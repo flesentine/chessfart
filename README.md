@@ -18,7 +18,7 @@ Chess Fart now has the complete standard chess engine plus its first variant lay
 - Gas is visible directly on the VGA board
 - `F` enters Fart mode for a selected piece with at least 2 Gas
 - all eight blast directions are targetable
-- empty/off-board directions can be confirmed as a turn-consuming `PUFF`
+- empty adjacent directions can be confirmed as a turn-consuming `PUFF`
 - Gas is included in Chess Fart repetition identity
 - occupied targets are previewed but actual displacement is deliberately Build 6 work
 
