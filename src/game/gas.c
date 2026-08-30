@@ -137,8 +137,7 @@ CfFartPreview gas_preview_fart(const CfBoard *board, const CfGasState *gas,
     if (df == 0 && dr == 0) return CF_FART_INVALID;
     target_file = file + df;
     target_rank = rank + dr;
-    if (!in_bounds(target_file, target_rank))
-        return board_is_in_check(board, board->side_to_move) ? CF_FART_INVALID : CF_FART_PUFF;
+    if (!in_bounds(target_file, target_rank)) return CF_FART_INVALID;
     if (board->squares[target_rank][target_file].type != CF_PIECE_NONE)
         return CF_FART_PUSH_BUILD6;
     return board_is_in_check(board, board->side_to_move) ? CF_FART_INVALID : CF_FART_PUFF;
