@@ -31,15 +31,29 @@ typedef enum CfFartDirection {
 typedef enum CfFartPreview {
     CF_FART_INVALID = 0,
     CF_FART_PUFF,
-    CF_FART_PUSH_BUILD6
+    CF_FART_PUSH,
+    CF_FART_BLOCKED,
+    CF_FART_PROMOTION,
+    CF_FART_PUSH_BUILD6 = CF_FART_PUSH
 } CfFartPreview;
 
 typedef struct CfFartAction {
     int actor_file;
     int actor_rank;
     CfFartDirection direction;
-    cf_u8 previous_gas;
+    CfFartPreview result;
+    int target_file;
+    int target_rank;
+    int destination_file;
+    int destination_rank;
+    CfPiece previous_target_piece;
+    CfPiece previous_destination_piece;
+    cf_u8 previous_actor_gas;
+    cf_u8 previous_target_gas;
+    cf_u8 previous_destination_gas;
+    CfPieceType promotion;
     CfPieceColor previous_side;
+    unsigned previous_castling_rights;
     int previous_ep_file;
     int previous_ep_rank;
     unsigned previous_halfmove;
@@ -69,17 +83,33 @@ int gas_make_move_ex(CfBoard *board, CfGasState *gas,
                      CfPieceType promotion, CfGasMove *made_move);
 void gas_unmake_move(CfBoard *board, CfGasState *gas, const CfGasMove *move);
 
-int gas_piece_can_fart(const CfBoard *board, const CfGasState *gas, int file, int rank);
+int gas_piece_can_fart(const CfBoard *board, const CfGasState *gas,
+                       int file, int rank);
 CfFartPreview gas_preview_fart(const CfBoard *board, const CfGasState *gas,
                                int file, int rank, CfFartDirection direction);
+int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,
+                                    int file, int rank, CfFartDirection direction,
+                                    CfPieceType promotion);
+int gas_make_fart(CfBoard *board, CfGasState *gas,
+                  int file, int rank, CfFartDirection direction,
+                  CfPieceType promotion, CfFartAction *action);
+void gas_unmake_fart(CfBoard *board, CfGasState *gas,
+                     const CfFartAction *action);
+
+/* Build 5 compatibility wrappers. */
 int gas_make_puff(CfBoard *board, CfGasState *gas,
                   int file, int rank, CfFartDirection direction,
                   CfFartAction *action);
-void gas_unmake_puff(CfBoard *board, CfGasState *gas, const CfFartAction *action);
-const char *gas_direction_name(CfFartDirection direction);
+void gas_unmake_puff(CfBoard *board, CfGasState *gas,
+                     const CfFartAction *action);
 
-void gas_history_init(CfGasHistory *history, const CfBoard *board, const CfGasState *gas);
-void gas_history_record(CfGasHistory *history, const CfBoard *board, const CfGasState *gas);
+const char *gas_direction_name(CfFartDirection direction);
+const char *gas_fart_preview_name(CfFartPreview preview);
+
+void gas_history_init(CfGasHistory *history, const CfBoard *board,
+                      const CfGasState *gas);
+void gas_history_record(CfGasHistory *history, const CfBoard *board,
+                        const CfGasState *gas);
 int gas_history_repetition_count(const CfGasHistory *history,
                                  const CfBoard *board, const CfGasState *gas);
 CfGameStatus gas_game_status(const CfBoard *board, const CfGasState *gas,

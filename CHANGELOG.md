@@ -4,38 +4,37 @@ All notable project milestones will be recorded here.
 
 ## Unreleased
 
-### Build 5 — Gas system
+### Build 6 — Fart displacement
 
 Added:
 
-- parallel per-piece Gas state from 0 to 3
-- +1 Gas on legal quiet move and +2 total on capture
-- Gas cap at 3
-- castling Gas award to both king and rook
-- Gas inheritance through promotion
-- Gas-aware move/unmake wrappers
-- three-segment Gas strips on every occupied VGA square
-- selected/cursor Gas readout in the side panel
-- F-key Fart mode
-- eight directional targets
-- empty-direction PUFF action
-- Gas spending, en-passant expiry and turn accounting on PUFF
-- reversible `CfFartAction` state
-- Gas-sensitive repetition keys/history
-- Build 5 Gas regression suite
-- `docs/BUILD_5.md`
+- actual one-square Fart displacement for friendly and enemy pieces
+- `PUFF`, `PUSH`, `BLOCKED`, `PROMOTE`, and `INVALID` preview states
+- confirmed blocked pushes that still spend Gas and consume the turn
+- scratch-board king-safety validation for displacement
+- Fart responses that can resolve check
+- enemy-king displacement and check creation
+- king-adjacency rejection through acting-king safety
+- castling-right loss when a home king/rook is displaced
+- en-passant expiry and clock accounting on every Fart Action
+- pushed-pawn promotion with Q/R/B/N choice
+- pushed-piece Gas preservation
+- complete reversible `CfFartAction` state
+- game-status awareness of legal Fart responses
+- Build 6 push/destination VGA overlays
+- deterministic host push demo
+- Build 6 regression suite
+- GitHub Actions host CI
+- `docs/BUILD_6.md`
 
-Verified:
+Verified locally:
 
-- strict C89 build succeeds with warnings-as-errors
-- the full Build 4 standard-chess/perft suite remains green without changing its chess core
-- normal move/capture/castling/promotion Gas rules pass
-- PUFF spend/unmake/check-safety tests pass
-- repetition distinguishes otherwise identical positions with different Gas
-- host interaction legally charges a knight and performs `PUFF N`
-- Build 5 framebuffer preview is generated successfully
+- Build 6 core, UI integration and tests compile with strict C89 warnings-as-errors
+- displacement-specific test harness passes push, blocked, check-safety, king, castling, promotion and undo cases
 
-Occupied-piece displacement remains intentionally deferred to Build 6.
+### Build 5 — Gas system
+
+Added per-piece Gas, Gas earning/cap, castling/promotion Gas handling, board Gas display, Fart mode, eight-direction targeting, empty-square PUFF, Gas-sensitive repetition, reversible Fart state, and Build 5 tests.
 
 ### Build 4 — complete standard chess
 
@@ -59,4 +58,4 @@ Added the game concept, VGA target, deterministic Gas/Fart ruleset, master plan,
 
 ### Current phase
 
-Build 5 complete in source. Build 6 — Fart displacement — is next.
+Build 6 complete in source. Build 7 — presentation pass — is next.

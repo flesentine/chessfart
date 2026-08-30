@@ -7,9 +7,23 @@ static int in_bounds(int file, int rank)
     return file >= 0 && file < 8 && rank >= 0 && rank < 8;
 }
 
+static CfPiece empty_piece(void)
+{
+    CfPiece piece;
+    piece.type = CF_PIECE_NONE;
+    piece.color = CF_COLOR_NONE;
+    return piece;
+}
+
 static cf_u8 clamp_gas(unsigned value)
 {
     return (cf_u8)(value > CF_GAS_MAX ? CF_GAS_MAX : value);
+}
+
+static int is_promotion_choice(CfPieceType type)
+{
+    return type == CF_PIECE_QUEEN || type == CF_PIECE_ROOK ||
+           type == CF_PIECE_BISHOP || type == CF_PIECE_KNIGHT;
 }
 
 void gas_init(CfGasState *gas)
@@ -109,13 +123,27 @@ static void direction_delta(CfFartDirection direction, int *df, int *dr)
 
 const char *gas_direction_name(CfFartDirection direction)
 {
-    static const char *names[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+    static const char *names[8] = {
+        "N", "NE", "E", "SE", "S", "SW", "W", "NW"
+    };
     int index = (int)direction;
     if (index < 0 || index > 7) return "?";
     return names[index];
 }
 
-int gas_piece_can_fart(const CfBoard *board, const CfGasState *gas, int file, int rank)
+const char *gas_fart_preview_name(CfFartPreview preview)
+{
+    switch (preview) {
+    case CF_FART_PUFF: return "PUFF";
+    case CF_FART_PUSH: return "PUSH";
+    case CF_FART_BLOCKED: return "BLOCKED";
+    case CF_FART_PROMOTION: return "PROMOTE";
+    default: return "INVALID";
+    }
+}
+
+int gas_piece_can_fart(const CfBoard *board, const CfGasState *gas,
+                       int file, int rank)
 {
     const CfPiece *piece;
     if (board == 0 || gas == 0) return 0;
@@ -125,22 +153,236 @@ int gas_piece_can_fart(const CfBoard *board, const CfGasState *gas, int file, in
            gas_at(gas, file, rank) >= CF_GAS_FART_COST;
 }
 
-CfFartPreview gas_preview_fart(const CfBoard *board, const CfGasState *gas,
-                               int file, int rank, CfFartDirection direction)
+static void push_scratch(CfBoard *scratch, int target_file, int target_rank,
+                         int destination_file, int destination_rank,
+                         CfPieceType promotion)
+{
+    CfPiece pushed = scratch->squares[target_rank][target_file];
+    if (promotion != CF_PIECE_NONE) pushed.type = promotion;
+    scratch->squares[destination_rank][destination_file] = pushed;
+    scratch->squares[target_rank][target_file] = empty_piece();
+}
+
+static int push_keeps_actor_safe(const CfBoard *board,
+                                 int target_file, int target_rank,
+                                 int destination_file, int destination_rank,
+                                 CfPieceType promotion)
+{
+    CfBoard scratch;
+    scratch = *board;
+    push_scratch(&scratch, target_file, target_rank,
+                 destination_file, destination_rank, promotion);
+    return !board_is_in_check(&scratch, board->side_to_move);
+}
+
+static int fart_geometry(int file, int rank,
+                         CfFartDirection direction,
+                         int *target_file, int *target_rank,
+                         int *destination_file, int *destination_rank)
 {
     int df;
     int dr;
-    int target_file;
-    int target_rank;
-    if (!gas_piece_can_fart(board, gas, file, rank)) return CF_FART_INVALID;
     direction_delta(direction, &df, &dr);
-    if (df == 0 && dr == 0) return CF_FART_INVALID;
-    target_file = file + df;
-    target_rank = rank + dr;
-    if (!in_bounds(target_file, target_rank)) return CF_FART_INVALID;
-    if (board->squares[target_rank][target_file].type != CF_PIECE_NONE)
-        return CF_FART_PUSH_BUILD6;
-    return board_is_in_check(board, board->side_to_move) ? CF_FART_INVALID : CF_FART_PUFF;
+    if (df == 0 && dr == 0) return 0;
+    *target_file = file + df;
+    *target_rank = rank + dr;
+    *destination_file = *target_file + df;
+    *destination_rank = *target_rank + dr;
+    if (!in_bounds(*target_file, *target_rank)) return 0;
+    return 1;
+}
+
+static int push_requires_promotion(CfPiece piece, int destination_rank)
+{
+    if (piece.type != CF_PIECE_PAWN) return 0;
+    if (piece.color == CF_COLOR_WHITE && destination_rank == 7) return 1;
+    if (piece.color == CF_COLOR_BLACK && destination_rank == 0) return 1;
+    return 0;
+}
+
+int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,
+                                    int file, int rank, CfFartDirection direction,
+                                    CfPieceType promotion)
+{
+    int tf;
+    int tr;
+    int df;
+    int dr;
+    CfPiece target;
+    if (!gas_piece_can_fart(board, gas, file, rank)) return 0;
+    if (!is_promotion_choice(promotion)) return 0;
+    if (!fart_geometry(file, rank, direction, &tf, &tr, &df, &dr)) return 0;
+    target = board->squares[tr][tf];
+    if (target.type == CF_PIECE_NONE) return 0;
+    if (!in_bounds(df, dr)) return 0;
+    if (board->squares[dr][df].type != CF_PIECE_NONE) return 0;
+    if (!push_requires_promotion(target, dr)) return 0;
+    return push_keeps_actor_safe(board, tf, tr, df, dr, promotion);
+}
+
+CfFartPreview gas_preview_fart(const CfBoard *board, const CfGasState *gas,
+                               int file, int rank, CfFartDirection direction)
+{
+    static const CfPieceType promotions[4] = {
+        CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
+    };
+    int tf;
+    int tr;
+    int df;
+    int dr;
+    int i;
+    CfPiece target;
+
+    if (!gas_piece_can_fart(board, gas, file, rank)) return CF_FART_INVALID;
+    if (!fart_geometry(file, rank, direction, &tf, &tr, &df, &dr))
+        return CF_FART_INVALID;
+
+    target = board->squares[tr][tf];
+    if (target.type == CF_PIECE_NONE)
+        return board_is_in_check(board, board->side_to_move) ?
+               CF_FART_INVALID : CF_FART_PUFF;
+
+    if (!in_bounds(df, dr) || board->squares[dr][df].type != CF_PIECE_NONE)
+        return board_is_in_check(board, board->side_to_move) ?
+               CF_FART_INVALID : CF_FART_BLOCKED;
+
+    if (push_requires_promotion(target, dr)) {
+        for (i = 0; i < 4; ++i)
+            if (push_keeps_actor_safe(board, tf, tr, df, dr, promotions[i]))
+                return CF_FART_PROMOTION;
+        return CF_FART_INVALID;
+    }
+
+    if (!push_keeps_actor_safe(board, tf, tr, df, dr, CF_PIECE_NONE))
+        return CF_FART_INVALID;
+    return CF_FART_PUSH;
+}
+
+static void lose_castling_rights_for_displacement(CfBoard *board,
+                                                   CfPiece piece,
+                                                   int from_file,
+                                                   int from_rank)
+{
+    if (piece.type == CF_PIECE_KING) {
+        if (piece.color == CF_COLOR_WHITE && from_file == 4 && from_rank == 0)
+            board->castling_rights &= ~(CF_CASTLE_WHITE_KING | CF_CASTLE_WHITE_QUEEN);
+        else if (piece.color == CF_COLOR_BLACK && from_file == 4 && from_rank == 7)
+            board->castling_rights &= ~(CF_CASTLE_BLACK_KING | CF_CASTLE_BLACK_QUEEN);
+    } else if (piece.type == CF_PIECE_ROOK) {
+        if (piece.color == CF_COLOR_WHITE && from_rank == 0) {
+            if (from_file == 0) board->castling_rights &= ~CF_CASTLE_WHITE_QUEEN;
+            if (from_file == 7) board->castling_rights &= ~CF_CASTLE_WHITE_KING;
+        } else if (piece.color == CF_COLOR_BLACK && from_rank == 7) {
+            if (from_file == 0) board->castling_rights &= ~CF_CASTLE_BLACK_QUEEN;
+            if (from_file == 7) board->castling_rights &= ~CF_CASTLE_BLACK_KING;
+        }
+    }
+}
+
+int gas_make_fart(CfBoard *board, CfGasState *gas,
+                  int file, int rank, CfFartDirection direction,
+                  CfPieceType promotion, CfFartAction *action)
+{
+    CfFartAction local;
+    CfFartPreview preview;
+    int tf;
+    int tr;
+    int df;
+    int dr;
+    CfPiece pushed;
+
+    if (board == 0 || gas == 0) return 0;
+    preview = gas_preview_fart(board, gas, file, rank, direction);
+    if (preview == CF_FART_INVALID) return 0;
+    if (preview == CF_FART_PROMOTION &&
+        !gas_fart_promotion_choice_legal(board, gas, file, rank,
+                                         direction, promotion)) return 0;
+
+    memset(&local, 0, sizeof(local));
+    local.actor_file = file;
+    local.actor_rank = rank;
+    local.direction = direction;
+    local.result = preview;
+    local.target_file = -1;
+    local.target_rank = -1;
+    local.destination_file = -1;
+    local.destination_rank = -1;
+    local.previous_actor_gas = gas_at(gas, file, rank);
+    local.previous_side = board->side_to_move;
+    local.previous_castling_rights = board->castling_rights;
+    local.previous_ep_file = board->en_passant_file;
+    local.previous_ep_rank = board->en_passant_rank;
+    local.previous_halfmove = board->halfmove_clock;
+    local.previous_fullmove = board->fullmove_number;
+    local.promotion = CF_PIECE_NONE;
+
+    if (!fart_geometry(file, rank, direction, &tf, &tr, &df, &dr))
+        return 0;
+    local.target_file = tf;
+    local.target_rank = tr;
+    local.previous_target_piece = board->squares[tr][tf];
+    local.previous_target_gas = gas_at(gas, tf, tr);
+
+    if (in_bounds(df, dr)) {
+        local.destination_file = df;
+        local.destination_rank = dr;
+        local.previous_destination_piece = board->squares[dr][df];
+        local.previous_destination_gas = gas_at(gas, df, dr);
+    }
+
+    gas->squares[rank][file] =
+        (cf_u8)(gas->squares[rank][file] - CF_GAS_FART_COST);
+
+    if (preview == CF_FART_PUSH || preview == CF_FART_PROMOTION) {
+        pushed = board->squares[tr][tf];
+        lose_castling_rights_for_displacement(board, pushed, tf, tr);
+        board->squares[tr][tf] = empty_piece();
+        gas->squares[tr][tf] = 0;
+        if (preview == CF_FART_PROMOTION) {
+            pushed.type = promotion;
+            local.promotion = promotion;
+        }
+        board->squares[dr][df] = pushed;
+        gas->squares[dr][df] = local.previous_target_gas;
+    }
+
+    board->en_passant_file = -1;
+    board->en_passant_rank = -1;
+    ++board->halfmove_clock;
+    if (board->side_to_move == CF_COLOR_BLACK) ++board->fullmove_number;
+    board->side_to_move = board_other_color(board->side_to_move);
+
+    if (action != 0) *action = local;
+    return 1;
+}
+
+void gas_unmake_fart(CfBoard *board, CfGasState *gas,
+                     const CfFartAction *action)
+{
+    if (board == 0 || gas == 0 || action == 0) return;
+
+    gas_set(gas, action->actor_file, action->actor_rank,
+            action->previous_actor_gas);
+
+    if (action->target_file >= 0 && action->target_rank >= 0) {
+        board->squares[action->target_rank][action->target_file] =
+            action->previous_target_piece;
+        gas->squares[action->target_rank][action->target_file] =
+            action->previous_target_gas;
+    }
+    if (action->destination_file >= 0 && action->destination_rank >= 0) {
+        board->squares[action->destination_rank][action->destination_file] =
+            action->previous_destination_piece;
+        gas->squares[action->destination_rank][action->destination_file] =
+            action->previous_destination_gas;
+    }
+
+    board->side_to_move = action->previous_side;
+    board->castling_rights = action->previous_castling_rights;
+    board->en_passant_file = action->previous_ep_file;
+    board->en_passant_rank = action->previous_ep_rank;
+    board->halfmove_clock = action->previous_halfmove;
+    board->fullmove_number = action->previous_fullmove;
 }
 
 int gas_make_puff(CfBoard *board, CfGasState *gas,
@@ -148,39 +390,18 @@ int gas_make_puff(CfBoard *board, CfGasState *gas,
                   CfFartAction *action)
 {
     CfFartAction local;
-    if (board == 0 || gas == 0) return 0;
-    if (gas_preview_fart(board, gas, file, rank, direction) != CF_FART_PUFF) return 0;
-
-    memset(&local, 0, sizeof(local));
-    local.actor_file = file;
-    local.actor_rank = rank;
-    local.direction = direction;
-    local.previous_gas = gas_at(gas, file, rank);
-    local.previous_side = board->side_to_move;
-    local.previous_ep_file = board->en_passant_file;
-    local.previous_ep_rank = board->en_passant_rank;
-    local.previous_halfmove = board->halfmove_clock;
-    local.previous_fullmove = board->fullmove_number;
-
-    gas->squares[rank][file] = (cf_u8)(gas->squares[rank][file] - CF_GAS_FART_COST);
-    board->en_passant_file = -1;
-    board->en_passant_rank = -1;
-    ++board->halfmove_clock;
-    if (board->side_to_move == CF_COLOR_BLACK) ++board->fullmove_number;
-    board->side_to_move = board_other_color(board->side_to_move);
+    if (gas_preview_fart(board, gas, file, rank, direction) != CF_FART_PUFF)
+        return 0;
+    if (!gas_make_fart(board, gas, file, rank, direction,
+                       CF_PIECE_QUEEN, &local)) return 0;
     if (action != 0) *action = local;
     return 1;
 }
 
-void gas_unmake_puff(CfBoard *board, CfGasState *gas, const CfFartAction *action)
+void gas_unmake_puff(CfBoard *board, CfGasState *gas,
+                     const CfFartAction *action)
 {
-    if (board == 0 || gas == 0 || action == 0) return;
-    gas_set(gas, action->actor_file, action->actor_rank, action->previous_gas);
-    board->side_to_move = action->previous_side;
-    board->en_passant_file = action->previous_ep_file;
-    board->en_passant_rank = action->previous_ep_rank;
-    board->halfmove_clock = action->previous_halfmove;
-    board->fullmove_number = action->previous_fullmove;
+    gas_unmake_fart(board, gas, action);
 }
 
 static int effective_en_passant_file(const CfBoard *board)
@@ -192,7 +413,8 @@ static int effective_en_passant_file(const CfBoard *board)
     if (board->en_passant_file < 0 || board->en_passant_rank < 0) return -1;
     pawn_rank = board->side_to_move == CF_COLOR_WHITE ?
                 board->en_passant_rank - 1 : board->en_passant_rank + 1;
-    for (file = board->en_passant_file - 1; file <= board->en_passant_file + 1; file += 2) {
+    for (file = board->en_passant_file - 1;
+         file <= board->en_passant_file + 1; file += 2) {
         if (!in_bounds(file, pawn_rank)) continue;
         if (board->squares[pawn_rank][file].type != CF_PIECE_PAWN ||
             board->squares[pawn_rank][file].color != board->side_to_move) continue;
@@ -227,7 +449,8 @@ static void make_key(const CfBoard *board, const CfGasState *gas,
         file = square % 8;
         code = piece_code(board->squares[rank][file]);
         if (code != 0)
-            code = (cf_u8)(code | (cf_u8)((gas_at(gas, file, rank) & 3U) << 4));
+            code = (cf_u8)(code |
+                   (cf_u8)((gas_at(gas, file, rank) & 3U) << 4));
         key->squares[square] = code;
     }
     key->state = (cf_u8)((board->side_to_move == CF_COLOR_BLACK ? 1U : 0U) |
@@ -238,11 +461,13 @@ static void make_key(const CfBoard *board, const CfGasState *gas,
 
 static int key_equal(const CfGasPositionKey *a, const CfGasPositionKey *b)
 {
-    return a->state == b->state && a->en_passant_file == b->en_passant_file &&
+    return a->state == b->state &&
+           a->en_passant_file == b->en_passant_file &&
            memcmp(a->squares, b->squares, sizeof(a->squares)) == 0;
 }
 
-void gas_history_record(CfGasHistory *history, const CfBoard *board, const CfGasState *gas)
+void gas_history_record(CfGasHistory *history, const CfBoard *board,
+                        const CfGasState *gas)
 {
     CfGasPositionKey key;
     int i;
@@ -256,7 +481,8 @@ void gas_history_record(CfGasHistory *history, const CfBoard *board, const CfGas
     history->keys[history->count++] = key;
 }
 
-void gas_history_init(CfGasHistory *history, const CfBoard *board, const CfGasState *gas)
+void gas_history_init(CfGasHistory *history, const CfBoard *board,
+                      const CfGasState *gas)
 {
     if (history == 0) return;
     history->count = 0;
@@ -276,18 +502,17 @@ int gas_history_repetition_count(const CfGasHistory *history,
     return count;
 }
 
-static int has_legal_puff(const CfBoard *board, const CfGasState *gas)
+static int has_legal_fart(const CfBoard *board, const CfGasState *gas)
 {
     int file;
     int rank;
     int direction;
-    if (board_is_in_check(board, board->side_to_move)) return 0;
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
             if (!gas_piece_can_fart(board, gas, file, rank)) continue;
             for (direction = 0; direction < 8; ++direction)
                 if (gas_preview_fart(board, gas, file, rank,
-                                     (CfFartDirection)direction) == CF_FART_PUFF)
+                                     (CfFartDirection)direction) != CF_FART_INVALID)
                     return 1;
         }
     }
@@ -299,13 +524,13 @@ CfGameStatus gas_game_status(const CfBoard *board, const CfGasState *gas,
 {
     int moves;
     int check;
+    int fart;
     if (board == 0 || gas == 0) return CF_GAME_ONGOING;
     moves = board_count_legal_moves(board, board->side_to_move);
     check = board_is_in_check(board, board->side_to_move);
-    if (moves == 0) {
-        if (check) return CF_GAME_CHECKMATE;
-        if (!has_legal_puff(board, gas)) return CF_GAME_STALEMATE;
-    }
+    fart = has_legal_fart(board, gas);
+    if (moves == 0 && !fart)
+        return check ? CF_GAME_CHECKMATE : CF_GAME_STALEMATE;
     if (board_is_insufficient_material(board)) return CF_GAME_DRAW_INSUFFICIENT;
     if (history != 0 && gas_history_repetition_count(history, board, gas) >= 3)
         return CF_GAME_DRAW_THREEFOLD;
