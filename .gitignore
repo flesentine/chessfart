@@ -1,0 +1,21 @@
+# Build output
+build/
+*.obj
+*.o
+*.exe
+*.map
+*.err
+
+# Generated runtime assets
+assets/runtime/
+
+# Editor/OS
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Test output
+coverage/
+*.log
