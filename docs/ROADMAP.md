@@ -37,21 +37,28 @@ Remaining integration check: Open Watcom + DOSBox keyboard/runtime validation.
 
 ## Build 3 — Normal chess movement
 
-**Status: next**
+**Status: complete in source; host rules tests pass**
 
-Deliverables:
+Delivered:
 
-- pseudo-legal move generation for all six piece types
-- attack detection
-- king safety
+- pseudo-legal movement for all six piece types
+- attack detection and check detection
+- scratch-board king-safety filtering
 - legal destination highlights
-- apply/unapply
-- captures
+- apply/unapply move records
+- ordinary captures
+- turn enforcement
 - source/destination cursor interaction
+- pinned-piece and king-safety regression tests
+- opening perft validation through depth 3
 
-Exit criterion: ordinary piece movement cannot produce an illegal self-check position.
+Exit criterion met in source/host validation: ordinary moves cannot leave the moving side in self-check.
+
+Remaining integration check: Open Watcom + DOSBox runtime validation.
 
 ## Build 4 — Complete standard chess
+
+**Status: next**
 
 Deliverables: castling, en passant, promotion, check/checkmate/stalemate, draw state, regression tests.
 

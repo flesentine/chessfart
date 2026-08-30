@@ -6,47 +6,48 @@ The design goal is **real strategy first, toilet humor second**. Normal chess re
 
 ## Project status
 
-**Build 2 — Cursor and Pieces: complete in source.**
+**Build 3 — Legal Chess Movement: complete in source.**
 
-Build 2 is the first interactive board milestone:
+The board is now genuinely playable for ordinary chess moves:
 
-- 320x200 Mode 13h presentation
-- all 32 pieces in the standard starting position
-- compact placeholder VGA piece silhouettes
-- arrow-key board cursor
-- Enter to select/deselect a piece
-- persistent selected-square highlight
-- live cursor/piece/selection information in the side panel
-- Escape restores text mode and exits
-- strict host-side board tests and framebuffer smoke test
+- all six piece types generate movement
+- White/Black turns alternate
+- legal destinations are highlighted
+- ordinary captures work
+- attack maps and check detection work
+- moves that expose your own king are rejected
+- pinned pieces are handled through king-safety filtering
+- make/unmake move records are available for later AI/search work
+- strict C89 regression tests pass
 
-The host validation passes. The DOS target is ready for Open Watcom compilation; Open Watcom/DOSBox is not installed in the environment used to prepare this milestone, so no precompiled DOS executable is committed.
+Special rules — castling, en passant, promotion, mate/stalemate, and draw state — are intentionally Build 4 work.
 
-See [`docs/BUILD_2.md`](docs/BUILD_2.md) for the full milestone notes.
+See [`docs/BUILD_3.md`](docs/BUILD_3.md) for implementation and verification details.
 
-## Controls — Build 2
+## Controls — Build 3
 
 ```text
 Arrow keys   Move cursor
-Enter        Select/deselect piece
+Enter        Select piece / make legal move / change source
 Esc          Quit
 ```
 
-Pieces do **not** move yet. Build 3 adds legal movement, captures, attack detection, and king-safety filtering.
+Visual hints:
+
+- cyan = cursor
+- magenta = selected source
+- green marker = legal quiet move
+- orange/red outline = legal capture
 
 ## Build
 
 ### Host verification
 
 ```sh
-make test-build2
+make test-build3
 ```
 
-This builds and runs the host shell, checks the board model, and writes:
-
-```text
-build/host/chessfart_build2.ppm
-```
+This runs the rules regression suite, exercises a scripted E2-E4 interaction, and writes `build/host/chessfart_build3.ppm`.
 
 ### DOS / Open Watcom
 
@@ -54,17 +55,11 @@ build/host/chessfart_build2.ppm
 wmake -f makefile.dos dos
 ```
 
-or:
+or `scripts\build_dos.bat`.
 
-```bat
-scripts\build_dos.bat
-```
+Expected output: `build\dos\CHESSFRT.EXE`.
 
-Expected output:
-
-```text
-build\dos\CHESSFRT.EXE
-```
+The DOS target is ready for Open Watcom compilation. Open Watcom/DOSBox is not available in the environment used to prepare this build, so a precompiled DOS executable is not committed.
 
 ## Target experience
 
@@ -82,26 +77,6 @@ Every piece eventually has a small **Gas meter**. Gas is earned through normal p
 
 The system is deterministic and visible to both players. Full rules are in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 
-## Source layout
-
-```text
-include/
-src/
-  main.c
-  game/
-    board.c
-    board_view.c
-    font.c
-  platform/
-    dos/
-    host/
-tests/
-scripts/
-docs/
-```
-
-The board model is platform-independent. DOS-specific video/input stays under `src/platform/dos`, while the host backend exists for fast deterministic testing.
-
 ## Documentation
 
 - [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md) — full project blueprint
@@ -115,6 +90,7 @@ The board model is platform-independent. DOS-specific video/input stays under `s
 - [`docs/BUILD_AND_TOOLCHAIN.md`](docs/BUILD_AND_TOOLCHAIN.md) — toolchain plan
 - [`docs/BUILD_1.md`](docs/BUILD_1.md) — VGA boot milestone
 - [`docs/BUILD_2.md`](docs/BUILD_2.md) — cursor/pieces milestone
+- [`docs/BUILD_3.md`](docs/BUILD_3.md) — legal-movement milestone
 
 ## Design pillars
 

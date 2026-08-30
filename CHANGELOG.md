@@ -1,47 +1,50 @@
 # Changelog
 
-All notable project milestones are recorded here.
+All notable project milestones will be recorded here.
 
 ## Unreleased
 
-### Build 2 — cursor and pieces
+### Build 3 — legal chess movement
 
 Added:
 
-- platform-independent 8x8 board model
-- standard 32-piece starting position
-- piece/color/type helpers and guarded square access
-- placeholder VGA silhouettes for pawn, knight, bishop, rook, queen, and king
-- distinct White/Black piece palette treatment
-- cyan board cursor starting on E2
-- DOS arrow-key decoding
-- Enter selection/deselection
-- persistent magenta selected-square highlight
-- live cursor coordinate and piece details in the side panel
-- deterministic host input script demonstrating separate cursor/selection states
-- Build 2 board-state tests
-- `docs/BUILD_2.md`
+- pseudo-legal movement generation for all six piece types
+- board turn state
+- pawn one/two-step movement and diagonal capture
+- slider ray/blocker handling
+- knight jumps and king steps
+- attack detection and check detection
+- king-safety filtering through scratch-board simulation
+- legal destination markers and capture outlines
+- ordinary captures
+- make/unmake move records
+- source/destination move interaction
+- pinned-piece and king-safety regression tests
+- `docs/BUILD_3.md`
 
 Verified:
 
-- `make test-build2` passes with `-std=c89 -pedantic -Wall -Wextra -Werror`
-- starting position contains exactly 32 pieces
-- known king/queen/rook/pawn squares are correct
-- invalid board coordinates safely return null
-- host backend produces a valid 320x200 Build 2 framebuffer preview
+- strict C89 compilation succeeds with `-std=c89 -pedantic -Wall -Wextra -Werror`
+- starting position reports 20 legal ordinary moves per side
+- opening perft sanity matches 20 / 400 / 8,902 nodes at depths 1 / 2 / 3
+- capture, check, pin, king-safety, turn, and unmake tests pass
+- scripted host interaction legally moves E2 to E4
+- host framebuffer preview is generated successfully
 
-Not yet verified in this environment:
+Deferred to Build 4: castling, en passant, promotion, checkmate/stalemate, and draw state.
 
-- Open Watcom compilation and DOSBox runtime because those tools are not installed here
+### Build 2 — cursor and pieces
+
+Added the 32-piece starting-position board model, placeholder VGA pieces, arrow-key cursor, persistent selection, side-panel piece information, and host board-state tests.
 
 ### Build 1 — VGA boot
 
-Added the C89 application shell, Open Watcom DOS target, Mode 13h entry/exit, 64,000-byte backbuffer, VGA palette programming, framebuffer primitives, bitmap font, static board, Escape handling, and deterministic host renderer.
+Added the C89 application shell, Mode 13h DOS backend, software backbuffer, VGA palette, bitmap font, keyboard input abstraction, and host framebuffer smoke test.
 
 ### Build 0 — foundation
 
-Added the game concept, VGA target, deterministic Gas/Fart ruleset, master plan, art/audio/architecture specs, roadmap, tests, toolchain plan, decisions, and contribution conventions.
+Added the game concept, VGA target, deterministic Gas/Fart ruleset, master plan, art/audio/architecture specs, roadmap, test plan, toolchain plan, and project conventions.
 
 ### Current phase
 
-Build 2 complete in source. Build 3 — normal chess movement — is next.
+Build 3 complete in source. Build 4 — complete standard chess — is next.
