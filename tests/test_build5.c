@@ -130,6 +130,9 @@ static void test_preview_and_check_safety(void)
     CHECK(gas_preview_fart(&board, &gas, 2, 2, CF_FART_E) == CF_FART_PUSH_BUILD6);
     CHECK(!gas_make_puff(&board, &gas, 2, 2, CF_FART_E, 0));
     CHECK(gas_preview_fart(&board, &gas, 2, 2, CF_FART_N) == CF_FART_PUFF);
+    board_set_piece(&board, 0, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    gas_set(&gas, 0, 2, 2U);
+    CHECK(gas_preview_fart(&board, &gas, 0, 2, CF_FART_W) == CF_FART_INVALID);
     board_set_piece(&board, 4, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
     CHECK(board_is_in_check(&board, CF_COLOR_WHITE));
     CHECK(gas_preview_fart(&board, &gas, 2, 2, CF_FART_N) == CF_FART_INVALID);
