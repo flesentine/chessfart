@@ -49,9 +49,9 @@ The VGA side panel displays the current direction and preview state before confi
 
 ## PUFF action
 
-Build 5 fully implements the no-target/off-board Fart Action.
+Build 5 fully implements the empty-direction Fart Action.
 
-If the adjacent target square in the chosen direction is empty or off-board, a legal `PUFF`:
+If the adjacent target square in the chosen direction is on-board and empty, a legal `PUFF`:
 
 1. spends 2 Gas from the acting piece
 2. clears any en-passant opportunity
@@ -60,7 +60,7 @@ If the adjacent target square in the chosen direction is empty or off-board, a l
 5. changes side to move
 6. records a Gas-aware repetition position
 
-A PUFF is rejected while the acting side is in check because it does not alter piece geometry and therefore cannot resolve that check.
+An off-board direction is invalid. A PUFF is also rejected while the acting side is in check because it does not alter piece geometry and therefore cannot resolve that check.
 
 `CfFartAction` records enough state to unmake a PUFF exactly during testing and future search work.
 
@@ -127,6 +127,7 @@ Build 5 tests cover:
 - en-passant expiry on PUFF
 - clock/turn accounting
 - PUFF make/unmake
+- off-board direction rejection
 - in-check PUFF rejection
 - occupied-target Build 6 preview
 - Gas-sensitive repetition identity
@@ -161,7 +162,7 @@ Open Watcom/DOSBox is not installed in the environment used for this milestone, 
 
 ## Build 5 exit criterion
 
-**Met in source/host validation:** individual pieces accumulate visible Gas, a charged piece can enter eight-direction Fart mode, and a legal no-target PUFF spends Gas and consumes the turn without displacing another piece.
+**Met in source/host validation:** individual pieces accumulate visible Gas, a charged piece can enter eight-direction Fart mode, and a legal empty-direction PUFF spends Gas and consumes the turn without displacing another piece.
 
 ## Build 6 handoff
 
