@@ -1,86 +1,82 @@
 # Chess Fart
 
-**Chess Fart** is a deliberately ridiculous 256-color VGA strategy game: real chess rebuilt as a loud early-1990s DOS game where pieces will build Gas and use directional fart blasts as tactical abilities.
+**Chess Fart** is a deliberately ridiculous 256-color VGA strategy game: real chess rebuilt as a loud early-1990s DOS game where pieces build Gas and use directional fart blasts as tactical abilities.
 
-The design goal is **real strategy first, toilet humor second**. Build 4 completes the normal chess layer; Build 5 is where the Gas system begins.
+The design goal is **real strategy first, toilet humor second**. Build 4 completed the normal chess foundation; Build 5 puts the Gas system online.
 
 ## Project status
 
-**Build 4 — Complete Standard Chess: complete in source.**
+**Build 5 — Gas System: complete in source.**
 
-Pure Chess now supports:
+Chess Fart now has the complete standard chess engine plus its first variant layer:
 
-- legal movement for every piece
-- captures and king-safety filtering
-- castling on both sides with persistent castling rights
-- en passant, including king-safety edge cases
-- promotion to queen, rook, bishop, or knight
-- check, checkmate, and stalemate
-- halfmove/fullmove bookkeeping
-- fifty-move draw handling
-- threefold repetition tracking
-- insufficient-material draws
-- make/unmake restoration of all special-rule state
+- Gas 0–3 belongs to every piece
+- normal moves earn +1 Gas
+- captures earn +2 Gas total
+- castling charges both moved pieces
+- promotion carries Gas into the promoted piece
+- Gas is visible directly on the VGA board
+- `F` enters Fart mode for a selected piece with at least 2 Gas
+- all eight blast directions are targetable
+- empty/off-board directions can be confirmed as a turn-consuming `PUFF`
+- Gas is included in Chess Fart repetition identity
+- occupied targets are previewed but actual displacement is deliberately Build 6 work
 
-The interactive VGA shell includes a promotion chooser and terminal game-state display.
+Build 5 uses a parallel `CfGasState` around the unchanged Build 4 chess core, keeping standard chess as a permanent regression baseline.
 
-See [`docs/BUILD_4.md`](docs/BUILD_4.md) for implementation and verification details.
+See [`docs/BUILD_5.md`](docs/BUILD_5.md) for implementation and verification details.
 
-## Controls — Build 4
+## Controls — Build 5
 
 ```text
-Arrow keys   Move cursor
-Enter        Select piece / make legal move / confirm promotion
-Esc          Quit
+Arrow keys        Move cursor / aim cardinal Fart direction
+Enter             Select / move / confirm PUFF
+F                 Enter or cancel Fart mode
+Keypad diagonals  Aim NE / SE / SW / NW
+Esc               Quit
 ```
 
-During promotion, use the arrow keys to cycle **Queen / Rook / Bishop / Knight**, then press Enter.
-
-Visual hints:
-
-- cyan = cursor
-- magenta = selected source
-- green marker = legal quiet move
-- orange/red outline = legal capture
-- red status = check/checkmate
+Visual Gas pips appear at the bottom of every occupied square. A piece needs at least **2 Gas** to enter Fart mode.
 
 ## Build
 
 ### Host verification
 
 ```sh
-make test-build4
+make test-build5
 ```
 
-This runs the strict C89 rule suite, exercises the host UI, and writes `build/host/chessfart_build4.ppm`.
-
-The regression suite includes standard opening perft through depth 4 plus special-rule reference positions covering castling, en passant, and promotion-heavy trees.
+This reruns the complete Build 4 chess suite, runs the Build 5 Gas/Fart tests, executes the scripted UI smoke test, and writes `build/host/chessfart_build5.ppm`.
 
 ### DOS / Open Watcom
 
 ```bat
-wmake -f makefile.dos dos
+wmake -f makefile.build5.dos dos
 ```
 
-or `scripts\build_dos.bat`.
+or:
+
+```bat
+scripts\build_dos_build5.bat
+```
 
 Expected output: `build\dos\CHESSFRT.EXE`.
 
-The DOS target remains ready for Open Watcom compilation. Open Watcom/DOSBox is not installed in the environment used for this milestone, so no precompiled DOS executable is claimed here.
+Open Watcom/DOSBox is not available in the environment used to prepare this build, so the DOS target is source-ready but not runtime-verified here.
 
 ## Target experience
 
 - 320x200, 256-color VGA / Mode 13h presentation
 - DOS-era visual language: chunky sprites, dithered gradients, palette cycling, oversized UI panels
 - complete standard chess as the rules foundation
-- deterministic Gas/Fart tactics layered on top starting in Build 5
+- deterministic Gas/Fart tactics layered on top
 - keyboard-first controls, optional mouse support later
 - Sound Blaster-style sampled fart effects with PC speaker fallback
 - DOSBox as the primary runtime target, with real DOS-era constraints kept in mind
 
 ## The core gimmick
 
-Every piece eventually has a small **Gas meter**. Gas is earned through normal play. A sufficiently charged piece may spend its turn on a **Fart Action** instead of making a normal move. A fart projects a one-square blast in a chosen direction and can shove a neighboring piece one square farther away when legal.
+Every piece has a small **Gas meter**. Gas is earned through normal play. A sufficiently charged piece may spend its turn on a **Fart Action** instead of making a normal move. A fart projects a one-square blast in a chosen direction and, beginning in Build 6, can shove a neighboring piece one square farther away when legal.
 
 The system is deterministic and visible to both players. Full rules are in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 
@@ -99,6 +95,7 @@ The system is deterministic and visible to both players. Full rules are in [`doc
 - [`docs/BUILD_2.md`](docs/BUILD_2.md) — cursor/pieces milestone
 - [`docs/BUILD_3.md`](docs/BUILD_3.md) — legal-movement milestone
 - [`docs/BUILD_4.md`](docs/BUILD_4.md) — complete standard-chess milestone
+- [`docs/BUILD_5.md`](docs/BUILD_5.md) — Gas-system milestone
 
 ## Design pillars
 

@@ -52,15 +52,33 @@ Remaining integration check: Open Watcom + DOSBox runtime validation.
 
 ## Build 5 — Gas system
 
-**Status: next**
+**Status: complete in source; host gas/rules tests pass**
 
-Deliverables: per-piece Gas 0–3, gas earning, gas UI, fart-mode input, eight directions, no-target puff.
+Delivered:
 
-Exit criterion: charged pieces can spend Gas and consume a turn without yet displacing another piece.
+- per-piece Gas 0–3
+- +1 normal move / +2 capture earning with cap
+- castling Gas for king and rook
+- promotion Gas inheritance
+- board and side-panel Gas display
+- F-key Fart mode
+- eight-direction targeting
+- no-target/off-board PUFF action
+- Gas spend and turn accounting
+- en-passant expiry on Fart turn
+- Gas-sensitive repetition keys
+- PUFF make/unmake and regression tests
+- unchanged Build 4 chess regression baseline
+
+Exit criterion met in source/host validation: charged pieces can spend Gas and consume a turn without displacement.
+
+Remaining integration check: Open Watcom + DOSBox runtime validation.
 
 ## Build 6 — Fart displacement
 
-Deliverables: one-square push, edge/occupied handling, king legality, castling-right displacement effects, pushed-pawn promotion, check caused/resolved by fart, edge-case tests.
+**Status: next**
+
+Deliverables: one-square push, edge/occupied handling, king legality, castling-right displacement effects, pushed-pawn promotion, check caused/resolved by fart, Gas-aware repetition, and full edge-case tests.
 
 Exit criterion: every documented Fart Action rule is executable and test-covered.
 

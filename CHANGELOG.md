@@ -4,34 +4,42 @@ All notable project milestones will be recorded here.
 
 ## Unreleased
 
-### Build 4 — complete standard chess
+### Build 5 — Gas system
 
 Added:
 
-- persistent castling-right state and both castling moves
-- castling-through-check/path validation
-- en-passant target state and en-passant captures
-- en-passant self-check filtering
-- four-way pawn promotion: queen, rook, bishop, knight
-- interactive VGA promotion chooser
-- checkmate and stalemate status
-- halfmove/fullmove counters
-- fifty-move draw handling
-- threefold repetition history with side/castling/effective-en-passant state
-- insufficient-material draw detection
-- complete special-state make/unmake restoration
-- terminal game-state handling in the VGA shell
-- `docs/BUILD_4.md`
+- parallel per-piece Gas state from 0 to 3
+- +1 Gas on legal quiet move and +2 total on capture
+- Gas cap at 3
+- castling Gas award to both king and rook
+- Gas inheritance through promotion
+- Gas-aware move/unmake wrappers
+- three-segment Gas strips on every occupied VGA square
+- selected/cursor Gas readout in the side panel
+- F-key Fart mode
+- eight directional targets
+- no-target/off-board PUFF action
+- Gas spending, en-passant expiry and turn accounting on PUFF
+- reversible `CfFartAction` state
+- Gas-sensitive repetition keys/history
+- Build 5 Gas regression suite
+- `docs/BUILD_5.md`
 
 Verified:
 
-- strict C89 compilation succeeds with `-std=c89 -pedantic -Wall -Wextra -Werror`
-- opening perft matches 20 / 400 / 8,902 / 197,281 through depth 4
-- Kiwipete matches 48 / 2,039 / 97,862 through depth 3
-- en-passant reference position matches 14 / 191 / 2,812 / 43,238 / 674,624 through depth 5
-- promotion/castling reference position matches 6 / 264 / 9,467 / 422,333 through depth 4
-- castling, en passant, promotion, mate, stalemate, draw, repetition, counters, and unmake fixtures pass
-- scripted host interaction legally moves E2 to E4 and renders Build 4 state
+- strict C89 build succeeds with warnings-as-errors
+- the full Build 4 standard-chess/perft suite remains green without changing its chess core
+- normal move/capture/castling/promotion Gas rules pass
+- PUFF spend/unmake/check-safety tests pass
+- repetition distinguishes otherwise identical positions with different Gas
+- host interaction legally charges a knight and performs `PUFF N`
+- Build 5 framebuffer preview is generated successfully
+
+Occupied-piece displacement remains intentionally deferred to Build 6.
+
+### Build 4 — complete standard chess
+
+Added castling, en passant, four-way promotion, checkmate/stalemate, draw state, repetition, counters, complete special-state make/unmake, promotion UI, and multi-position perft regression testing.
 
 ### Build 3 — legal chess movement
 
@@ -51,4 +59,4 @@ Added the game concept, VGA target, deterministic Gas/Fart ruleset, master plan,
 
 ### Current phase
 
-Build 4 complete in source. Build 5 — Gas system — is next.
+Build 5 complete in source. Build 6 — Fart displacement — is next.
