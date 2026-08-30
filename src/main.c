@@ -6,6 +6,9 @@
 #include "input.h"
 #include "vga.h"
 
+static CfBoard g_board;
+static CfHistory g_history;
+
 static void square_name(char *out, int file, int rank)
 {
     out[0] = (char)('A' + file);
@@ -13,13 +16,75 @@ static void square_name(char *out, int file, int rank)
     out[2] = '\0';
 }
 
+static int status_is_terminal(CfGameStatus status)
+{
+    return status == CF_GAME_CHECKMATE || status == CF_GAME_STALEMATE ||
+           status == CF_GAME_DRAW_FIFTY_MOVE || status == CF_GAME_DRAW_THREEFOLD ||
+           status == CF_GAME_DRAW_INSUFFICIENT;
+}
+
+static int target_is_promotion(const CfMoveList *list, int file, int rank)
+{
+    int i;
+    for (i = 0; i < list->count; ++i)
+        if (list->moves[i].to_file == file && list->moves[i].to_rank == rank &&
+            (list->moves[i].flags & CF_MOVE_PROMOTION) != 0U) return 1;
+    return 0;
+}
+
+static CfPieceType cycle_promotion(CfPieceType current, int direction)
+{
+    static const CfPieceType choices[4] = {
+        CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
+    };
+    int i;
+    for (i = 0; i < 4; ++i) {
+        if (choices[i] == current) {
+            i = (i + direction + 4) % 4;
+            return choices[i];
+        }
+    }
+    return CF_PIECE_QUEEN;
+}
+
+static void set_move_message(char *message, const CfMove *move, CfGameStatus status)
+{
+    char from[3];
+    char to[3];
+    if (status_is_terminal(status) || status == CF_GAME_CHECK) {
+        strcpy(message, board_game_status_name(status));
+        return;
+    }
+    if ((move->flags & CF_MOVE_CASTLE_KING) != 0U) {
+        strcpy(message, "CASTLE KING");
+        return;
+    }
+    if ((move->flags & CF_MOVE_CASTLE_QUEEN) != 0U) {
+        strcpy(message, "CASTLE QUEEN");
+        return;
+    }
+    if ((move->flags & CF_MOVE_EN_PASSANT) != 0U) {
+        strcpy(message, "EN PASSANT");
+        return;
+    }
+    if ((move->flags & CF_MOVE_PROMOTION) != 0U) {
+        sprintf(message, "PROMOTE %c", board_piece_letter(move->promotion));
+        return;
+    }
+    square_name(from, move->from_file, move->from_rank);
+    square_name(to, move->to_file, move->to_rank);
+    sprintf(message, move->captured.type == CF_PIECE_NONE ? "MOVE %s-%s" : "CAPTURE %s-%s", from, to);
+}
+
 int main(void)
 {
-    CfBoard board;
     CfInputKey key;
     CfMoveList legal_moves;
     const CfPiece *piece;
     CfMove made_move;
+    CfGameStatus status;
+    CfPieceType promotion_choice = CF_PIECE_QUEEN;
+    int promotion_pending = 0;
     int cursor_file = 4;
     int cursor_rank = 1;
     int selected_file = 0;
@@ -28,10 +93,10 @@ int main(void)
     int running = 1;
     int changed;
     char message[24];
-    char from[3];
-    char to[3];
 
-    board_init_starting_position(&board);
+    board_init_starting_position(&g_board);
+    board_history_init(&g_history, &g_board);
+    status = board_game_status(&g_board, &g_history);
     legal_moves.count = 0;
     strcpy(message, "WHITE TO MOVE");
 
@@ -41,75 +106,118 @@ int main(void)
     }
 
     input_init();
-    board_view_render_build3(&board, cursor_file, cursor_rank,
+    board_view_render_build4(&g_board, cursor_file, cursor_rank,
                              has_selection, selected_file, selected_rank,
-                             &legal_moves, message);
+                             &legal_moves, status, promotion_pending,
+                             promotion_choice, message);
     vga_present();
 
     while (running) {
         key = input_poll_key();
         changed = 0;
-        switch (key) {
-        case CF_KEY_ESCAPE:
+
+        if (key == CF_KEY_ESCAPE) {
             running = 0;
-            break;
-        case CF_KEY_UP:
-            if (cursor_rank < 7) { ++cursor_rank; changed = 1; }
-            break;
-        case CF_KEY_DOWN:
-            if (cursor_rank > 0) { --cursor_rank; changed = 1; }
-            break;
-        case CF_KEY_LEFT:
-            if (cursor_file > 0) { --cursor_file; changed = 1; }
-            break;
-        case CF_KEY_RIGHT:
-            if (cursor_file < 7) { ++cursor_file; changed = 1; }
-            break;
-        case CF_KEY_ENTER:
-            piece = board_piece_at(&board, cursor_file, cursor_rank);
-            if (!has_selection) {
-                if (piece != 0 && piece->type != CF_PIECE_NONE && piece->color == board.side_to_move) {
-                    selected_file = cursor_file;
-                    selected_rank = cursor_rank;
-                    has_selection = 1;
-                    board_generate_legal_moves(&board, selected_file, selected_rank, &legal_moves);
-                    strcpy(message, "CHOOSE TARGET");
-                } else if (piece != 0 && piece->type != CF_PIECE_NONE) {
-                    strcpy(message, "WRONG COLOR");
-                } else {
-                    strcpy(message, "EMPTY SQUARE");
-                }
-            } else if (cursor_file == selected_file && cursor_rank == selected_rank) {
-                has_selection = 0;
-                legal_moves.count = 0;
-                strcpy(message, "CANCELLED");
-            } else if (board_move_is_legal(&board, selected_file, selected_rank, cursor_file, cursor_rank)) {
-                square_name(from, selected_file, selected_rank);
-                square_name(to, cursor_file, cursor_rank);
-                if (board_make_move(&board, selected_file, selected_rank, cursor_file, cursor_rank, &made_move)) {
-                    sprintf(message, made_move.captured.type == CF_PIECE_NONE ? "MOVE %s-%s" : "CAPTURE %s-%s", from, to);
+            continue;
+        }
+
+        if (promotion_pending) {
+            switch (key) {
+            case CF_KEY_LEFT:
+            case CF_KEY_DOWN:
+                promotion_choice = cycle_promotion(promotion_choice, -1);
+                changed = 1;
+                break;
+            case CF_KEY_RIGHT:
+            case CF_KEY_UP:
+                promotion_choice = cycle_promotion(promotion_choice, 1);
+                changed = 1;
+                break;
+            case CF_KEY_ENTER:
+                if (board_make_move_ex(&g_board, selected_file, selected_rank,
+                                       cursor_file, cursor_rank, promotion_choice, &made_move)) {
+                    board_history_record_move(&g_history, &g_board, &made_move);
+                    status = board_game_status(&g_board, &g_history);
+                    set_move_message(message, &made_move, status);
                     has_selection = 0;
                     legal_moves.count = 0;
+                    promotion_pending = 0;
                 }
-            } else if (piece != 0 && piece->type != CF_PIECE_NONE && piece->color == board.side_to_move) {
-                selected_file = cursor_file;
-                selected_rank = cursor_rank;
-                board_generate_legal_moves(&board, selected_file, selected_rank, &legal_moves);
-                strcpy(message, "NEW SOURCE");
-            } else {
-                strcpy(message, "ILLEGAL MOVE");
+                changed = 1;
+                break;
+            default:
+                break;
             }
-            changed = 1;
-            break;
-        case CF_KEY_NONE:
-        default:
-            break;
+        } else {
+            switch (key) {
+            case CF_KEY_UP:
+                if (cursor_rank < 7) { ++cursor_rank; changed = 1; }
+                break;
+            case CF_KEY_DOWN:
+                if (cursor_rank > 0) { --cursor_rank; changed = 1; }
+                break;
+            case CF_KEY_LEFT:
+                if (cursor_file > 0) { --cursor_file; changed = 1; }
+                break;
+            case CF_KEY_RIGHT:
+                if (cursor_file < 7) { ++cursor_file; changed = 1; }
+                break;
+            case CF_KEY_ENTER:
+                if (status_is_terminal(status)) {
+                    strcpy(message, board_game_status_name(status));
+                    changed = 1;
+                    break;
+                }
+                piece = board_piece_at(&g_board, cursor_file, cursor_rank);
+                if (!has_selection) {
+                    if (piece != 0 && piece->type != CF_PIECE_NONE && piece->color == g_board.side_to_move) {
+                        selected_file = cursor_file;
+                        selected_rank = cursor_rank;
+                        has_selection = 1;
+                        board_generate_legal_moves(&g_board, selected_file, selected_rank, &legal_moves);
+                        strcpy(message, "CHOOSE TARGET");
+                    } else if (piece != 0 && piece->type != CF_PIECE_NONE) {
+                        strcpy(message, "WRONG COLOR");
+                    } else {
+                        strcpy(message, "EMPTY SQUARE");
+                    }
+                } else if (cursor_file == selected_file && cursor_rank == selected_rank) {
+                    has_selection = 0;
+                    legal_moves.count = 0;
+                    strcpy(message, "CANCELLED");
+                } else if (board_move_is_legal(&g_board, selected_file, selected_rank, cursor_file, cursor_rank)) {
+                    if (target_is_promotion(&legal_moves, cursor_file, cursor_rank)) {
+                        promotion_pending = 1;
+                        promotion_choice = CF_PIECE_QUEEN;
+                        strcpy(message, "CHOOSE PROMO");
+                    } else if (board_make_move(&g_board, selected_file, selected_rank,
+                                               cursor_file, cursor_rank, &made_move)) {
+                        board_history_record_move(&g_history, &g_board, &made_move);
+                        status = board_game_status(&g_board, &g_history);
+                        set_move_message(message, &made_move, status);
+                        has_selection = 0;
+                        legal_moves.count = 0;
+                    }
+                } else if (piece != 0 && piece->type != CF_PIECE_NONE && piece->color == g_board.side_to_move) {
+                    selected_file = cursor_file;
+                    selected_rank = cursor_rank;
+                    board_generate_legal_moves(&g_board, selected_file, selected_rank, &legal_moves);
+                    strcpy(message, "NEW SOURCE");
+                } else {
+                    strcpy(message, "ILLEGAL MOVE");
+                }
+                changed = 1;
+                break;
+            default:
+                break;
+            }
         }
 
         if (changed) {
-            board_view_render_build3(&board, cursor_file, cursor_rank,
+            board_view_render_build4(&g_board, cursor_file, cursor_rank,
                                      has_selection, selected_file, selected_rank,
-                                     &legal_moves, message);
+                                     &legal_moves, status, promotion_pending,
+                                     promotion_choice, message);
             vga_present();
         }
     }

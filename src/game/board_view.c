@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <string.h>
 
 #include "board_view.h"
 #include "cf_types.h"
@@ -27,7 +26,8 @@ enum {
     COL_SHADOW = 17,
     COL_LEGAL = 18,
     COL_CAPTURE = 19,
-    COL_CHECK = 20
+    COL_CHECK = 20,
+    COL_PROMOTE = 21
 };
 
 #define BOARD_X 10
@@ -42,7 +42,7 @@ static void set_rgb(cf_u8 *palette, int index, int r, int g, int b)
     palette[base + 2] = (cf_u8)b;
 }
 
-static void load_build3_palette(void)
+static void load_build4_palette(void)
 {
     cf_u8 palette[VGA_PALETTE_BYTES];
     int i;
@@ -69,8 +69,9 @@ static void load_build3_palette(void)
     set_rgb(palette, COL_LEGAL, 20, 63, 24);
     set_rgb(palette, COL_CAPTURE, 63, 22, 12);
     set_rgb(palette, COL_CHECK, 63, 8, 8);
-    for (i = 21; i < VGA_PALETTE_COLORS; ++i) {
-        shade = (i - 21) * 63 / (VGA_PALETTE_COLORS - 22);
+    set_rgb(palette, COL_PROMOTE, 55, 26, 63);
+    for (i = 22; i < VGA_PALETTE_COLORS; ++i) {
+        shade = (i - 22) * 63 / (VGA_PALETTE_COLORS - 23);
         set_rgb(palette, i, shade, shade, shade);
     }
     vga_set_palette(palette);
@@ -105,11 +106,16 @@ static void draw_piece_shape(int x, int y, CfPieceType type, cf_u8 color)
 
 static void draw_piece(int x, int y, const CfPiece *piece)
 {
-    cf_u8 body, highlight, label;
+    cf_u8 body;
+    cf_u8 highlight;
+    cf_u8 label;
     char text[2];
     if (piece == 0 || piece->type == CF_PIECE_NONE) return;
-    if (piece->color == CF_COLOR_WHITE) { body = COL_WHITE_PIECE; highlight = COL_WHITE_HI; label = COL_BLACK; }
-    else { body = COL_BLACK_PIECE; highlight = COL_BLACK_HI; label = COL_TEXT; }
+    if (piece->color == CF_COLOR_WHITE) {
+        body = COL_WHITE_PIECE; highlight = COL_WHITE_HI; label = COL_BLACK;
+    } else {
+        body = COL_BLACK_PIECE; highlight = COL_BLACK_HI; label = COL_TEXT;
+    }
     draw_piece_shape(x + 1, y + 1, piece->type, COL_SHADOW);
     draw_piece_shape(x, y, piece->type, body);
     vga_fill_rect(x + 7, y + 4, 2, 2, highlight);
@@ -130,7 +136,12 @@ static void draw_board(const CfBoard *board, int cursor_file, int cursor_rank,
                        int has_selection, int selected_file, int selected_rank,
                        const CfMoveList *legal_moves)
 {
-    int file, rank, screen_rank, x, y, mi;
+    int file;
+    int rank;
+    int screen_rank;
+    int x;
+    int y;
+    int mi;
     cf_u8 color;
     const CfPiece *piece;
     vga_fill_rect(BOARD_X - 2, BOARD_Y - 2, 164, 164, COL_GOLD);
@@ -165,24 +176,44 @@ static void draw_board(const CfBoard *board, int cursor_file, int cursor_rank,
 
 static void square_name(char *out, int file, int rank)
 {
+    if (file < 0 || rank < 0) {
+        out[0] = '-'; out[1] = '-'; out[2] = '\0'; return;
+    }
     out[0] = (char)('A' + file); out[1] = (char)('1' + rank); out[2] = '\0';
+}
+
+static void castle_text(char *out, unsigned rights)
+{
+    int n = 0;
+    out[n++] = 'W';
+    if ((rights & CF_CASTLE_WHITE_KING) != 0U) out[n++] = 'K';
+    if ((rights & CF_CASTLE_WHITE_QUEEN) != 0U) out[n++] = 'Q';
+    out[n++] = ' ';
+    out[n++] = 'B';
+    if ((rights & CF_CASTLE_BLACK_KING) != 0U) out[n++] = 'K';
+    if ((rights & CF_CASTLE_BLACK_QUEEN) != 0U) out[n++] = 'Q';
+    out[n] = '\0';
 }
 
 static void draw_panel(const CfBoard *board, int cursor_file, int cursor_rank,
                        int has_selection, int selected_file, int selected_rank,
-                       const CfMoveList *legal_moves, const char *message)
+                       const CfMoveList *legal_moves, CfGameStatus status,
+                       int promotion_pending, CfPieceType promotion_choice,
+                       const char *message)
 {
     char square[3];
+    char ep[3];
+    char castles[12];
     char line[24];
     const CfPiece *piece;
-    int check;
     vga_fill_rect(181, 22, 129, 164, COL_PANEL_EDGE);
     vga_fill_rect(183, 24, 125, 160, COL_PANEL);
-    font_draw_text(190, 30, "BUILD 3", COL_GOLD, 1);
+    font_draw_text(190, 29, "BUILD 4", COL_GOLD, 1);
     sprintf(line, "TURN %s", board_piece_color_name(board->side_to_move));
-    font_draw_text(190, 42, line, COL_TEXT, 1);
-    check = board_is_in_check(board, board->side_to_move);
-    if (check) font_draw_text(190, 52, "CHECK!", COL_CHECK, 1);
+    font_draw_text(190, 40, line, COL_TEXT, 1);
+    font_draw_text(190, 51, board_game_status_name(status),
+                   status == CF_GAME_CHECK || status == CF_GAME_CHECKMATE ? COL_CHECK : COL_GREEN, 1);
+
     square_name(square, cursor_file, cursor_rank);
     sprintf(line, "CURSOR %s", square);
     font_draw_text(190, 64, line, COL_CURSOR, 1);
@@ -190,29 +221,46 @@ static void draw_panel(const CfBoard *board, int cursor_file, int cursor_rank,
     if (piece != 0 && piece->type != CF_PIECE_NONE) {
         sprintf(line, "%s %s", board_piece_color_name(piece->color), board_piece_type_name(piece->type));
         font_draw_text(190, 75, line, COL_TEXT, 1);
-    } else font_draw_text(190, 75, "EMPTY", COL_MUTED, 1);
-    if (has_selection) {
+    }
+
+    if (promotion_pending) {
+        sprintf(line, "PROMOTE %s", board_piece_type_name(promotion_choice));
+        font_draw_text(190, 89, line, COL_PROMOTE, 1);
+        font_draw_text(190, 100, "ARROWS CHOOSE", COL_TEXT, 1);
+        font_draw_text(190, 111, "ENTER CONFIRM", COL_TEXT, 1);
+    } else if (has_selection) {
         square_name(square, selected_file, selected_rank);
         sprintf(line, "SELECT %s", square);
-        font_draw_text(190, 91, line, COL_SELECTED, 1);
+        font_draw_text(190, 89, line, COL_SELECTED, 1);
         sprintf(line, "LEGAL %d", legal_moves != 0 ? legal_moves->count : 0);
-        font_draw_text(190, 102, line, COL_LEGAL, 1);
-    } else font_draw_text(190, 91, "SELECT PIECE", COL_MUTED, 1);
+        font_draw_text(190, 100, line, COL_LEGAL, 1);
+    } else {
+        castle_text(castles, board->castling_rights);
+        sprintf(line, "CASTLE %s", castles);
+        font_draw_text(190, 89, line, COL_MUTED, 1);
+        square_name(ep, board->en_passant_file, board->en_passant_rank);
+        sprintf(line, "EP %s H %u", ep, board->halfmove_clock);
+        font_draw_text(190, 100, line, COL_MUTED, 1);
+    }
+
     if (message != 0 && message[0] != '\0') font_draw_text(190, 119, message, COL_GOLD, 1);
     font_draw_text(190, 140, "ARROWS MOVE", COL_TEXT, 1);
     font_draw_text(190, 151, "ENTER ACTION", COL_TEXT, 1);
     font_draw_text(190, 169, "ESC QUITS", COL_GOLD, 1);
 }
 
-void board_view_render_build3(const CfBoard *board, int cursor_file, int cursor_rank,
+void board_view_render_build4(const CfBoard *board, int cursor_file, int cursor_rank,
                               int has_selection, int selected_file, int selected_rank,
-                              const CfMoveList *legal_moves, const char *message)
+                              const CfMoveList *legal_moves, CfGameStatus status,
+                              int promotion_pending, CfPieceType promotion_choice,
+                              const char *message)
 {
-    load_build3_palette();
+    load_build4_palette();
     vga_clear(COL_BG);
     font_draw_text(10, 7, "CHESS FART", COL_TEXT, 1);
     font_draw_text(75, 7, "- CHECK MATE VENTILATE", COL_GOLD, 1);
     draw_board(board, cursor_file, cursor_rank, has_selection, selected_file, selected_rank, legal_moves);
-    draw_panel(board, cursor_file, cursor_rank, has_selection, selected_file, selected_rank, legal_moves, message);
-    font_draw_text(10, 190, "BUILD 3 - LEGAL CHESS ONLINE", COL_MUTED, 1);
+    draw_panel(board, cursor_file, cursor_rank, has_selection, selected_file, selected_rank,
+               legal_moves, status, promotion_pending, promotion_choice, message);
+    font_draw_text(10, 190, "BUILD 4 - PURE CHESS COMPLETE", COL_MUTED, 1);
 }

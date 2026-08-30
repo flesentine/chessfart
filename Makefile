@@ -10,10 +10,10 @@ HOST_SOURCES = \
 	src/platform/host/input_host.c
 
 HOST_BINARY = build/host/chessfart_host
-HOST_PREVIEW = build/host/chessfart_build3.ppm
-TEST_BINARY = build/host/test_build3
+HOST_PREVIEW = build/host/chessfart_build4.ppm
+TEST_BINARY = build/host/test_build4
 
-.PHONY: all host host-run test test-build3 dos clean
+.PHONY: all host host-run test test-build4 dos clean
 
 all: host
 
@@ -23,19 +23,19 @@ $(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) $(HOST_SOURCES) -o $(HOST_BINARY)
 
-$(TEST_BINARY): tests/test_build3.c src/game/board.c include/board.h
+$(TEST_BINARY): tests/test_build4.c src/game/board.c include/board.h include/cf_types.h
 	mkdir -p build/host
-	$(CC) $(CFLAGS) tests/test_build3.c src/game/board.c -o $(TEST_BINARY)
+	$(CC) $(CFLAGS) tests/test_build4.c src/game/board.c -o $(TEST_BINARY)
 
 host-run: host
 	./$(HOST_BINARY)
 
-test: test-build3
+test: test-build4
 
-test-build3: $(TEST_BINARY) host-run
+test-build4: $(TEST_BINARY) host-run
 	./$(TEST_BINARY)
 	test -s $(HOST_PREVIEW)
-	@echo "Build 3 host smoke test passed."
+	@echo "Build 4 host smoke test passed."
 
 dos:
 	@echo "Use Open Watcom: wmake -f makefile.dos dos"

@@ -20,55 +20,43 @@ Remaining integration check: compile/run the DOS target under Open Watcom + DOSB
 
 **Status: complete in source; host tests pass**
 
-Delivered:
-
-- 32-piece starting-position board model
-- placeholder piece silhouettes
-- keyboard board cursor
-- arrow-key navigation
-- Enter selection/deselection
-- persistent selection state
-- side-panel cursor/piece/selection information
-- host board-state tests
-
-Exit criterion met in source/host validation: all 32 pieces draw and the player can navigate/select squares.
-
-Remaining integration check: Open Watcom + DOSBox keyboard/runtime validation.
+Delivered: 32-piece starting board, placeholder sprites, keyboard cursor, selection state, side-panel information, and host board-state tests.
 
 ## Build 3 — Normal chess movement
 
 **Status: complete in source; host rules tests pass**
 
-Delivered:
-
-- pseudo-legal movement for all six piece types
-- attack detection and check detection
-- scratch-board king-safety filtering
-- legal destination highlights
-- apply/unapply move records
-- ordinary captures
-- turn enforcement
-- source/destination cursor interaction
-- pinned-piece and king-safety regression tests
-- opening perft validation through depth 3
-
-Exit criterion met in source/host validation: ordinary moves cannot leave the moving side in self-check.
-
-Remaining integration check: Open Watcom + DOSBox runtime validation.
+Delivered: ordinary movement for all six pieces, attack/check detection, king-safety filtering, move highlights, captures, turns, apply/unapply, pinned-piece tests, and opening perft validation.
 
 ## Build 4 — Complete standard chess
 
-**Status: next**
+**Status: complete in source; host rules tests pass**
 
-Deliverables: castling, en passant, promotion, check/checkmate/stalemate, draw state, regression tests.
+Delivered:
 
-Exit criterion: Pure Chess mode can play a complete legal match.
+- castling rights and both castling directions
+- en-passant target/capture state
+- queen/rook/bishop/knight promotion
+- promotion-choice UI
+- checkmate and stalemate
+- halfmove/fullmove bookkeeping
+- fifty-move draw
+- threefold repetition
+- insufficient-material draw
+- special-state make/unmake
+- multi-position perft regression suite
+
+Exit criterion met in source/host validation: Pure Chess can play through all conventional move types and reach terminal game outcomes.
+
+Remaining integration check: Open Watcom + DOSBox runtime validation.
 
 ## Build 5 — Gas system
 
+**Status: next**
+
 Deliverables: per-piece Gas 0–3, gas earning, gas UI, fart-mode input, eight directions, no-target puff.
 
-Exit criterion: charged pieces can spend Gas and consume a turn.
+Exit criterion: charged pieces can spend Gas and consume a turn without yet displacing another piece.
 
 ## Build 6 — Fart displacement
 
@@ -94,7 +82,7 @@ Deliverables: negamax/alpha-beta, evaluation, action ordering, Gas/fart awarenes
 
 ## Build 11 — UX/polish
 
-Deliverables: move history, help/rules, promotion UI, check/checkmate presentation, attract/demo loop, credits, keyboard completeness, mouse support.
+Deliverables: move history, help/rules, polished promotion/checkmate presentation, attract/demo loop, credits, keyboard completeness, mouse support.
 
 ## Build 12 — Release candidate
 

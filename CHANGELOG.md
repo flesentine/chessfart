@@ -4,34 +4,38 @@ All notable project milestones will be recorded here.
 
 ## Unreleased
 
-### Build 3 — legal chess movement
+### Build 4 — complete standard chess
 
 Added:
 
-- pseudo-legal movement generation for all six piece types
-- board turn state
-- pawn one/two-step movement and diagonal capture
-- slider ray/blocker handling
-- knight jumps and king steps
-- attack detection and check detection
-- king-safety filtering through scratch-board simulation
-- legal destination markers and capture outlines
-- ordinary captures
-- make/unmake move records
-- source/destination move interaction
-- pinned-piece and king-safety regression tests
-- `docs/BUILD_3.md`
+- persistent castling-right state and both castling moves
+- castling-through-check/path validation
+- en-passant target state and en-passant captures
+- en-passant self-check filtering
+- four-way pawn promotion: queen, rook, bishop, knight
+- interactive VGA promotion chooser
+- checkmate and stalemate status
+- halfmove/fullmove counters
+- fifty-move draw handling
+- threefold repetition history with side/castling/effective-en-passant state
+- insufficient-material draw detection
+- complete special-state make/unmake restoration
+- terminal game-state handling in the VGA shell
+- `docs/BUILD_4.md`
 
 Verified:
 
 - strict C89 compilation succeeds with `-std=c89 -pedantic -Wall -Wextra -Werror`
-- starting position reports 20 legal ordinary moves per side
-- opening perft sanity matches 20 / 400 / 8,902 nodes at depths 1 / 2 / 3
-- capture, check, pin, king-safety, turn, and unmake tests pass
-- scripted host interaction legally moves E2 to E4
-- host framebuffer preview is generated successfully
+- opening perft matches 20 / 400 / 8,902 / 197,281 through depth 4
+- Kiwipete matches 48 / 2,039 / 97,862 through depth 3
+- en-passant reference position matches 14 / 191 / 2,812 / 43,238 / 674,624 through depth 5
+- promotion/castling reference position matches 6 / 264 / 9,467 / 422,333 through depth 4
+- castling, en passant, promotion, mate, stalemate, draw, repetition, counters, and unmake fixtures pass
+- scripted host interaction legally moves E2 to E4 and renders Build 4 state
 
-Deferred to Build 4: castling, en passant, promotion, checkmate/stalemate, and draw state.
+### Build 3 — legal chess movement
+
+Added ordinary legal movement, attack/check detection, king-safety filtering, captures, legal-move highlights, make/unmake records, turn enforcement, and opening perft validation.
 
 ### Build 2 — cursor and pieces
 
@@ -47,4 +51,4 @@ Added the game concept, VGA target, deterministic Gas/Fart ruleset, master plan,
 
 ### Current phase
 
-Build 3 complete in source. Build 4 — complete standard chess — is next.
+Build 4 complete in source. Build 5 — Gas system — is next.
