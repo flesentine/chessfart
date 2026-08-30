@@ -4,6 +4,48 @@
 
 The design goal is **real strategy first, toilet humor second**. A good chess player should immediately understand the board, but the gas system creates new positional tactics, traps, escapes, and combo opportunities without turning the game into random chaos.
 
+## Project status
+
+**Build 1 — VGA Boot: complete in source.**
+
+Build 1 adds the first executable code:
+
+- C89/C90 project skeleton
+- 320x200 Mode 13h DOS video backend
+- 64,000-byte software backbuffer
+- 256-entry VGA DAC palette
+- tiny built-in bitmap font
+- static 8x8 board and status panel
+- keyboard Escape handling
+- text-mode restoration on shutdown
+- modern host backend that renders the exact indexed frame to a PPM image for smoke testing
+
+The host version compiles with strict C89 warnings and its Build 1 smoke test passes. The DOS source is prepared for Open Watcom; the DOS executable must be compiled in an Open Watcom environment.
+
+See [`docs/BUILD_1.md`](docs/BUILD_1.md) for the exact milestone notes.
+
+## Build
+
+### Host smoke build
+
+```sh
+make test-build1
+```
+
+This builds `build/host/chessfart_host` and writes `build/host/chessfart_build1.ppm`.
+
+### DOS / Open Watcom
+
+```bat
+wmake -f makefile.dos dos
+```
+
+or run `scripts\build_dos.bat`.
+
+Expected output: `build\dos\CHESSFRT.EXE`.
+
+Run it in DOSBox and press **Esc** to restore text mode and exit.
+
 ## Target experience
 
 - 320x200, 256-color VGA / Mode 13h presentation
@@ -22,26 +64,34 @@ This turns familiar chess geometry into something new: pieces can be displaced, 
 
 The exact rules, king-safety constraints, edge cases, and tuning are defined in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 
-## Project status
+## Source layout
 
-**Phase 0 — design foundation.** No gameplay code has been committed yet. The repository currently contains the build blueprint and production documentation needed to begin implementation cleanly.
+```text
+include/
+src/
+  main.c
+  game/
+  platform/
+    dos/
+    host/
+scripts/
+docs/
+```
+
+The application and game-view layers use platform interfaces; DOS-specific code stays under `src/platform/dos`.
 
 ## Documentation
 
 - [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md) — full project blueprint and build order
-- [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) — game rules, gas system, game modes, balance principles
-- [`docs/VGA_ART_STYLE.md`](docs/VGA_ART_STYLE.md) — Mode 13h art direction, palette, sprite sizes, UI layout
-- [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) — engine structure, board model, rendering, input, AI and save format
-- [`docs/AUDIO_DESIGN.md`](docs/AUDIO_DESIGN.md) — music/SFX plan and Sound Blaster/PC speaker strategy
-- [`docs/ASSET_MANIFEST.md`](docs/ASSET_MANIFEST.md) — planned graphics, animation and audio assets
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — milestone-by-milestone implementation plan
-- [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) — rules, regression, DOSBox and performance testing
-- [`docs/BUILD_AND_TOOLCHAIN.md`](docs/BUILD_AND_TOOLCHAIN.md) — proposed compiler/toolchain and project layout
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — repository conventions for future builds
-
-## Proposed implementation stack
-
-The reference implementation plan uses **C89/C90 + Open Watcom C/C++**, direct Mode 13h framebuffer rendering, fixed-size data structures, and a small platform layer for VGA, timer, keyboard, mouse and audio access. The chess/rules engine remains platform-independent so it can be unit-tested outside the DOS renderer.
+- [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) — game rules and Gas system
+- [`docs/VGA_ART_STYLE.md`](docs/VGA_ART_STYLE.md) — Mode 13h art direction
+- [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) — engine architecture
+- [`docs/AUDIO_DESIGN.md`](docs/AUDIO_DESIGN.md) — audio plan
+- [`docs/ASSET_MANIFEST.md`](docs/ASSET_MANIFEST.md) — planned assets
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — milestone roadmap
+- [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) — test strategy
+- [`docs/BUILD_AND_TOOLCHAIN.md`](docs/BUILD_AND_TOOLCHAIN.md) — toolchain plan
+- [`docs/BUILD_1.md`](docs/BUILD_1.md) — Build 1 implementation/verification
 
 ## Design pillars
 

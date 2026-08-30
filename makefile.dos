@@ -1,0 +1,18 @@
+CC=wcl
+CFLAGS=-zq -bt=dos -ml -3 -ox -w4 -Iinclude
+
+DOS_SOURCES=src\main.c src\game\font.c src\game\board_view.c src\platform\dos\vga_dos.c src\platform\dos\input_dos.c
+
+.ERASE
+
+all: dos
+
+dos:
+	@if not exist build mkdir build
+	@if not exist build\dos mkdir build\dos
+	$(CC) $(CFLAGS) -fe=build\dos\CHESSFRT.EXE $(DOS_SOURCES)
+	@echo Built build\dos\CHESSFRT.EXE
+
+clean:
+	-if exist build\dos\CHESSFRT.EXE del build\dos\CHESSFRT.EXE
+	-if exist *.obj del *.obj
