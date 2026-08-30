@@ -63,7 +63,7 @@ Delivered:
 - board and side-panel Gas display
 - F-key Fart mode
 - eight-direction targeting
-- no-target/off-board PUFF action
+- empty-direction PUFF action
 - Gas spend and turn accounting
 - en-passant expiry on Fart turn
 - Gas-sensitive repetition keys
