@@ -4,58 +4,66 @@ All notable project milestones will be recorded here.
 
 ## Unreleased
 
-### Build 6 — Fart displacement
+### Build 7 — presentation pass
 
 Added:
 
-- actual one-square Fart displacement for friendly and enemy pieces
-- `PUFF`, `PUSH`, `BLOCKED`, `PROMOTE`, and `INVALID` preview states
-- confirmed blocked pushes that still spend Gas and consume the turn
-- scratch-board king-safety validation for displacement
-- Fart responses that can resolve check
-- enemy-king displacement and check creation
-- king-adjacency rejection through acting-king safety
-- castling-right loss when a home king/rook is displaced
-- en-passant expiry and clock accounting on every Fart Action
-- pushed-pawn promotion with Q/R/B/N choice
-- pushed-piece Gas preservation
-- complete reversible `CfFartAction` state
-- game-status awareness of legal Fart responses
-- Build 6 push/destination VGA overlays
-- deterministic host push demo
-- Build 6 regression suite
-- GitHub Actions host CI
-- `docs/BUILD_6.md`
+- dedicated VGA title screen and keyboard menu
+- Royal Basement palette override
+- improved six-piece silhouettes without letter labels
+- board bevel and rank/file coordinates
+- shadowed header treatment
+- five-frame fart/push animation wrapper
+- gas plume particles
+- impact palette flash
+- one-pixel alternating board-frame shake
+- deterministic Build 7 host preview
+- CI upload of the Build 7 PPM artifact
+- `docs/BUILD_7.md`
 
-Verified locally:
+Architecture:
 
-- Build 6 core, UI integration and tests compile with strict C89 warnings-as-errors
-- displacement-specific test harness passes push, blocked, check-safety, king, castling, promotion and undo cases
+- Build 7 embeds the Build 6 game loop instead of copying its rules logic
+- rendering is redirected to the Build 7 presentation layer
+- fart execution is wrapped for before/after animation only
+- `board.c` and `gas.c` rule outcomes remain the Build 6 source of truth
+
+Verification target:
+
+- strict C89 host build with warnings-as-errors
+- complete Build 4 chess regression/perft suite
+- complete Build 5 Gas suite
+- complete Build 6 displacement suite
+- scripted title/game/fart-push presentation smoke run
+
+### Build 6 — fart displacement
+
+Added one-square displacement, blocked outcomes, full king-safety filtering, castling-right displacement effects, pushed-pawn promotion, check creation/resolution, Gas-aware history and reversible fart actions.
 
 ### Build 5 — Gas system
 
-Added per-piece Gas, Gas earning/cap, castling/promotion Gas handling, board Gas display, Fart mode, eight-direction targeting, empty-square PUFF, Gas-sensitive repetition, reversible Fart state, and Build 5 tests.
+Added per-piece Gas, earning/spending, Fart mode, eight-direction targeting, PUFF turns and Gas-aware repetition.
 
 ### Build 4 — complete standard chess
 
-Added castling, en passant, four-way promotion, checkmate/stalemate, draw state, repetition, counters, complete special-state make/unmake, promotion UI, and multi-position perft regression testing.
+Added castling, en passant, four-way promotion, checkmate/stalemate, draw state, repetition, counters and complete special-state make/unmake.
 
 ### Build 3 — legal chess movement
 
-Added ordinary legal movement, attack/check detection, king-safety filtering, captures, legal-move highlights, make/unmake records, turn enforcement, and opening perft validation.
+Added ordinary legal movement, attack/check detection, king-safety filtering, captures and perft validation.
 
 ### Build 2 — cursor and pieces
 
-Added the 32-piece starting-position board model, placeholder VGA pieces, arrow-key cursor, persistent selection, side-panel piece information, and host board-state tests.
+Added the 32-piece starting board, VGA pieces, keyboard cursor and selection state.
 
 ### Build 1 — VGA boot
 
-Added the C89 application shell, Mode 13h DOS backend, software backbuffer, VGA palette, bitmap font, keyboard input abstraction, and host framebuffer smoke test.
+Added the Mode 13h shell, backbuffer, palette, font and input abstraction.
 
 ### Build 0 — foundation
 
-Added the game concept, VGA target, deterministic Gas/Fart ruleset, master plan, art/audio/architecture specs, roadmap, test plan, toolchain plan, and project conventions.
+Added the design, architecture, rules and milestone documentation.
 
 ### Current phase
 
-Build 6 complete in source. Build 7 — presentation pass — is next.
+Build 7 presentation complete in source. Build 8 — audio — is next.
