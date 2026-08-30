@@ -18,7 +18,7 @@ Added:
 - selected/cursor Gas readout in the side panel
 - F-key Fart mode
 - eight directional targets
-- no-target/off-board PUFF action
+- empty-direction PUFF action
 - Gas spending, en-passant expiry and turn accounting on PUFF
 - reversible `CfFartAction` state
 - Gas-sensitive repetition keys/history
