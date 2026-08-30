@@ -1,38 +1,52 @@
 # Chess Fart
 
-**Chess Fart** is a deliberately ridiculous 256-color VGA strategy game: recognizable chess, rebuilt as a loud early-1990s DOS game where pieces can build gas and use directional fart blasts as tactical abilities.
+**Chess Fart** is a deliberately ridiculous 256-color VGA strategy game: recognizable chess rebuilt as a loud early-1990s DOS game where pieces build Gas and eventually use directional fart blasts as tactical abilities.
 
-The design goal is **real strategy first, toilet humor second**. A good chess player should immediately understand the board, but the gas system creates new positional tactics, traps, escapes, and combo opportunities without turning the game into random chaos.
+The design goal is **real strategy first, toilet humor second**. Normal chess remains the foundation; the Gas/Fart layer arrives after the standard move engine is solid.
 
 ## Project status
 
-**Build 1 — VGA Boot: complete in source.**
+**Build 2 — Cursor and Pieces: complete in source.**
 
-Build 1 adds the first executable code:
+Build 2 is the first interactive board milestone:
 
-- C89/C90 project skeleton
-- 320x200 Mode 13h DOS video backend
-- 64,000-byte software backbuffer
-- 256-entry VGA DAC palette
-- tiny built-in bitmap font
-- static 8x8 board and status panel
-- keyboard Escape handling
-- text-mode restoration on shutdown
-- modern host backend that renders the exact indexed frame to a PPM image for smoke testing
+- 320x200 Mode 13h presentation
+- all 32 pieces in the standard starting position
+- compact placeholder VGA piece silhouettes
+- arrow-key board cursor
+- Enter to select/deselect a piece
+- persistent selected-square highlight
+- live cursor/piece/selection information in the side panel
+- Escape restores text mode and exits
+- strict host-side board tests and framebuffer smoke test
 
-The host version compiles with strict C89 warnings and its Build 1 smoke test passes. The DOS source is prepared for Open Watcom; the DOS executable must be compiled in an Open Watcom environment.
+The host validation passes. The DOS target is ready for Open Watcom compilation; Open Watcom/DOSBox is not installed in the environment used to prepare this milestone, so no precompiled DOS executable is committed.
 
-See [`docs/BUILD_1.md`](docs/BUILD_1.md) for the exact milestone notes.
+See [`docs/BUILD_2.md`](docs/BUILD_2.md) for the full milestone notes.
+
+## Controls — Build 2
+
+```text
+Arrow keys   Move cursor
+Enter        Select/deselect piece
+Esc          Quit
+```
+
+Pieces do **not** move yet. Build 3 adds legal movement, captures, attack detection, and king-safety filtering.
 
 ## Build
 
-### Host smoke build
+### Host verification
 
 ```sh
-make test-build1
+make test-build2
 ```
 
-This builds `build/host/chessfart_host` and writes `build/host/chessfart_build1.ppm`.
+This builds and runs the host shell, checks the board model, and writes:
+
+```text
+build/host/chessfart_build2.ppm
+```
 
 ### DOS / Open Watcom
 
@@ -40,29 +54,33 @@ This builds `build/host/chessfart_host` and writes `build/host/chessfart_build1.
 wmake -f makefile.dos dos
 ```
 
-or run `scripts\build_dos.bat`.
+or:
 
-Expected output: `build\dos\CHESSFRT.EXE`.
+```bat
+scripts\build_dos.bat
+```
 
-Run it in DOSBox and press **Esc** to restore text mode and exit.
+Expected output:
+
+```text
+build\dos\CHESSFRT.EXE
+```
 
 ## Target experience
 
 - 320x200, 256-color VGA / Mode 13h presentation
 - DOS-era visual language: chunky sprites, dithered gradients, palette cycling, oversized UI panels
-- Standard chess movement and check/checkmate as the foundation
-- A deterministic gas/fart mechanic layered on top
-- Keyboard-first controls, optional mouse support
+- standard chess movement and check/checkmate as the foundation
+- deterministic Gas/Fart tactics layered on top
+- keyboard-first controls, optional mouse support later
 - Sound Blaster-style sampled fart effects with PC speaker fallback
-- Runs in DOSBox and is designed to remain compatible with real DOS-era constraints
+- DOSBox as the primary runtime target, with real DOS-era constraints kept in mind
 
 ## The core gimmick
 
-Every piece has a small **Gas meter**. Gas is earned through normal play. A sufficiently charged piece may spend its turn on a **Fart Action** instead of making a normal move. A fart projects a one-square blast in a chosen direction and can shove a neighboring piece one square farther away if that destination is valid.
+Every piece eventually has a small **Gas meter**. Gas is earned through normal play. A sufficiently charged piece may spend its turn on a **Fart Action** instead of making a normal move. A fart projects a one-square blast in a chosen direction and can shove a neighboring piece one square farther away when legal.
 
-This turns familiar chess geometry into something new: pieces can be displaced, lines can be opened or closed, defenders can be pushed off squares, and kings can sometimes escape by using gas. The system is deterministic and completely visible to both players.
-
-The exact rules, king-safety constraints, edge cases, and tuning are defined in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
+The system is deterministic and visible to both players. Full rules are in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 
 ## Source layout
 
@@ -71,35 +89,40 @@ include/
 src/
   main.c
   game/
+    board.c
+    board_view.c
+    font.c
   platform/
     dos/
     host/
+tests/
 scripts/
 docs/
 ```
 
-The application and game-view layers use platform interfaces; DOS-specific code stays under `src/platform/dos`.
+The board model is platform-independent. DOS-specific video/input stays under `src/platform/dos`, while the host backend exists for fast deterministic testing.
 
 ## Documentation
 
-- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md) — full project blueprint and build order
-- [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) — game rules and Gas system
-- [`docs/VGA_ART_STYLE.md`](docs/VGA_ART_STYLE.md) — Mode 13h art direction
+- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md) — full project blueprint
+- [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) — chess + Gas/Fart rules
+- [`docs/VGA_ART_STYLE.md`](docs/VGA_ART_STYLE.md) — VGA art direction
 - [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) — engine architecture
 - [`docs/AUDIO_DESIGN.md`](docs/AUDIO_DESIGN.md) — audio plan
 - [`docs/ASSET_MANIFEST.md`](docs/ASSET_MANIFEST.md) — planned assets
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — milestone roadmap
 - [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) — test strategy
 - [`docs/BUILD_AND_TOOLCHAIN.md`](docs/BUILD_AND_TOOLCHAIN.md) — toolchain plan
-- [`docs/BUILD_1.md`](docs/BUILD_1.md) — Build 1 implementation/verification
+- [`docs/BUILD_1.md`](docs/BUILD_1.md) — VGA boot milestone
+- [`docs/BUILD_2.md`](docs/BUILD_2.md) — cursor/pieces milestone
 
 ## Design pillars
 
 1. **Still chess.** Normal chess knowledge matters.
 2. **No hidden randomness.** Gas state and fart outcomes are predictable.
-3. **Fast to read.** The 320x200 screen must communicate legal moves, check, gas and blast direction instantly.
-4. **Juicy VGA presentation.** Palette flashes, screen shake, sprite squash, cartoon gas clouds and crude digitized audio are part of the identity.
-5. **Small enough to finish.** One polished board, one strong ruleset and a few game modes beat an oversized unfinished game.
+3. **Fast to read.** The 320x200 screen must communicate state instantly.
+4. **Juicy VGA presentation.** Palette flashes, screen shake, sprite squash, gas clouds and crude digitized audio are part of the identity.
+5. **Small enough to finish.** One polished board and one strong ruleset beat oversized scope.
 
 ## Working title
 

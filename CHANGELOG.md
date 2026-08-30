@@ -1,39 +1,47 @@
 # Changelog
 
-All notable project milestones will be recorded here.
+All notable project milestones are recorded here.
 
 ## Unreleased
 
-### Build 1 — VGA boot
+### Build 2 — cursor and pieces
 
 Added:
 
-- first C89/C90 application code
-- Open Watcom DOS build target for `CHESSFRT.EXE`
-- BIOS Mode 13h entry and text-mode 03h restoration
-- 64,000-byte indexed software backbuffer
-- VGA DAC palette programming
-- clipped pixel and rectangle primitives
-- compact built-in 5x7 bitmap font
-- static 8x8 chessboard and right-side VGA status panel
-- DOS keyboard polling with Escape-to-exit
-- host VGA/input backends
-- strict host compile and deterministic framebuffer smoke test
-- `docs/BUILD_1.md`
+- platform-independent 8x8 board model
+- standard 32-piece starting position
+- piece/color/type helpers and guarded square access
+- placeholder VGA silhouettes for pawn, knight, bishop, rook, queen, and king
+- distinct White/Black piece palette treatment
+- cyan board cursor starting on E2
+- DOS arrow-key decoding
+- Enter selection/deselection
+- persistent magenta selected-square highlight
+- live cursor coordinate and piece details in the side panel
+- deterministic host input script demonstrating separate cursor/selection states
+- Build 2 board-state tests
+- `docs/BUILD_2.md`
 
 Verified:
 
-- `make test-build1` passes with `-std=c89 -pedantic -Wall -Wextra -Werror`
-- host backend writes a valid 320x200 PPM preview
+- `make test-build2` passes with `-std=c89 -pedantic -Wall -Wextra -Werror`
+- starting position contains exactly 32 pieces
+- known king/queen/rook/pawn squares are correct
+- invalid board coordinates safely return null
+- host backend produces a valid 320x200 Build 2 framebuffer preview
 
 Not yet verified in this environment:
 
-- Open Watcom compilation and DOSBox runtime, because Open Watcom is not installed in the build environment used for this milestone
+- Open Watcom compilation and DOSBox runtime because those tools are not installed here
+
+### Build 1 — VGA boot
+
+Added the C89 application shell, Open Watcom DOS target, Mode 13h entry/exit, 64,000-byte backbuffer, VGA palette programming, framebuffer primitives, bitmap font, static board, Escape handling, and deterministic host renderer.
 
 ### Build 0 — foundation
 
-Added the game concept, 320x200/256-color VGA target, deterministic Gas/Fart ruleset, master plan, VGA art spec, architecture, audio plan, asset manifest, roadmap, tests, toolchain plan, decisions, and contribution conventions.
+Added the game concept, VGA target, deterministic Gas/Fart ruleset, master plan, art/audio/architecture specs, roadmap, tests, toolchain plan, decisions, and contribution conventions.
 
 ### Current phase
 
-Build 1 complete in source. Build 2 — cursor and pieces — is next.
+Build 2 complete in source. Build 3 — normal chess movement — is next.

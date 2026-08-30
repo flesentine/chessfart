@@ -56,9 +56,9 @@ void vga_present(void)
     int index;
     unsigned char rgb[3];
 
-    fp = fopen("build/host/chessfart_build1.ppm", "wb");
+    fp = fopen("build/host/chessfart_build2.ppm", "wb");
     if (fp == 0) {
-        fprintf(stderr, "Unable to write Build 1 preview.\n");
+        fprintf(stderr, "Unable to write Build 2 preview.\n");
         return;
     }
 
@@ -73,5 +73,5 @@ void vga_present(void)
         }
     }
     fclose(fp);
-    printf("Build 1 host preview: build/host/chessfart_build1.ppm\n");
+    printf("Build 2 host preview: build/host/chessfart_build2.ppm\n");
 }
