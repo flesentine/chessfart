@@ -15,6 +15,7 @@ HOST_SOURCES = \
 
 HOST_BINARY = build/host/chessfart_host
 HOST_PREVIEW = build/host/chessfart_build7.ppm
+HOST_TITLE_PREVIEW = build/host/chessfart_build7_title.ppm
 TEST4_BINARY = build/host/test_build4
 TEST5_BINARY = build/host/test_build5
 TEST6_BINARY = build/host/test_build6
@@ -51,6 +52,7 @@ test-build7: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) host-run
 	./$(TEST5_BINARY)
 	./$(TEST6_BINARY)
 	test -s $(HOST_PREVIEW)
+	test -s $(HOST_TITLE_PREVIEW)
 	@echo "Build 7 presentation smoke test passed."
 
 dos:

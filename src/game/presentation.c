@@ -1,4 +1,5 @@
 #include "board_view_build7.h"
+#include "font.h"
 #include "input_build5.h"
 #include "presentation.h"
 #include "vga.h"
@@ -87,6 +88,34 @@ static void animate_fart(const CfBoard *before_board,
         vga_present();
         frame_delay();
     }
+}
+
+void presentation_render_game(const CfBoard *board,
+                              const CfGasState *gas,
+                              int cursor_file,
+                              int cursor_rank,
+                              int has_selection,
+                              int selected_file,
+                              int selected_rank,
+                              const CfMoveList *legal_moves,
+                              CfGameStatus status,
+                              int promotion_pending,
+                              CfPieceType promotion_choice,
+                              int fart_mode,
+                              CfFartDirection fart_direction,
+                              CfFartPreview fart_preview,
+                              int fart_promotion_pending,
+                              CfPieceType fart_promotion_choice,
+                              const char *message)
+{
+    board_view_render_build7(board, gas, cursor_file, cursor_rank,
+                             has_selection, selected_file, selected_rank,
+                             legal_moves, status, promotion_pending,
+                             promotion_choice, fart_mode, fart_direction,
+                             fart_preview, fart_promotion_pending,
+                             fart_promotion_choice, message);
+    vga_fill_rect(188, 27, 116, 10, 1);
+    font_draw_text(190, 29, "BUILD 7", 4, 1);
 }
 
 int presentation_make_fart(CfBoard *board, CfGasState *gas,

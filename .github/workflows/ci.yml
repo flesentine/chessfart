@@ -16,4 +16,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: chessfart-build7-preview
-          path: build/host/chessfart_build7.ppm
+          path: |
+            build/host/chessfart_build7.ppm
+            build/host/chessfart_build7_title.ppm

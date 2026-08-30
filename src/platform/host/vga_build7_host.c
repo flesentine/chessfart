@@ -4,6 +4,7 @@
 
 static cf_u8 g_buffer[VGA_FRAME_SIZE];
 static cf_u8 g_palette[VGA_PALETTE_BYTES];
+static int g_present_count;
 
 int vga_init(void)
 {
@@ -39,12 +40,17 @@ void vga_fill_rect(int x, int y, int w, int h, cf_u8 color)
 void vga_present(void)
 {
     FILE *fp;
+    const char *path;
     int x;
     int y;
     int index;
     unsigned char rgb[3];
 
-    fp = fopen("build/host/chessfart_build7.ppm", "wb");
+    path = g_present_count == 0 ?
+           "build/host/chessfart_build7_title.ppm" :
+           "build/host/chessfart_build7.ppm";
+    ++g_present_count;
+    fp = fopen(path, "wb");
     if (fp == 0) {
         fprintf(stderr, "Unable to write Build 7 preview.\n");
         return;
