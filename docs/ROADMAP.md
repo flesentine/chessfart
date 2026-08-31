@@ -50,11 +50,12 @@ Versioned game saves, exact Gas/history restoration, safe load validation, persi
 Iterative-deepening negamax/alpha-beta, deterministic action ordering, Gas/Fart-aware evaluation, Easy/Medium/Hard limits, bounded node/time search, automatic Black CPU turns and CPU regression coverage.
 
 ## Build 11 — UX/polish
-**Status: next**
+**Status: complete when Build 11 CI is green**
 
-Move/action history, help/rules, polished terminal-state presentation, attract/demo loop, credits, keyboard completeness and optional mouse support.
+Session move/action history, help/rules overlays, terminal-state presentation, title attract demo, credits, keyboard completeness and optional DOS mouse support.
 
 ## Build 12 — Release candidate
+**Status: next**
 
 Compatibility matrix, profiling, bug burn-down, packaged DOS ZIP, sample DOSBox config, final README and version stamp.
 
