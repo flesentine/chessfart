@@ -6,23 +6,24 @@ The design goal is **real strategy first, toilet humor second**.
 
 ## Project status
 
-**Build 8 — Audio: complete in source/host validation.**
+**Build 9 — Save/Load and Config: complete in source/host validation when CI is green.**
 
-Chess Fart now has its complete Build 6 rules, Build 7 VGA presentation and the first working DOS-style audio layer:
+Chess Fart now has the complete Build 6 rules, Build 7 presentation, Build 8 audio, and persistent game/config state:
 
-- 8-bit unsigned mono PCM at 11025 Hz
-- five procedurally generated original fart voices
-- move/capture/select/invalid/check/checkmate/promotion/menu SFX
-- Sound Blaster DSP detection/playback source for DOS
-- PC-speaker fallback
-- AUTO / SB / PCSPK / NONE device selection
-- OFF / LOW / MED / HIGH SFX levels
-- audio status on the title screen and in-game panel
-- host audio event log plus a playable generated fart WAV
+- `S` saves the current match
+- `L` loads the current match
+- versioned `CHESSFRT.SAV`
+- exact board, Gas, counters and Gas-aware repetition-history restoration
+- transactional load validation: failed loads leave the live match unchanged
+- versioned `CHESSFRT.CFG`
+- persistent audio device/SFX/music-level settings
+- temp-file replacement writes
+- corrupt/truncated/unsupported save rejection
+- host save/config artifacts for inspection
 
-No chess or Fart rule behavior changed in Build 8.
+Save/config state does **not** alter chess/Fart legality or repetition identity.
 
-See [`docs/BUILD_8.md`](docs/BUILD_8.md) for implementation and verification details.
+See [`docs/BUILD_9.md`](docs/BUILD_9.md) and [`docs/SAVE_FORMAT.md`](docs/SAVE_FORMAT.md).
 
 ## Controls
 
@@ -38,6 +39,8 @@ In game:
 Arrow keys        Move cursor / aim cardinal Fart direction
 Enter             Select / move / confirm action
 F                 Enter or cancel Fart mode
+S                 Save game
+L                 Load game
 Keypad diagonals  Aim NE / SE / SW / NW
 Esc               Quit
 ```
@@ -47,33 +50,37 @@ Esc               Quit
 ### Host verification
 
 ```sh
-make test-build8
+make test-build9
 ```
 
-This reruns the permanent Build 4–6 rule suites, runs the Build 8 audio tests, executes the Build 7-style visual push demo with audio hooks, and writes:
+This reruns the permanent Build 4–6 rule suites, Build 8 audio suite, Build 9 persistence tests, and a scripted save → fart-push → load → fart-push smoke path.
+
+Artifacts:
 
 ```text
-build/host/chessfart_build8.ppm
-build/host/chessfart_build8_title.ppm
-build/host/chessfart_build8_audio.log
-build/host/chessfart_build8_fart.wav
+build/host/chessfart_build9.ppm
+build/host/chessfart_build9_title.ppm
+build/host/chessfart_build9_audio.log
+build/host/chessfart_build9_fart.wav
+build/host/CHESSFRT.SAV
+build/host/CHESSFRT.CFG
 ```
 
 ### DOS / Open Watcom
 
 ```bat
-wmake -f makefile.build8.dos dos
+wmake -f makefile.build9.dos dos
 ```
 
 or:
 
 ```bat
-scripts\build_dos_build8.bat
+scripts\build_dos_build9.bat
 ```
 
 Expected output: `build\dos\CHESSFRT.EXE`.
 
-Open Watcom/DOSBox and real Sound Blaster-compatible hardware are not installed in the environment used for this build, so DOS audio timing remains the platform integration check.
+Open Watcom/DOSBox and real Sound Blaster-compatible hardware are not installed in the environment used for this build, so DOS runtime validation remains the platform integration check.
 
 ## Core rules
 
@@ -88,10 +95,12 @@ Full rules are in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 - [`docs/VGA_ART_STYLE.md`](docs/VGA_ART_STYLE.md)
 - [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md)
 - [`docs/AUDIO_DESIGN.md`](docs/AUDIO_DESIGN.md)
+- [`docs/SAVE_FORMAT.md`](docs/SAVE_FORMAT.md)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md)
 - [`docs/BUILD_7.md`](docs/BUILD_7.md)
 - [`docs/BUILD_8.md`](docs/BUILD_8.md)
+- [`docs/BUILD_9.md`](docs/BUILD_9.md)
 
 ## Design pillars
 

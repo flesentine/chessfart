@@ -30,5 +30,7 @@ CfInputKey5 input5_poll_key(void)
     if (ch == 27) return CF5_KEY_ESCAPE;
     if (ch == 13) return CF5_KEY_ENTER;
     if (ch == 'f' || ch == 'F') return CF5_KEY_FART;
+    if (ch == 's' || ch == 'S') return CF5_KEY_SAVE;
+    if (ch == 'l' || ch == 'L') return CF5_KEY_LOAD;
     return CF5_KEY_NONE;
 }
