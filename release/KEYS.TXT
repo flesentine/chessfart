@@ -1,0 +1,33 @@
+CHESS FART 1.0.0-rc1 CONTROLS
+==============================
+
+TITLE SCREEN
+Up / Down          Move menu selection
+Enter / Space      Choose
+Left / Right       Cycle audio device
+F                  Cycle SFX level
+D                  Cycle CPU difficulty
+H                  Help / rules
+C                  Credits
+Mouse left         Choose menu item when DOS mouse driver is present
+Esc                Quit
+
+IN GAME
+Arrow keys         Move board cursor / aim cardinal Fart direction
+Keypad diagonals   Aim NE / SE / SW / NW
+Enter / Space      Select / move / confirm action
+F                  Enter or cancel Fart mode
+S                  Save
+L                  Load
+H or ?             Help / rules
+Tab or M           Session action log
+C                  Credits
+Mouse left         Target/confirm board square
+Mouse right        Enter Fart mode
+Esc                Quit
+
+GAS QUICK RULE
+Normal move: +1 Gas. Capture: +2 Gas total. Gas caps at 3.
+At 2+ Gas, spend the turn on a Fart Action in one of eight directions.
+Empty adjacent target = PUFF. Occupied adjacent target may be pushed one
+square if the destination and resulting king safety are legal.
