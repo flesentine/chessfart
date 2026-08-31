@@ -22,10 +22,14 @@ CfInputKey5 input5_poll_key(void)
         }
     }
     if (ch == 27) return CF5_KEY_ESCAPE;
-    if (ch == 13) return CF5_KEY_ENTER;
+    if (ch == 13 || ch == ' ') return CF5_KEY_ENTER;
+    if (ch == 9) return CF5_KEY_HISTORY;
     if (ch == 'f' || ch == 'F') return CF5_KEY_FART;
     if (ch == 's' || ch == 'S') return CF5_KEY_SAVE;
     if (ch == 'l' || ch == 'L') return CF5_KEY_LOAD;
     if (ch == 'd' || ch == 'D') return CF5_KEY_DIFFICULTY;
+    if (ch == 'h' || ch == 'H' || ch == '?') return CF5_KEY_HELP;
+    if (ch == 'm' || ch == 'M') return CF5_KEY_HISTORY;
+    if (ch == 'c' || ch == 'C') return CF5_KEY_CREDITS;
     return CF5_KEY_NONE;
 }
