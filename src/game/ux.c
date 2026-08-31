@@ -91,13 +91,11 @@ void ux_format_fart_line(const char *actor, const CfFartAction *fart,
 void ux_format_cpu_line(const char *actor, const CfCpuAction *action,
                         char *out, unsigned capacity)
 {
-    char temp[32];
+    (void)actor;
     if (out == 0 || capacity == 0U) return;
     out[0] = '\0';
-    if (actor == 0 || action == 0) return;
-    cpu_format_action(action, temp, sizeof(temp));
-    sprintf(out, "%s %s", actor, temp);
-    out[capacity - 1U] = '\0';
+    if (action == 0) return;
+    cpu_format_action(action, out, capacity);
 }
 
 const char *ux_terminal_title(CfGameStatus status, CfPieceColor side_to_move)
