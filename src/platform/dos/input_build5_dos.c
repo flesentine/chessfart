@@ -1,12 +1,6 @@
 #include <conio.h>
-
 #include "input_build5.h"
-
-void input5_init(void)
-{
-    while (kbhit()) (void)getch();
-}
-
+void input5_init(void) { while (kbhit()) (void)getch(); }
 CfInputKey5 input5_poll_key(void)
 {
     int ch;
@@ -32,5 +26,6 @@ CfInputKey5 input5_poll_key(void)
     if (ch == 'f' || ch == 'F') return CF5_KEY_FART;
     if (ch == 's' || ch == 'S') return CF5_KEY_SAVE;
     if (ch == 'l' || ch == 'L') return CF5_KEY_LOAD;
+    if (ch == 'd' || ch == 'D') return CF5_KEY_DIFFICULTY;
     return CF5_KEY_NONE;
 }

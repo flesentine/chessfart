@@ -1,38 +1,59 @@
 # Changelog
 
-All notable project milestones will be recorded here.
+All notable project milestones are recorded here.
 
 ## Unreleased
 
-### Build 9 — save/load and config
+### Build 10 — CPU opponent
 
 Added:
 
-- versioned `CHESSFRT.SAV`
-- field-by-field portable save serialization
-- exact board/Gas/counter/Gas-history restoration
-- transactional load validation
-- unsupported-version, corruption and truncation rejection
-- `S` save and `L` load controls
-- versioned `CHESSFRT.CFG`
-- persisted Build 8 audio settings
-- temp-file replacement writes
-- Build 9 persistence regression suite
-- scripted save → push → load → push host smoke test
-- `docs/BUILD_9.md`
-- `docs/SAVE_FORMAT.md`
+- deterministic iterative-deepening negamax search
+- alpha-beta pruning
+- deterministic action ordering
+- Easy / Medium / Hard difficulty profiles
+- node and time search caps
+- material/Gas/Fart-aware evaluation
+- CPU generation of ordinary moves, promotions and every legal Fart Action
+- automatic Black CPU replies after White actions
+- automatic CPU continuation for Black-to-move loaded saves
+- CPU search depth/node/cutoff/score VGA status
+- `D` difficulty control on the title screen
+- `docs/CPU_DESIGN.md`
+- `docs/BUILD_10.md`
+- Build 10 CPU regression suite
+
+Architecture:
+
+- Build 10 embeds the proven Build 9 game shell and wraps human action calls
+- search uses the same reversible `gas_make_*` / `gas_unmake_*` rules as gameplay
+- the real Black-to-move intermediate position is preserved in repetition history before the CPU action
+- Build 9 save/config formats remain unchanged
+
+Verification:
+
+- all permanent Build 4–9 suites remain required
+- deterministic opening search
+- mate-in-one search
+- Fart PUSH generation and exact unmake
+- node-budget cutoff
+- scripted save/load/Fart demo with CPU replies
+
+### Build 9 — save/load and config
+
+Added versioned transactional saves, exact Gas/history restoration, save/load controls and persistent audio config.
 
 ### Build 8 — audio
 
-Added platform-neutral sound events, original procedural 8-bit PCM, five fart voices, Sound Blaster source backend, PC-speaker fallback, audio options, host audio log/WAV and CI coverage.
+Added generated 8-bit PCM, Sound Blaster source backend, PC-speaker fallback, fart/UI/game effects and audio options.
 
 ### Build 7 — presentation pass
 
-Added title/menu presentation, Royal Basement palette, improved pieces, board framing, coordinates, five-frame fart animation, palette flash and board shake.
+Added title/menu, Royal Basement VGA palette, improved pieces and five-frame fart/push animation.
 
 ### Build 6 — fart displacement
 
-Added one-square displacement, blocked outcomes, full king-safety filtering, displaced castling rights, pushed-pawn promotion, check creation/resolution, Gas-aware history and reversible fart actions.
+Added one-square displacement, blocked outcomes, king safety, castling-right displacement effects, pushed promotion and reversible fart actions.
 
 ### Build 5 — Gas system
 
@@ -40,24 +61,8 @@ Added per-piece Gas, earning/spending, Fart mode, eight-direction targeting, PUF
 
 ### Build 4 — complete standard chess
 
-Added castling, en passant, four-way promotion, checkmate/stalemate, draw state, repetition, counters and complete special-state make/unmake.
-
-### Build 3 — legal chess movement
-
-Added ordinary legal movement, attack/check detection, king-safety filtering, captures and perft validation.
-
-### Build 2 — cursor and pieces
-
-Added the 32-piece starting board, VGA pieces, keyboard cursor and selection state.
-
-### Build 1 — VGA boot
-
-Added the Mode 13h shell, backbuffer, palette, font and input abstraction.
-
-### Build 0 — foundation
-
-Added the design, architecture, rules and milestone documentation.
+Added castling, en passant, promotion, terminal/draw states and reversible special moves.
 
 ### Current phase
 
-Build 9 persistence complete in source/host validation. Build 10 — CPU opponent — is next.
+Build 10 CPU opponent complete in source when CI is green. Build 11 — UX/polish — is next.

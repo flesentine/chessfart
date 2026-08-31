@@ -40,18 +40,19 @@ Title/menu, Royal Basement VGA palette, improved pieces, board polish and five-f
 Sound Blaster source backend, generated 8-bit PCM, fart/UI/game SFX, PC-speaker fallback and audio options.
 
 ## Build 9 — Save/load and config
-**Status: complete when Build 9 CI is green**
+**Status: complete; CI passes**
 
 Versioned game saves, exact Gas/history restoration, safe load validation, persistent audio config and save/load controls.
 
 ## Build 10 — CPU opponent
-**Status: next**
+**Status: complete when Build 10 CI is green**
 
-Negamax/alpha-beta, evaluation, action ordering, Gas/Fart awareness, difficulty settings and move-time cap.
+Iterative-deepening negamax/alpha-beta, deterministic action ordering, Gas/Fart-aware evaluation, Easy/Medium/Hard limits, bounded node/time search, automatic Black CPU turns and CPU regression coverage.
 
 ## Build 11 — UX/polish
+**Status: next**
 
-Move history, help/rules, polished terminal-state presentation, attract/demo loop, credits, keyboard completeness and optional mouse support.
+Move/action history, help/rules, polished terminal-state presentation, attract/demo loop, credits, keyboard completeness and optional mouse support.
 
 ## Build 12 — Release candidate
 

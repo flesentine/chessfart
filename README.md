@@ -6,24 +6,21 @@ The design goal is **real strategy first, toilet humor second**.
 
 ## Project status
 
-**Build 9 — Save/Load and Config: complete in source/host validation when CI is green.**
+**Build 10 — CPU Opponent: complete in source/host validation when CI is green.**
 
-Chess Fart now has the complete Build 6 rules, Build 7 presentation, Build 8 audio, and persistent game/config state:
+Chess Fart now combines the complete rules engine, VGA presentation, digital audio, persistence, and a Black CPU opponent:
 
-- `S` saves the current match
-- `L` loads the current match
-- versioned `CHESSFRT.SAV`
-- exact board, Gas, counters and Gas-aware repetition-history restoration
-- transactional load validation: failed loads leave the live match unchanged
-- versioned `CHESSFRT.CFG`
-- persistent audio device/SFX/music-level settings
-- temp-file replacement writes
-- corrupt/truncated/unsupported save rejection
-- host save/config artifacts for inspection
+- full legal chess plus Gas/Fart displacement rules
+- 320x200 256-color VGA presentation
+- Sound Blaster / PC-speaker audio architecture
+- versioned save/load and audio config
+- deterministic iterative-deepening CPU
+- alpha-beta pruning
+- Easy / Medium / Hard search budgets
+- CPU evaluates and searches both chess moves and Fart Actions
+- automatic CPU reply after White actions and Black-to-move loads
 
-Save/config state does **not** alter chess/Fart legality or repetition identity.
-
-See [`docs/BUILD_9.md`](docs/BUILD_9.md) and [`docs/SAVE_FORMAT.md`](docs/SAVE_FORMAT.md).
+See [`docs/BUILD_10.md`](docs/BUILD_10.md) and [`docs/CPU_DESIGN.md`](docs/CPU_DESIGN.md).
 
 ## Controls
 
@@ -32,6 +29,7 @@ Title screen:
 Up/Down          Choose Play / Quit
 Left/Right       Cycle audio device
 F                 Cycle SFX volume
+D                 Cycle CPU difficulty
 Enter             Confirm
 Esc               Quit
 
@@ -39,48 +37,49 @@ In game:
 Arrow keys        Move cursor / aim cardinal Fart direction
 Enter             Select / move / confirm action
 F                 Enter or cancel Fart mode
-S                 Save game
-L                 Load game
 Keypad diagonals  Aim NE / SE / SW / NW
+S                 Save
+L                 Load
 Esc               Quit
 ```
+
+Build 10 is **human White versus CPU Black**.
 
 ## Build
 
 ### Host verification
 
 ```sh
-make test-build9
+make test-build10
 ```
 
-This reruns the permanent Build 4–6 rule suites, Build 8 audio suite, Build 9 persistence tests, and a scripted save → fart-push → load → fart-push smoke path.
-
-Artifacts:
-
-```text
-build/host/chessfart_build9.ppm
-build/host/chessfart_build9_title.ppm
-build/host/chessfart_build9_audio.log
-build/host/chessfart_build9_fart.wav
-build/host/CHESSFRT.SAV
-build/host/CHESSFRT.CFG
-```
+This reruns the permanent Build 4–9 suites, runs CPU search tests, executes the scripted VGA/audio/save-load game with automatic CPU replies, and verifies all generated artifacts.
 
 ### DOS / Open Watcom
 
 ```bat
-wmake -f makefile.build9.dos dos
+wmake -f makefile.build10.dos dos
 ```
 
 or:
 
 ```bat
-scripts\build_dos_build9.bat
+scripts\build_dos_build10.bat
 ```
 
 Expected output: `build\dos\CHESSFRT.EXE`.
 
-Open Watcom/DOSBox and real Sound Blaster-compatible hardware are not installed in the environment used for this build, so DOS runtime validation remains the platform integration check.
+Open Watcom/DOSBox is still required for final DOS runtime and CPU-speed validation.
+
+## CPU
+
+The CPU uses deterministic iterative-deepening negamax with alpha-beta pruning. Every legal chess move and every legal Fart Action is generated through the same rules engine used for human play. Search is capped by both nodes and time so old DOS hardware cannot disappear into an unbounded think.
+
+Default levels:
+
+- EASY — depth 1 / 800 nodes / 100 ms
+- MED — depth 2 / 8,000 nodes / 500 ms
+- HARD — depth 3 / 50,000 nodes / 1,500 ms
 
 ## Core rules
 
@@ -96,18 +95,8 @@ Full rules are in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 - [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md)
 - [`docs/AUDIO_DESIGN.md`](docs/AUDIO_DESIGN.md)
 - [`docs/SAVE_FORMAT.md`](docs/SAVE_FORMAT.md)
+- [`docs/CPU_DESIGN.md`](docs/CPU_DESIGN.md)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)
-- [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md)
-- [`docs/BUILD_7.md`](docs/BUILD_7.md)
-- [`docs/BUILD_8.md`](docs/BUILD_8.md)
-- [`docs/BUILD_9.md`](docs/BUILD_9.md)
-
-## Design pillars
-
-1. **Still chess.** Normal chess knowledge matters.
-2. **No hidden gameplay randomness.** Gas state and fart outcomes are predictable.
-3. **Fast to read.** The 320x200 screen must communicate state instantly.
-4. **Juicy DOS presentation.** VGA effects and crude digital audio are part of the identity.
-5. **Small enough to finish.** One polished board and one strong ruleset beat oversized scope.
+- [`docs/BUILD_10.md`](docs/BUILD_10.md)
 
 **CHESS FART** — *Check. Mate. Ventilate.*

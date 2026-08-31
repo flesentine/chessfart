@@ -11,11 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build and test Chess Fart
-        run: make test-build9
-      - name: Preserve Build 9 previews and persistence artifacts
+        run: make test-build10
+      - name: Preserve Build 10 previews, audio and persistence
         uses: actions/upload-artifact@v4
         with:
-          name: chessfart-build9-preview
+          name: chessfart-build10-preview
           path: |
             build/host/chessfart_build9.ppm
             build/host/chessfart_build9_title.ppm

@@ -2,9 +2,14 @@ CC ?= cc
 CFLAGS ?= -std=c89 -pedantic -Wall -Wextra -Werror -O2 -Iinclude
 
 HOST_SOURCES = \
-	src/main_build9.c \
+	src/main_build10.c \
 	src/game/board.c \
 	src/game/gas.c \
+	src/game/cpu_config.c \
+	src/game/cpu_actions.c \
+	src/game/cpu_eval.c \
+	src/game/cpu_search.c \
+	src/game/cpu_format.c \
 	src/game/font.c \
 	src/game/board_view_build5.c \
 	src/game/board_view_build6.c \
@@ -31,14 +36,15 @@ TEST5_BINARY = build/host/test_build5
 TEST6_BINARY = build/host/test_build6
 TEST8_BINARY = build/host/test_build8
 TEST9_BINARY = build/host/test_build9
+TEST10_BINARY = build/host/test_build10
 
-.PHONY: all host host-run test test-build9 dos clean
+.PHONY: all host host-run test test-build10 dos clean
 
 all: host
 
 host: $(HOST_BINARY)
 
-$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h include/persistence.h include/persistence_ui.h
+$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/cpu.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h include/persistence.h include/persistence_ui.h src/main_build9.c
 	mkdir -p build/host
 	$(CC) $(CFLAGS) -DCF_BUILD6_DEMO -DCF_HOST_BUILD $(HOST_SOURCES) -o $(HOST_BINARY)
 
@@ -62,17 +68,22 @@ $(TEST9_BINARY): tests/test_build9.c src/game/board.c src/game/gas.c src/game/pe
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build9.c src/game/board.c src/game/gas.c src/game/persistence.c -o $(TEST9_BINARY)
 
+$(TEST10_BINARY): tests/test_build10.c src/game/board.c src/game/gas.c src/game/cpu_config.c src/game/cpu_actions.c src/game/cpu_eval.c src/game/cpu_search.c src/game/cpu_format.c include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
+	mkdir -p build/host
+	$(CC) $(CFLAGS) tests/test_build10.c src/game/board.c src/game/gas.c src/game/cpu_config.c src/game/cpu_actions.c src/game/cpu_eval.c src/game/cpu_search.c src/game/cpu_format.c -o $(TEST10_BINARY)
+
 host-run: host
 	./$(HOST_BINARY)
 
-test: test-build9
+test: test-build10
 
-test-build9: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) $(TEST9_BINARY) $(HOST_BINARY)
+test-build10: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) $(TEST9_BINARY) $(TEST10_BINARY) $(HOST_BINARY)
 	./$(TEST4_BINARY)
 	./$(TEST5_BINARY)
 	./$(TEST6_BINARY)
 	./$(TEST8_BINARY)
 	./$(TEST9_BINARY)
+	./$(TEST10_BINARY)
 	./$(HOST_BINARY)
 	test -s $(HOST_PREVIEW)
 	test -s $(HOST_TITLE_PREVIEW)
@@ -80,10 +91,10 @@ test-build9: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) $(T
 	test -s $(HOST_FART_WAV)
 	test -s $(HOST_SAVE)
 	test -s $(HOST_CONFIG)
-	@echo "Build 9 save/load/config smoke test passed."
+	@echo "Build 10 CPU opponent smoke test passed."
 
 dos:
-	@echo "Use Open Watcom: wmake -f makefile.build9.dos dos"
+	@echo "Use Open Watcom: wmake -f makefile.build10.dos dos"
 
 clean:
 	rm -rf build/host
