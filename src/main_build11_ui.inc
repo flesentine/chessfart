@@ -7,6 +7,12 @@ static void ux_capture(const char *stem) { vga_host_capture(stem); }
 static void ux_capture(const char *stem) { (void)stem; }
 #endif
 
+static void ux_stamp_build11(void)
+{
+    vga_fill_rect(188, 27, 116, 10, 1);
+    font_draw_text(190, 29, "BUILD 11", 4, 1);
+}
+
 static void ux_draw_box(int x, int y, int w, int h)
 {
     vga_fill_rect(x, y, w, h, 0);
@@ -244,6 +250,7 @@ static void ux_run_attract(void)
                             &moves, CF_GAME_ONGOING, 0, CF_PIECE_QUEEN,
                             1, CF_FART_NE, CF_FART_PUSH, 0,
                             CF_PIECE_QUEEN, "ATTRACT: CHARGED KNIGHT");
+    ux_stamp_build11();
     vga_present();
     if (gas_make_fart(&after_board, &after_gas, 2, 2, CF_FART_NE,
                       CF_PIECE_QUEEN, &action)) {
@@ -253,6 +260,7 @@ static void ux_run_attract(void)
                                 &moves, CF_GAME_ONGOING, 0, CF_PIECE_QUEEN,
                                 0, CF_FART_NE, CF_FART_INVALID, 0,
                                 CF_PIECE_QUEEN, "DEMO: D4 BLASTED TO E5");
+        ux_stamp_build11();
         vga_fill_rect(0, 188, 320, 12, 0);
         font_draw_text(37, 190, "ATTRACT DEMO - CHECK. MATE. VENTILATE.", 10, 1);
         vga_present();
@@ -273,6 +281,7 @@ static void ux_render_terminal_preview(void)
                             CF_GAME_CHECKMATE, 0, CF_PIECE_QUEEN, 0,
                             CF_FART_N, CF_FART_INVALID, 0,
                             CF_PIECE_QUEEN, "CHECKMATE");
+    ux_stamp_build11();
     ux_draw_terminal_overlay(CF_GAME_CHECKMATE, CF_COLOR_BLACK);
     vga_present();
 }
