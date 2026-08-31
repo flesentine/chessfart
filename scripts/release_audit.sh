@@ -13,7 +13,9 @@ test -f release/KEYS.TXT
 test -f release/KNOWNISS.TXT
 test -f release/DOSBOX.CONF
 
-if grep -R -n -E '^(<<<<<<<|=======|>>>>>>>)' src include tests release docs >/tmp/chessfart-conflicts.txt; then
+# A bare ======= line is valid DOS text decoration, so only the unambiguous
+# opening/closing merge markers are release blockers here.
+if grep -R -n -E '^(<<<<<<<|>>>>>>>)' src include tests release docs >/tmp/chessfart-conflicts.txt; then
     cat /tmp/chessfart-conflicts.txt >&2
     exit 1
 fi
