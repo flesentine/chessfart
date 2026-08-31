@@ -1,0 +1,50 @@
+EMCC ?= emcc
+WEB_CFLAGS = -O2 -Iinclude -DCF_WEB_BUILD \
+	-DCF_DEFAULT_SAVE_PATH='"/persist/CHESSFRT.SAV"' \
+	-DCF_DEFAULT_CONFIG_PATH='"/persist/CHESSFRT.CFG"'
+
+WEB_SOURCES = \
+	src/main_build11.c \
+	src/game/board.c \
+	src/game/gas.c \
+	src/game/cpu_config.c \
+	src/game/cpu_actions.c \
+	src/game/cpu_eval.c \
+	src/game/cpu_search.c \
+	src/game/cpu_format.c \
+	src/game/ux.c \
+	src/game/font.c \
+	src/game/board_view_build5.c \
+	src/game/board_view_build6.c \
+	src/game/board_view_build7.c \
+	src/game/presentation.c \
+	src/game/audio.c \
+	src/game/audio_samples.c \
+	src/game/audio_game.c \
+	src/game/persistence.c \
+	src/game/persistence_ui.c \
+	src/platform/web/vga_web.c \
+	src/platform/web/input_web.c \
+	src/platform/web/audio_web.c \
+	src/platform/web/mouse_web.c
+
+WEB_OUT = build/web/index.html
+
+.PHONY: web clean-web
+
+web: $(WEB_OUT)
+
+$(WEB_OUT): $(WEB_SOURCES) web/shell.html
+	mkdir -p build/web
+	$(EMCC) $(WEB_CFLAGS) $(WEB_SOURCES) -o $(WEB_OUT) \
+		--shell-file web/shell.html \
+		-sASYNCIFY=1 \
+		-sALLOW_MEMORY_GROWTH=1 \
+		-sENVIRONMENT=web \
+		-sFORCE_FILESYSTEM=1 \
+		-sEXPORTED_RUNTIME_METHODS='["FS","IDBFS"]' \
+		-lidbfs.js
+	touch build/web/.nojekyll
+
+clean-web:
+	rm -rf build/web
