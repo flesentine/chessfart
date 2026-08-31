@@ -30,11 +30,18 @@ jobs:
 
       - name: Run DOS platform smoke
         run: |
-          xvfb-run -a env SDL_AUDIODRIVER=dummy dosbox -exit \
+          set +e
+          timeout 30s xvfb-run -a env SDL_AUDIODRIVER=dummy dosbox -exit \
             -c "mount c $(pwd)/build/dos" \
             -c "c:" \
             -c "set BLASTER=A220 I7 D1 H5 T6" \
-            -c "DOSSMOKE.EXE"
+            -c "DOSSMOKE.EXE" \
+            -c "exit"
+          dosbox_status=$?
+          set -e
+          if [ "$dosbox_status" -ne 0 ] && [ "$dosbox_status" -ne 124 ]; then
+            exit "$dosbox_status"
+          fi
           test -s build/dos/DOSSMOKE.OK
           cat build/dos/DOSSMOKE.OK
 
