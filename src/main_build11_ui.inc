@@ -282,6 +282,8 @@ static void ux_render_terminal_preview(void)
                             CF_FART_N, CF_FART_INVALID, 0,
                             CF_PIECE_QUEEN, "CHECKMATE");
     ux_stamp_build11();
+    vga_fill_rect(0, 188, 320, 12, 0);
+    font_draw_text(37, 190, "BUILD 11  TERMINAL STATE  H HELP  M LOG", 6, 1);
     ux_draw_terminal_overlay(CF_GAME_CHECKMATE, CF_COLOR_BLACK);
     vga_present();
 }
