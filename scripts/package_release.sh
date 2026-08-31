@@ -23,8 +23,9 @@ cp release/KNOWNISS.TXT "$ROOT/KNOWNISS.TXT"
 cat > "$ROOT/BUILDINFO.TXT" <<EOF
 CHESS FART ${VERSION}
 Source commit: ${COMMIT}
-Reference compiler: Open Watcom V2 2026-07-13-Build
-Open Watcom snapshot SHA-256: 35e9c56ca93234ba0b8b596387815399317ea0548aeac1318f0674dca3921314
+CI compiler: Open Watcom 2.0 via open-watcom/setup-watcom@v1
+Reproducibility reference: Open Watcom 2026-07-13-Build ow-snapshot.tar.xz
+Reference snapshot SHA-256: 35e9c56ca93234ba0b8b596387815399317ea0548aeac1318f0674dca3921314
 Target: 16-bit DOS, large memory model, 386 instruction selection
 Video: VGA Mode 13h, 320x200x256
 Audio: Sound Blaster 8-bit PCM / PC speaker fallback

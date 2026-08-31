@@ -55,9 +55,13 @@ Iterative-deepening negamax/alpha-beta, deterministic action ordering, Gas/Fart-
 Session move/action history, help/rules overlays, terminal-state presentation, title attract demo, credits, keyboard completeness and optional DOS mouse support.
 
 ## Build 12 — Release candidate
-**Status: next**
+**Status: complete — 1.0.0-rc1**
 
-Compatibility matrix, profiling, bug burn-down, packaged DOS ZIP, sample DOSBox config, final README and version stamp.
+Feature freeze, version stamp, full regression/profile/audit gate, real Open Watcom 16-bit DOS build, DOSBox platform smoke, compatibility matrix, DOSBox configuration, release documentation, verified distributable ZIP and SHA-256.
+
+## RC follow-up / v1.0
+
+Collect physical/emulator compatibility reports, fix any RC-discovered P0/P1 defects, then promote the same feature set to v1.0 without adding new gameplay systems.
 
 ## Post-v1 ideas
 
