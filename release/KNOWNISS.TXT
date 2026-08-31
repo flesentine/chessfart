@@ -1,0 +1,23 @@
+CHESS FART 1.0.0-rc1 - KNOWN ISSUES / PLATFORM NOTES
+=====================================================
+
+RELEASE BLOCKERS
+No known host-test, rules-engine, save/load, CPU, packaging, or DOSBox smoke
+blockers at the time RC1 is cut. See docs/RELEASE_CHECKLIST.md in the source
+repository for the verification matrix.
+
+PLATFORM NOTES
+- The reference target is 16-bit DOS built with Open Watcom.
+- Sound Blaster playback uses simple polling/direct-DAC output rather than DMA.
+  This is intentionally small but timing can vary on unusual hardware/emulators.
+- CPU difficulty is bounded by node/time budgets, so apparent think time depends
+  on emulated/real CPU speed.
+- Mouse support requires a Microsoft-compatible DOS mouse driver. Keyboard play
+  is complete and does not require a mouse.
+- RC1 CI exercises a DOSBox platform smoke program; full interactive sessions
+  on a range of physical 386/486 machines remain community/manual validation.
+- No music is included in RC1; all audio is SFX plus PC-speaker fallback.
+
+SAVE COMPATIBILITY
+The versioned CHESSFRT.SAV and CHESSFRT.CFG formats remain those introduced in
+Build 9. Build 12 does not change game-state serialization.
