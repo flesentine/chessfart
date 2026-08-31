@@ -2,7 +2,7 @@
 
 ## Status
 
-**Complete when Build 4–10 CI is green.**
+**Complete; Build 4–10 CI is green.**
 
 Build 10 adds a deterministic CPU opponent without changing any chess, Gas/Fart, presentation, audio, save, or config rule from Builds 4–9.
 
