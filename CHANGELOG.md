@@ -4,40 +4,36 @@ All notable project milestones are recorded here.
 
 ## Unreleased
 
-### Build 10 — CPU opponent
+### Build 11 — UX / polish
 
 Added:
 
-- deterministic iterative-deepening negamax search
-- alpha-beta pruning
-- deterministic action ordering
-- Easy / Medium / Hard difficulty profiles
-- node and time search caps
-- material/Gas/Fart-aware evaluation
-- CPU generation of ordinary moves, promotions and every legal Fart Action
-- automatic Black CPU replies after White actions
-- automatic CPU continuation for Black-to-move loaded saves
-- CPU search depth/node/cutoff/score VGA status
-- `D` difficulty control on the title screen
-- `docs/CPU_DESIGN.md`
-- `docs/BUILD_10.md`
-- Build 10 CPU regression suite
+- 32-entry session action history
+- `Tab`/`M` action-log overlay
+- two-page `H`/`?` rules/help overlay
+- `C` credits screen
+- polished terminal-state overlays
+- Play / Attract Demo / Help / Credits / Quit title menu
+- idle title-screen attract demo using a real Fart PUSH
+- Space as an Enter synonym
+- optional DOS INT 33h mouse support
+- left-click board targeting and right-click Fart mode
+- clickable title menu with mouse driver
+- Build 11 host previews for title/game/demo/help/history/credits/terminal
+- `docs/UX_DESIGN.md`
+- `docs/BUILD_11.md`
+- Build 11 UX regression suite
 
 Architecture:
 
-- Build 10 embeds the proven Build 9 game shell and wraps human action calls
-- search uses the same reversible `gas_make_*` / `gas_unmake_*` rules as gameplay
-- the real Black-to-move intermediate position is preserved in repetition history before the CPU action
-- Build 9 save/config formats remain unchanged
+- Build 11 keeps UX/session state outside save files and repetition identity
+- action log clears on load while Build 9 rules history is restored exactly
+- mouse input synthesizes the existing keyboard actions instead of bypassing rules
+- Build 10 CPU and all Build 4–10 game semantics remain unchanged
 
-Verification:
+### Build 10 — CPU opponent
 
-- all permanent Build 4–9 suites remain required
-- deterministic opening search
-- mate-in-one search
-- Fart PUSH generation and exact unmake
-- node-budget cutoff
-- scripted save/load/Fart demo with CPU replies
+Added deterministic iterative-deepening negamax/alpha-beta search, Gas/Fart-aware evaluation, bounded Easy/Medium/Hard CPU play and automatic Black turns.
 
 ### Build 9 — save/load and config
 
@@ -65,4 +61,4 @@ Added castling, en passant, promotion, terminal/draw states and reversible speci
 
 ### Current phase
 
-Build 10 CPU opponent complete; CI passes. Build 11 — UX/polish — is next.
+Build 11 UX/polish is complete when CI is green. Build 12 — release candidate — is next.
