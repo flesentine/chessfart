@@ -6,7 +6,7 @@ The design goal is **real strategy first, toilet humor second**.
 
 ## Project status
 
-**Build 10 — CPU Opponent: complete in source/host validation when CI is green.**
+**Build 10 — CPU Opponent: complete in source/host validation; CI passes.**
 
 Chess Fart now combines the complete rules engine, VGA presentation, digital audio, persistence, and a Black CPU opponent:
 
