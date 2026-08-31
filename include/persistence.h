@@ -7,8 +7,12 @@
 
 #define CF_SAVE_VERSION 1
 #define CF_CONFIG_VERSION 1
+#ifndef CF_DEFAULT_SAVE_PATH
 #define CF_DEFAULT_SAVE_PATH "CHESSFRT.SAV"
+#endif
+#ifndef CF_DEFAULT_CONFIG_PATH
 #define CF_DEFAULT_CONFIG_PATH "CHESSFRT.CFG"
+#endif
 
 typedef enum CfPersistenceResult {
     CF_PERSIST_OK = 0,
