@@ -11,15 +11,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build and test Chess Fart
-        run: make test-build10
-      - name: Preserve Build 10 previews, audio and persistence
+        run: make test-build11
+      - name: Preserve Build 11 UX previews, audio and persistence
         uses: actions/upload-artifact@v4
         with:
-          name: chessfart-build10-preview
+          name: chessfart-build11-preview
           path: |
-            build/host/chessfart_build9.ppm
-            build/host/chessfart_build9_title.ppm
-            build/host/chessfart_build9_audio.log
-            build/host/chessfart_build9_fart.wav
+            build/host/chessfart_build11.ppm
+            build/host/chessfart_build11_title.ppm
+            build/host/chessfart_build11_attract.ppm
+            build/host/chessfart_build11_help.ppm
+            build/host/chessfart_build11_history.ppm
+            build/host/chessfart_build11_credits.ppm
+            build/host/chessfart_build11_terminal.ppm
+            build/host/chessfart_build11_audio.log
+            build/host/chessfart_build11_fart.wav
             build/host/CHESSFRT.SAV
             build/host/CHESSFRT.CFG
