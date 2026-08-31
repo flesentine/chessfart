@@ -23,6 +23,8 @@ async function canvasSignature(page) {
 }
 
 let browser;
+let page;
+let errors = [];
 try {
   await sleep(500);
   browser = await puppeteer.launch({
@@ -30,11 +32,12 @@ try {
     headless: true,
     args: ['--no-sandbox', '--disable-dev-shm-usage']
   });
-  const page = await browser.newPage();
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(String(error)));
+  page = await browser.newPage();
+  page.on('pageerror', (error) => errors.push(`PAGE: ${String(error)}`));
   page.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text());
+    if (msg.type() === 'error' || msg.type() === 'warning') {
+      errors.push(`${msg.type().toUpperCase()}: ${msg.text()}`);
+    }
   });
 
   await page.goto('http://127.0.0.1:8123/', {
@@ -56,6 +59,26 @@ try {
   await page.screenshot({ path: 'build/web-smoke.png', fullPage: true });
   fs.writeFileSync('build/web-smoke.txt', `READY\ntitle=${titleSig}\ngame=${gameSig}\n`);
   console.log(`Web smoke passed: title ${titleSig} -> game ${gameSig}`);
+} catch (error) {
+  let status = '(unavailable)';
+  let calledRun = '(unavailable)';
+  let canvasSig = '(unavailable)';
+  if (page) {
+    try { status = await page.$eval('#status', (el) => el.textContent); } catch (_) {}
+    try { calledRun = await page.evaluate(() => String(Boolean(Module && Module.calledRun))); } catch (_) {}
+    try { canvasSig = String(await canvasSignature(page)); } catch (_) {}
+    try { await page.screenshot({ path: 'build/web-smoke.png', fullPage: true }); } catch (_) {}
+  }
+  const report = [
+    `FAIL: ${String(error)}`,
+    `status=${status}`,
+    `calledRun=${calledRun}`,
+    `canvas=${canvasSig}`,
+    ...errors
+  ].join('\n') + '\n';
+  fs.writeFileSync('build/web-smoke.txt', report);
+  console.error(report);
+  throw error;
 } finally {
   if (browser) await browser.close();
   server.kill('SIGTERM');
