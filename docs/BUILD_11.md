@@ -2,7 +2,7 @@
 
 ## Status
 
-**Complete when Build 4–11 CI is green.**
+**Complete; Build 4–11 CI is green.**
 
 Build 11 is a presentation/input milestone. It does not change chess legality, Gas/Fart rules, CPU search semantics, save files, repetition identity, or audio configuration.
 
