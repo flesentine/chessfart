@@ -30,12 +30,21 @@ jobs:
           test -s build/web/index.wasm
           grep -q "CHESS FART" build/web/index.html
           ls -lh build/web
+      - name: Browser runtime smoke
+        run: |
+          npm install --no-save puppeteer-core@24
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_smoke.mjs
+          test -s build/web-smoke.png
+          cat build/web-smoke.txt
       - name: Preserve web diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: chessfart-web-diagnostics
-          path: web-build.log
+          path: |
+            web-build.log
+            build/web-smoke.txt
+            build/web-smoke.png
       - name: Preserve browser bundle
         uses: actions/upload-artifact@v4
         with:
