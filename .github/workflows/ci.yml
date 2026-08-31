@@ -1,8 +1,8 @@
-name: Host CI
+name: Release Candidate CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, build12-rc ]
   pull_request:
 
 jobs:
@@ -10,13 +10,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build and test Chess Fart
-        run: make test-build11
-      - name: Preserve Build 11 UX previews, audio and persistence
+
+      - name: Build and test host release candidate
+        run: make test-build12
+
+      - name: Cache pinned Open Watcom snapshot
+        uses: actions/cache@v4
+        with:
+          path: ~/open-watcom-2026-07-13
+          key: open-watcom-2026-07-13-35e9c56ca93234ba
+
+      - name: Set up pinned Open Watcom
+        run: |
+          mkdir -p build
+          sh scripts/setup_watcom_ci.sh > build/watcom.env
+          cat build/watcom.env
+          cat build/watcom.env >> "$GITHUB_ENV"
+
+      - name: Build real 16-bit DOS executables
+        run: sh scripts/build_dos_ci.sh
+
+      - name: Install DOSBox smoke dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq dosbox xvfb zip
+
+      - name: Run DOS platform smoke
+        run: |
+          xvfb-run -a env SDL_AUDIODRIVER=dummy dosbox -exit \
+            -c "mount c $(pwd)/build/dos" \
+            -c "c:" \
+            -c "set BLASTER=A220 I7 D1 H5 T6" \
+            -c "DOSSMOKE.EXE"
+          test -s build/dos/DOSSMOKE.OK
+          cat build/dos/DOSSMOKE.OK
+
+      - name: Package 1.0.0-rc1
+        run: sh scripts/package_release.sh
+
+      - name: Preserve RC build, diagnostics and previews
         uses: actions/upload-artifact@v4
         with:
-          name: chessfart-build11-preview
+          name: chessfart-1.0.0-rc1
           path: |
+            build/release/chessfart-1.0.0-rc1-dos.zip
+            build/release/chessfart-1.0.0-rc1-dos.zip.sha256
+            build/dos/CHESSFRT.EXE
+            build/dos/DOSSMOKE.OK
+            build/host/PROFILE.txt
+            build/host/SIZE.txt
             build/host/chessfart_build11.ppm
             build/host/chessfart_build11_title.ppm
             build/host/chessfart_build11_attract.ppm
