@@ -16,7 +16,10 @@ typedef enum CfInputKey5 {
     CF5_KEY_FART,
     CF5_KEY_SAVE,
     CF5_KEY_LOAD,
-    CF5_KEY_DIFFICULTY
+    CF5_KEY_DIFFICULTY,
+    CF5_KEY_HELP,
+    CF5_KEY_HISTORY,
+    CF5_KEY_CREDITS
 } CfInputKey5;
 
 void input5_init(void);
