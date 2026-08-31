@@ -14,18 +14,11 @@ jobs:
       - name: Build and test host release candidate
         run: make test-build12
 
-      - name: Cache pinned Open Watcom snapshot
-        uses: actions/cache@v4
+      - name: Set up Open Watcom 2.0 for DOS
+        uses: open-watcom/setup-watcom@v1
         with:
-          path: ~/open-watcom-2026-07-13
-          key: open-watcom-2026-07-13-35e9c56ca93234ba
-
-      - name: Set up pinned Open Watcom
-        run: |
-          mkdir -p build
-          sh scripts/setup_watcom_ci.sh > build/watcom.env
-          cat build/watcom.env
-          cat build/watcom.env >> "$GITHUB_ENV"
+          version: "2.0"
+          target: "dos"
 
       - name: Build real 16-bit DOS executables
         run: sh scripts/build_dos_ci.sh
