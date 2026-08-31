@@ -55,7 +55,9 @@ void vga_present(void)
         var src = HEAPU8.subarray($0, $0 + 64000);
         var pal = HEAPU8.subarray($1, $1 + 768);
         var dst = image.data;
-        var i, p, d;
+        var i;
+        var p;
+        var d;
         for (i = 0; i < 64000; ++i) {
             p = src[i] * 3;
             d = i * 4;
