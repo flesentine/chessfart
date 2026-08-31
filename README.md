@@ -6,7 +6,7 @@ The design goal is **real strategy first, toilet humor second**.
 
 ## Project status
 
-**Build 11 — UX / Polish: complete in source/host validation when CI is green.**
+**Build 11 — UX / Polish: complete in source/host validation; CI passes.**
 
 Chess Fart now includes:
 
