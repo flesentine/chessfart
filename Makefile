@@ -26,6 +26,15 @@ HOST_SOURCES = \
 	src/platform/host/audio_build11_host.c \
 	src/platform/host/mouse_host.c
 
+CPU_SOURCES = \
+	src/game/board.c \
+	src/game/gas.c \
+	src/game/cpu_config.c \
+	src/game/cpu_actions.c \
+	src/game/cpu_eval.c \
+	src/game/cpu_search.c \
+	src/game/cpu_format.c
+
 HOST_BINARY = build/host/chessfart_host
 HOST_PREVIEW = build/host/chessfart_build11.ppm
 HOST_TITLE_PREVIEW = build/host/chessfart_build11_title.ppm
@@ -38,6 +47,8 @@ HOST_AUDIO_LOG = build/host/chessfart_build11_audio.log
 HOST_FART_WAV = build/host/chessfart_build11_fart.wav
 HOST_SAVE = build/host/CHESSFRT.SAV
 HOST_CONFIG = build/host/CHESSFRT.CFG
+PROFILE_REPORT = build/host/PROFILE.txt
+SIZE_REPORT = build/host/SIZE.txt
 TEST4_BINARY = build/host/test_build4
 TEST5_BINARY = build/host/test_build5
 TEST6_BINARY = build/host/test_build6
@@ -45,8 +56,9 @@ TEST8_BINARY = build/host/test_build8
 TEST9_BINARY = build/host/test_build9
 TEST10_BINARY = build/host/test_build10
 TEST11_BINARY = build/host/test_build11
+PROFILE12_BINARY = build/host/profile_build12
 
-.PHONY: all host host-run test test-build11 dos clean
+.PHONY: all host host-run test test-build11 test-build12 profile-build12 release-audit dos release clean
 
 all: host
 
@@ -76,18 +88,22 @@ $(TEST9_BINARY): tests/test_build9.c src/game/board.c src/game/gas.c src/game/pe
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build9.c src/game/board.c src/game/gas.c src/game/persistence.c -o $(TEST9_BINARY)
 
-$(TEST10_BINARY): tests/test_build10.c src/game/board.c src/game/gas.c src/game/cpu_config.c src/game/cpu_actions.c src/game/cpu_eval.c src/game/cpu_search.c src/game/cpu_format.c include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
+$(TEST10_BINARY): tests/test_build10.c $(CPU_SOURCES) include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
-	$(CC) $(CFLAGS) tests/test_build10.c src/game/board.c src/game/gas.c src/game/cpu_config.c src/game/cpu_actions.c src/game/cpu_eval.c src/game/cpu_search.c src/game/cpu_format.c -o $(TEST10_BINARY)
+	$(CC) $(CFLAGS) tests/test_build10.c $(CPU_SOURCES) -o $(TEST10_BINARY)
 
 $(TEST11_BINARY): tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c include/ux.h include/cpu.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c -o $(TEST11_BINARY)
 
+$(PROFILE12_BINARY): tests/profile_build12.c $(CPU_SOURCES) include/version.h include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
+	mkdir -p build/host
+	$(CC) $(CFLAGS) tests/profile_build12.c $(CPU_SOURCES) -o $(PROFILE12_BINARY)
+
 host-run: host
 	./$(HOST_BINARY)
 
-test: test-build11
+test: test-build12
 
 test-build11: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) $(TEST9_BINARY) $(TEST10_BINARY) $(TEST11_BINARY) $(HOST_BINARY)
 	./$(TEST4_BINARY)
@@ -111,8 +127,25 @@ test-build11: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) $(
 	test -s $(HOST_CONFIG)
 	@echo "Build 11 UX/polish smoke test passed."
 
+profile-build12: $(PROFILE12_BINARY) $(HOST_BINARY)
+	./$(PROFILE12_BINARY) > $(PROFILE_REPORT)
+	size $(HOST_BINARY) > $(SIZE_REPORT)
+	test -s $(PROFILE_REPORT)
+	test -s $(SIZE_REPORT)
+	cat $(PROFILE_REPORT)
+	cat $(SIZE_REPORT)
+
+release-audit:
+	sh scripts/release_audit.sh
+
+test-build12: test-build11 profile-build12 release-audit
+	@echo "Build 12 host release-candidate gate passed."
+
 dos:
-	@echo "Use Open Watcom: wmake -f makefile.build11.dos dos"
+	@echo "Set WATCOM/PATH/INCLUDE, then run: sh scripts/build_dos_ci.sh"
+
+release:
+	sh scripts/package_release.sh
 
 clean:
-	rm -rf build/host
+	rm -rf build/host build/release
