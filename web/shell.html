@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Chess Fart — Web</title>
+<style>
+:root{color-scheme:dark;--bg:#080708;--panel:#17131a;--line:#6c503a;--text:#eee4ce;--muted:#a79680;--accent:#b7d45b}
+*{box-sizing:border-box} html,body{margin:0;min-height:100%;background:radial-gradient(circle at top,#211821 0,#0b090c 52%,#050405 100%);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+body{display:flex;justify-content:center;padding:18px;touch-action:manipulation}.wrap{width:min(980px,100%);text-align:center}.brand{letter-spacing:.12em;font-size:clamp(20px,4vw,38px);margin:2px 0 4px}.tag{color:var(--muted);font-size:13px;margin-bottom:14px}
+.machine{display:inline-block;background:#19141a;border:2px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 18px 60px #000a,inset 0 0 0 2px #30252d}
+#canvas{display:block;width:min(92vw,800px);height:auto;aspect-ratio:8/5;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;outline:none;cursor:crosshair}
+.status{font-size:12px;color:var(--muted);margin:8px 0 0}.controls{display:grid;grid-template-columns:repeat(3,64px);gap:6px;justify-content:center;margin:14px auto 8px}.controls button,.actions button{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:8px;min-height:44px;box-shadow:inset 0 1px #ffffff10;cursor:pointer}.controls button:active,.actions button:active{transform:translateY(1px);background:#2b222b}.blank{visibility:hidden}.actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:760px;margin:auto}.actions button{padding:8px 13px}.fart{color:#d6ef83!important;border-color:#799341!important}.help{max-width:760px;margin:12px auto 0;color:var(--muted);font-size:12px;line-height:1.55}.kbd{color:var(--text)}
+@media (min-width:760px){.touch{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">CHESS FART</div>
+  <div class="tag">Check. Mate. Ventilate. — browser/WASM edition</div>
+  <div class="machine"><canvas id="canvas" width="320" height="200" tabindex="0"></canvas></div>
+  <div id="status" class="status">Loading the 256-color ventilation engine…</div>
+
+  <div class="touch">
+    <div class="controls">
+      <button data-k="6">↖</button><button data-k="2">↑</button><button data-k="7">↗</button>
+      <button data-k="4">←</button><button data-k="10">OK</button><button data-k="5">→</button>
+      <button data-k="8">↙</button><button data-k="3">↓</button><button data-k="9">↘</button>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="fart" data-k="11">FART (F)</button>
+    <button data-k="12">SAVE</button><button data-k="13">LOAD</button>
+    <button data-k="15">HELP</button><button data-k="16">LOG</button><button data-k="17">CREDITS</button>
+    <button data-k="14">CPU LEVEL</button><button data-k="1">ESC</button>
+  </div>
+  <div class="help">
+    Desktop: <span class="kbd">arrows + Enter/Space</span>. Diagonals: <span class="kbd">Home / PgUp / End / PgDn</span>.
+    Click the VGA screen to use the mouse; right-click enters Fart mode. Saves persist in this browser.
+  </div>
+</div>
+<script>
+var Module = {
+  canvas: document.getElementById('canvas'),
+  cfKeyQueue: [],
+  preRun: [function () {
+    try { FS.mkdir('/persist'); } catch (_) {}
+    FS.mount(IDBFS, {}, '/persist');
+    addRunDependency('chessfart-idb');
+    FS.syncfs(true, function (err) {
+      if (err) console.warn('Chess Fart save restore:', err);
+      removeRunDependency('chessfart-idb');
+    });
+  }],
+  onRuntimeInitialized: function () {
+    document.getElementById('status').textContent = 'Ready — click the VGA screen or use the controls.';
+    setInterval(function () { try { FS.syncfs(false, function () {}); } catch (_) {} }, 1500);
+    Module.canvas.focus();
+  },
+  printErr: function (text) { console.error(text); }
+};
+function pushKey(k) {
+  if (Module.cfPushKey) Module.cfPushKey(k);
+  else if (Module.cfKeyQueue.length < 64) Module.cfKeyQueue.push(k|0);
+  Module.canvas.focus();
+}
+document.querySelectorAll('[data-k]').forEach(function (b) {
+  b.addEventListener('pointerdown', function (e) { e.preventDefault(); pushKey(parseInt(b.dataset.k,10)); });
+});
+window.addEventListener('beforeunload', function () { try { FS.syncfs(false, function () {}); } catch (_) {} });
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>
