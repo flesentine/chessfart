@@ -3,10 +3,15 @@
 #include "input_build5.h"
 #include "presentation.h"
 #include "vga.h"
+#ifdef CF_WEB_BUILD
+#include <emscripten.h>
+#endif
 
 static void frame_delay(void)
 {
-#ifndef CF_HOST_BUILD
+#ifdef CF_WEB_BUILD
+    emscripten_sleep(42);
+#elif !defined(CF_HOST_BUILD)
     volatile unsigned long i;
     for (i = 0UL; i < 18000UL; ++i) { }
 #endif
