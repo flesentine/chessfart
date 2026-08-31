@@ -45,7 +45,7 @@ Sound Blaster source backend, generated 8-bit PCM, fart/UI/game SFX, PC-speaker 
 Versioned game saves, exact Gas/history restoration, safe load validation, persistent audio config and save/load controls.
 
 ## Build 10 — CPU opponent
-**Status: complete when Build 10 CI is green**
+**Status: complete; CI passes**
 
 Iterative-deepening negamax/alpha-beta, deterministic action ordering, Gas/Fart-aware evaluation, Easy/Medium/Hard limits, bounded node/time search, automatic Black CPU turns and CPU regression coverage.
 
