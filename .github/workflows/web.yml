@@ -1,0 +1,34 @@
+name: Web Build
+
+on:
+  push:
+    branches: [ main, web-playable ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Emscripten
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          version: 5.0.1
+          actions-cache-folder: emsdk-cache
+      - name: Build browser edition
+        run: make -f Makefile.web web
+      - name: Verify web bundle
+        run: |
+          test -s build/web/index.html
+          test -s build/web/index.js
+          test -s build/web/index.wasm
+          grep -q "CHESS FART" build/web/index.html
+          ls -lh build/web
+      - name: Preserve browser bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: chessfart-web
+          path: build/web/
