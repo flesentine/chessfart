@@ -61,4 +61,4 @@ Added castling, en passant, promotion, terminal/draw states and reversible speci
 
 ### Current phase
 
-Build 11 UX/polish is complete when CI is green. Build 12 — release candidate — is next.
+Build 11 UX/polish is complete; CI passes. Build 12 — release candidate — is next.
