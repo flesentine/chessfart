@@ -2,7 +2,7 @@ CC ?= cc
 CFLAGS ?= -std=c89 -pedantic -Wall -Wextra -Werror -O2 -Iinclude
 
 HOST_SOURCES = \
-	src/main_build7.c \
+	src/main_build8.c \
 	src/game/board.c \
 	src/game/gas.c \
 	src/game/font.c \
@@ -10,23 +10,30 @@ HOST_SOURCES = \
 	src/game/board_view_build6.c \
 	src/game/board_view_build7.c \
 	src/game/presentation.c \
-	src/platform/host/vga_build7_host.c \
-	src/platform/host/input_build7_host.c
+	src/game/audio.c \
+	src/game/audio_samples.c \
+	src/game/audio_game.c \
+	src/platform/host/vga_build8_host.c \
+	src/platform/host/input_build8_host.c \
+	src/platform/host/audio_host.c
 
 HOST_BINARY = build/host/chessfart_host
-HOST_PREVIEW = build/host/chessfart_build7.ppm
-HOST_TITLE_PREVIEW = build/host/chessfart_build7_title.ppm
+HOST_PREVIEW = build/host/chessfart_build8.ppm
+HOST_TITLE_PREVIEW = build/host/chessfart_build8_title.ppm
+HOST_AUDIO_LOG = build/host/chessfart_build8_audio.log
+HOST_FART_WAV = build/host/chessfart_build8_fart.wav
 TEST4_BINARY = build/host/test_build4
 TEST5_BINARY = build/host/test_build5
 TEST6_BINARY = build/host/test_build6
+TEST8_BINARY = build/host/test_build8
 
-.PHONY: all host host-run test test-build7 dos clean
+.PHONY: all host host-run test test-build8 dos clean
 
 all: host
 
 host: $(HOST_BINARY)
 
-$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/presentation.h
+$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) -DCF_BUILD6_DEMO -DCF_HOST_BUILD $(HOST_SOURCES) -o $(HOST_BINARY)
 
@@ -42,21 +49,29 @@ $(TEST6_BINARY): tests/test_build6.c src/game/board.c src/game/gas.c include/boa
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build6.c src/game/board.c src/game/gas.c -o $(TEST6_BINARY)
 
+$(TEST8_BINARY): tests/test_build8.c src/game/audio.c src/game/audio_samples.c src/platform/host/audio_host.c include/audio.h include/audio_platform.h include/gas.h include/board.h include/cf_types.h
+	mkdir -p build/host
+	$(CC) $(CFLAGS) tests/test_build8.c src/game/audio.c src/game/audio_samples.c src/platform/host/audio_host.c -o $(TEST8_BINARY)
+
 host-run: host
 	./$(HOST_BINARY)
 
-test: test-build7
+test: test-build8
 
-test-build7: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) host-run
+test-build8: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) $(HOST_BINARY)
 	./$(TEST4_BINARY)
 	./$(TEST5_BINARY)
 	./$(TEST6_BINARY)
+	./$(TEST8_BINARY)
+	./$(HOST_BINARY)
 	test -s $(HOST_PREVIEW)
 	test -s $(HOST_TITLE_PREVIEW)
-	@echo "Build 7 presentation smoke test passed."
+	test -s $(HOST_AUDIO_LOG)
+	test -s $(HOST_FART_WAV)
+	@echo "Build 8 audio smoke test passed."
 
 dos:
-	@echo "Use Open Watcom: wmake -f makefile.build7.dos dos"
+	@echo "Use Open Watcom: wmake -f makefile.build8.dos dos"
 
 clean:
 	rm -rf build/host

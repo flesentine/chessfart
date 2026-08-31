@@ -108,3 +108,13 @@ No continuous comedic sound bed. The joke lands better against mostly serious mu
 All final shipped sounds should be original, generated specifically for the project, or have clearly compatible licensing documented in the repository.
 
 Do not scrape random internet samples into the final build.
+
+## 10. Build 8 implementation status
+
+Build 8 implements the core SFX plan with original procedural PCM generated directly in C. The five fart categories above are present, along with generated UI/move/check/promotion cues.
+
+The DOS Sound Blaster backend performs DSP reset/detection and uses a conservative polling/direct-DAC playback path for short one-shot effects. `AUTO` falls back to PIT-driven PC-speaker cues when DSP initialization fails. The host backend produces a deterministic event log and WAV instead of accessing desktop audio hardware.
+
+SFX device and volume can be changed on the title screen. Music level exists in the configuration structure but remains OFF; OPL2 music is still optional and should not block save/load, AI or release work.
+
+See [`BUILD_8.md`](BUILD_8.md) for implementation details and known platform-validation work.

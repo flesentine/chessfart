@@ -48,11 +48,11 @@ int presentation_title_screen(void)
 #endif
 }
 
-static void animate_fart(const CfBoard *before_board,
-                         const CfGasState *before_gas,
-                         const CfBoard *after_board,
-                         const CfGasState *after_gas,
-                         const CfFartAction *action)
+void presentation_animate_fart(const CfBoard *before_board,
+                               const CfGasState *before_gas,
+                               const CfBoard *after_board,
+                               const CfGasState *after_gas,
+                               const CfFartAction *action)
 {
     CfMoveList empty_moves;
     CfPresentationFx fx;
@@ -132,7 +132,7 @@ int presentation_make_fart(CfBoard *board, CfGasState *gas,
 
     if (!gas_make_fart(board, gas, file, rank, direction,
                        promotion, &local)) return 0;
-    animate_fart(&before_board, &before_gas, board, gas, &local);
+    presentation_animate_fart(&before_board, &before_gas, board, gas, &local);
     if (action != 0) *action = local;
     return 1;
 }

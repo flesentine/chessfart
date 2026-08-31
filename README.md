@@ -6,30 +6,33 @@ The design goal is **real strategy first, toilet humor second**.
 
 ## Project status
 
-**Build 7 — Presentation Pass: complete in source.**
+**Build 8 — Audio: complete in source/host validation.**
 
-The rule set from Builds 4–6 is intact, but the game now looks much closer to the intended DOS release:
+Chess Fart now has its complete Build 6 rules, Build 7 VGA presentation and the first working DOS-style audio layer:
 
-- dedicated pixel-art title/menu screen
-- `Royal Basement` VGA palette
-- improved pawn/knight/bishop/rook/queen/king silhouettes
-- board bevel plus rank/file coordinates
-- visible Gas pips and existing move/fart previews retained
-- five-frame fart plume and push animation
-- impact palette flash and board-frame shake
-- deterministic host preview artifact
+- 8-bit unsigned mono PCM at 11025 Hz
+- five procedurally generated original fart voices
+- move/capture/select/invalid/check/checkmate/promotion/menu SFX
+- Sound Blaster DSP detection/playback source for DOS
+- PC-speaker fallback
+- AUTO / SB / PCSPK / NONE device selection
+- OFF / LOW / MED / HIGH SFX levels
+- audio status on the title screen and in-game panel
+- host audio event log plus a playable generated fart WAV
 
-Build 7 changes presentation only. Standard chess, Gas, PUFF/PUSH/BLOCKED, displaced kings/rooks, pushed promotion, repetition and all other Build 6 rules remain governed by the existing core engine.
+No chess or Fart rule behavior changed in Build 8.
 
-See [`docs/BUILD_7.md`](docs/BUILD_7.md) for implementation details.
+See [`docs/BUILD_8.md`](docs/BUILD_8.md) for implementation and verification details.
 
 ## Controls
 
 ```text
 Title screen:
-Up/Down          Choose menu item
-Enter            Confirm
-Esc              Quit
+Up/Down          Choose Play / Quit
+Left/Right       Cycle audio device
+F                 Cycle SFX volume
+Enter             Confirm
+Esc               Quit
 
 In game:
 Arrow keys        Move cursor / aim cardinal Fart direction
@@ -44,30 +47,33 @@ Esc               Quit
 ### Host verification
 
 ```sh
-make test-build7
+make test-build8
 ```
 
-This builds the Build 7 presentation shell, reruns all permanent Build 4–6 rule suites, performs the scripted C3→D4→E5 fart-push demo, and writes:
+This reruns the permanent Build 4–6 rule suites, runs the Build 8 audio tests, executes the Build 7-style visual push demo with audio hooks, and writes:
 
 ```text
-build/host/chessfart_build7.ppm
+build/host/chessfart_build8.ppm
+build/host/chessfart_build8_title.ppm
+build/host/chessfart_build8_audio.log
+build/host/chessfart_build8_fart.wav
 ```
 
 ### DOS / Open Watcom
 
 ```bat
-wmake -f makefile.build7.dos dos
+wmake -f makefile.build8.dos dos
 ```
 
 or:
 
 ```bat
-scripts\build_dos_build7.bat
+scripts\build_dos_build8.bat
 ```
 
 Expected output: `build\dos\CHESSFRT.EXE`.
 
-Open Watcom/DOSBox is not installed in the environment used to prepare this build, so DOS runtime validation remains the platform integration check.
+Open Watcom/DOSBox and real Sound Blaster-compatible hardware are not installed in the environment used for this build, so DOS audio timing remains the platform integration check.
 
 ## Core rules
 
@@ -85,13 +91,14 @@ Full rules are in [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md)
 - [`docs/BUILD_7.md`](docs/BUILD_7.md)
+- [`docs/BUILD_8.md`](docs/BUILD_8.md)
 
 ## Design pillars
 
 1. **Still chess.** Normal chess knowledge matters.
-2. **No hidden randomness.** Gas state and fart outcomes are predictable.
+2. **No hidden gameplay randomness.** Gas state and fart outcomes are predictable.
 3. **Fast to read.** The 320x200 screen must communicate state instantly.
-4. **Juicy VGA presentation.** Palette flashes, screen shake, sprites and gas clouds are part of the identity.
+4. **Juicy DOS presentation.** VGA effects and crude digital audio are part of the identity.
 5. **Small enough to finish.** One polished board and one strong ruleset beat oversized scope.
 
 **CHESS FART** — *Check. Mate. Ventilate.*

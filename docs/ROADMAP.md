@@ -30,30 +30,32 @@ Delivered per-piece Gas, earning/spending, Gas-aware repetition, eight-direction
 Delivered one-square push, blocked outcomes, king safety, displaced castling rights, pushed promotion, check creation/resolution and reversible Fart actions.
 
 ## Build 7 — Presentation pass
-**Status: complete in source; pending/verified by Build 7 CI**
+**Status: complete in source; CI passes**
+
+Delivered title/menu, Royal Basement palette, improved pieces, board coordinates/bevel, five-frame fart plume/push animation, palette flash and board shake.
+
+## Build 8 — Audio
+**Status: complete in source/host validation; CI target added**
 
 Delivered:
 
-- title screen and keyboard menu
-- Royal Basement final-ish VGA palette
-- improved piece silhouettes
-- copper board bevel and rank/file coordinates
-- shadowed title/header treatment
-- five-frame fart plume/push animation
-- palette impact flash
-- board-frame shake
-- Build 7 framebuffer artifact in CI
-- unchanged Build 4–6 rules regression baseline
+- platform-neutral audio event/config layer
+- five original procedural 8-bit PCM fart voices
+- UI/move/capture/check/checkmate/promotion SFX
+- Sound Blaster DSP initialization and short PCM playback source
+- PC-speaker fallback
+- device and SFX-level title-screen controls
+- host event log and WAV artifact
+- unchanged Build 4–7 gameplay/presentation regression baseline
 
-Exit criterion: a complete Build 6 match is presented with a coherent premium-DOS visual layer without altering rules.
+Exit criterion: game actions have deterministic non-gameplay audio cues, sound can be disabled, and the host path proves event/sample output without changing rules.
 
-## Build 8 — Audio
-**Status: next**
-
-Deliverables: Sound Blaster initialization, PCM playback, fart sample bank, UI/move/check SFX, PC speaker fallback, audio options.
+Remaining integration check: Open Watcom + DOSBox/real Sound Blaster-compatible validation.
 
 ## Build 9 — Save/load and config
-Deliverables: config file, save UI, versioned save data, exact Gas/history restoration, error handling.
+**Status: next**
+
+Deliverables: config file, save UI, versioned save data, exact Gas/history restoration, audio-setting persistence, error handling.
 
 ## Build 10 — CPU opponent
 Deliverables: negamax/alpha-beta, evaluation, action ordering, Gas/fart awareness, difficulty settings, move-time cap.
