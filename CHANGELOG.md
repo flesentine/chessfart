@@ -65,4 +65,4 @@ Added castling, en passant, promotion, terminal/draw states and reversible speci
 
 ### Current phase
 
-Build 10 CPU opponent complete in source when CI is green. Build 11 — UX/polish — is next.
+Build 10 CPU opponent complete; CI passes. Build 11 — UX/polish — is next.
