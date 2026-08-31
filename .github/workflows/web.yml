@@ -19,7 +19,10 @@ jobs:
           version: 5.0.1
           actions-cache-folder: emsdk-cache
       - name: Build browser edition
-        run: make -f Makefile.web web
+        shell: bash
+        run: |
+          set -o pipefail
+          make -f Makefile.web web 2>&1 | tee web-build.log
       - name: Verify web bundle
         run: |
           test -s build/web/index.html
@@ -27,6 +30,12 @@ jobs:
           test -s build/web/index.wasm
           grep -q "CHESS FART" build/web/index.html
           ls -lh build/web
+      - name: Preserve web diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chessfart-web-diagnostics
+          path: web-build.log
       - name: Preserve browser bundle
         uses: actions/upload-artifact@v4
         with:
