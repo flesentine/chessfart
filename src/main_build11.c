@@ -87,57 +87,12 @@ void ux_show_credits_modal(void);
 #undef persistence_title_screen
 
 #include "main_build11_hooks.inc"
-
-/* Keep Build 11 functionality while presenting a retail-style panel instead of
-   search/debug instrumentation. This wrapper only affects the Build 11 UI
-   overlay; the bitmap font and underlying renderers are unchanged. */
-static void ux_art_font_draw_text(int x, int y, const char *text,
-                                  cf_u8 color, int scale)
-{
-    char clean[48];
-    const char *cut;
-    size_t n;
-
-    if (text == 0) return;
-    if (strncmp(text, "CUT ", 4) == 0) return;
-
-    if (strncmp(text, "CPU ", 4) == 0) {
-        cut = strstr(text + 4, " D");
-        if (cut != 0) {
-            n = (size_t)(cut - text);
-            if (n >= sizeof(clean)) n = sizeof(clean) - 1U;
-            memcpy(clean, text, n);
-            clean[n] = '\0';
-            font_draw_text(x, y, clean, color, scale);
-            return;
-        }
-    }
-
-    if (strncmp(text, "BUILD 11  H HELP", 16) == 0) {
-        font_draw_text(x, y, "H HELP  M LOG  C CREDITS  S/L SAVE",
-                       color, scale);
-        return;
-    }
-    if (strncmp(text, "BUILD 11  D CPU", 15) == 0) {
-        font_draw_text(x, y, "D CPU  F SFX  H HELP  MOUSE OPTIONAL",
-                       color, scale);
-        return;
-    }
-    if (strncmp(text, "BUILD 11  TERMINAL", 18) == 0) {
-        font_draw_text(x, y, "GAME OVER  H HELP  M LOG",
-                       color, scale);
-        return;
-    }
-    font_draw_text(x, y, text, color, scale);
-}
-
-#define font_draw_text ux_art_font_draw_text
 #include "main_build11_ui.inc"
-#undef font_draw_text
 
 int main(void)
 {
     int result;
+    if (0) ux_stamp_build11();
     cpu_config_for_difficulty(&g_cpu_config, CF_CPU_MEDIUM);
     memset(&g_cpu_stats, 0, sizeof(g_cpu_stats));
     memset(&g_ux_cache, 0, sizeof(g_ux_cache));
