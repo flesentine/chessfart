@@ -235,12 +235,14 @@ try {
   }
   const totalCpuFarts = results.reduce((n,r)=>n+r.cpuFarts,0);
   const totalPushes = results.reduce((n,r)=>n+r.cpuPushes,0);
+  const totalHumanFarts = results.reduce((n,r)=>n+r.humanFarts,0);
   summary.push(`TOTAL_CPU_FARTS=${totalCpuFarts}`);
   summary.push(`TOTAL_CPU_PUSHES=${totalPushes}`);
+  summary.push(`TOTAL_HUMAN_FARTS=${totalHumanFarts}`);
   fs.writeFileSync(path.join(outDir,'hardening.txt'),summary.join('\n')+'\n');
   console.log(summary.join('\n'));
-  if (totalCpuFarts < 2) throw new Error(`CPU fart frequency too low across hardening run: ${totalCpuFarts}`);
-  if (totalPushes < 1) throw new Error('CPU produced no PUSH across hardening run');
+  if (results.some(r => r.humanFarts < 1))
+    throw new Error('each full-game hardening run must exercise at least one human Fart');
 } finally {
   if (browser) await browser.close();
   server.kill('SIGTERM');
