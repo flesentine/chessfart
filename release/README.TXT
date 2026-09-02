@@ -1,5 +1,5 @@
-CHESS FART 1.0.0-rc1
-=====================
+CHESS FART 1.0.0
+=================
 
 Check. Mate. Ventilate.
 
@@ -32,12 +32,16 @@ CHESSFRT.EXE   Game executable
 DOSBOX.CONF    Sample emulator configuration
 README.TXT     This file
 KEYS.TXT       Complete controls
-KNOWNISS.TXT   RC1 limitations and platform notes
+KNOWNISS.TXT   Platform notes and unverified hardware targets
 BUILDINFO.TXT  Exact source/toolchain build information
 
 SAVE FILES
 ----------
 The game writes CHESSFRT.SAV and CHESSFRT.CFG in the current directory.
+The versioned save/config formats are unchanged from the release candidate.
 
-This is release candidate 1. Please retain a copy of important save files
-before testing future release candidates.
+This is Chess Fart 1.0.0. The automated release gate covers host rules and
+CPU regressions, a real Open Watcom 16-bit DOS build, DOSBox smoke, browser
+runtime/playtest coverage, and deterministic full Chromium games. Physical
+DOS hardware and specific third-party drivers remain explicitly unverified
+where listed in KNOWNISS.TXT.

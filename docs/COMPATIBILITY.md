@@ -1,28 +1,32 @@
-# Chess Fart 1.0.0-rc1 — Compatibility Matrix
+# Chess Fart 1.0.0 — Compatibility Matrix
 
-This document distinguishes automated evidence from targets that still require physical/manual testing.
+This document distinguishes automated evidence from targets that still require physical/manual testing. “UNVERIFIED” means exactly that; the 1.0 release does not claim compatibility evidence it does not have.
 
-| Environment / subsystem | RC1 status | Evidence / scope |
+| Environment / subsystem | 1.0 status | Evidence / scope |
 | --- | --- | --- |
 | Ubuntu GitHub Actions + strict C89 host build | VERIFIED | `make test-build12`; warnings are errors |
 | Standard chess / perft regressions | VERIFIED | Permanent Build 4 suite |
 | Gas and Fart rules | VERIFIED | Permanent Build 5/6 suites |
 | Audio generation / host hooks | VERIFIED | Permanent Build 8 suite |
 | Save/config round-trip and validation | VERIFIED | Permanent Build 9 suite |
-| CPU legal move/Fart search | VERIFIED | Permanent Build 10 suite |
+| CPU legal move/Fart search | VERIFIED | Permanent Build 10 suite plus v7 tactical Fart regressions |
+| Fart-aware alpha-beta pruning | VERIFIED | RC hardening corrected move-dependent edge-bonus child windows; full regression gate passes |
 | UX/history/hit testing | VERIFIED | Permanent Build 11 suite |
+| Browser/WASM build and runtime | VERIFIED | Emscripten build plus headless Chromium runtime smoke |
+| Browser mouse/Fart/save-load flow | VERIFIED | Chromium gameplay playtest |
+| Browser full games EASY/MED/HARD | VERIFIED | Deterministic Chromium games terminate cleanly with zero browser errors and live Fart actions |
 | Open Watcom 2.0 16-bit DOS compile | VERIFIED | CI builds `CHESSFRT.EXE` with `-bt=dos -ml -3` |
 | DOSBox VGA Mode 13h smoke | VERIFIED | DOS-resident smoke initializes/draws/presents VGA |
 | DOSBox INT 33h mouse probe | VERIFIED (probe) | DOS-resident smoke calls mouse init/shutdown; full interactive pointer flow is manual |
 | DOSBox Sound Blaster/PC-speaker initialization | VERIFIED (smoke) | AUTO audio initialized in DOS smoke with BLASTER A220/I7/D1/H5/T6 |
 | Release ZIP structure/integrity | VERIFIED | `unzip -t`, required-entry checks and SHA-256 |
-| DOSBox interactive full match | MANUAL TARGET | Automated smoke is not a substitute for a human full session |
-| DOSBox-X / DOSBox Staging | UNVERIFIED RC1 | Expected compatible, not claimed tested |
-| FreeDOS | UNVERIFIED RC1 | Manual/community target |
-| MS-DOS 6.x | UNVERIFIED RC1 | Manual/community target |
-| Physical 386DX / 486 VGA hardware | UNVERIFIED RC1 | Manual/community target |
-| Real Sound Blaster 1.x / 2.0 / Pro / 16 | UNVERIFIED RC1 | Direct-DAC timing and BLASTER combinations need hardware coverage |
-| Microsoft-compatible DOS mouse drivers | UNVERIFIED RC1 | INT 33h code exists; driver/hardware combinations need manual coverage |
+| DOSBox interactive full human match | MANUAL TARGET | Automated smoke is not a substitute for a human DOSBox session |
+| DOSBox-X / DOSBox Staging | UNVERIFIED 1.0 | Expected compatible, not claimed tested |
+| FreeDOS | UNVERIFIED 1.0 | Manual/community target |
+| MS-DOS 6.x | UNVERIFIED 1.0 | Manual/community target |
+| Physical 386DX / 486 VGA hardware | UNVERIFIED 1.0 | Manual/community target |
+| Real Sound Blaster 1.x / 2.0 / Pro / 16 | UNVERIFIED 1.0 | Direct-DAC timing and BLASTER combinations need hardware coverage |
+| Microsoft-compatible DOS mouse drivers | UNVERIFIED 1.0 | INT 33h code exists; driver/hardware combinations need manual coverage |
 
 ## Reference DOS target
 
@@ -37,17 +41,17 @@ This document distinguishes automated evidence from targets that still require p
 
 The CPU uses bounded iterative deepening. EASY/MED/HARD have hard node/time limits, so slower hardware degrades think depth/time predictably instead of searching indefinitely.
 
-GitHub Actions host measurements for RC1:
+Post-hardening GitHub Actions node measurements:
 
-| Fixture | Completed depth | Nodes | Cutoffs | CI elapsed |
-| --- | ---: | ---: | ---: | ---: |
-| EASY start | 1 | 20 | 0 | 0 ms |
-| MED start | 2 | 440 | 0 | 1 ms |
-| HARD start | 3 | 7,320 | 325 | 27 ms |
-| Fart-heavy MED | 2 | 6,240 | 0 | 59 ms |
+| Fixture | Completed depth | Nodes | Cutoffs |
+| --- | ---: | ---: | ---: |
+| EASY start | 1 | 20 | 0 |
+| MED start | 2 | 440 | 0 |
+| HARD start | 3 | 6,349 | 325 |
+| Fart-heavy MED | 2 | 6,240 | 0 |
 
-These timings characterize the CI host implementation only. The node counts and depth limits are the useful cross-platform measurements; physical DOS timing must be measured separately.
+Host wall-clock timings vary by CI runner. Node counts and depth limits are the useful cross-platform measurements; physical DOS timing must be measured separately.
 
 ## Audio caveat
 
-RC1's Sound Blaster backend intentionally uses simple 8-bit direct-DAC polling instead of DMA. This keeps the implementation compact, but playback pacing depends more strongly on machine/emulator timing than a DMA mixer would. AUTO falls back to PC speaker if Sound Blaster initialization fails.
+1.0's Sound Blaster backend intentionally uses simple 8-bit direct-DAC polling instead of DMA. This keeps the implementation compact, but playback pacing depends more strongly on machine/emulator timing than a DMA mixer would. AUTO falls back to PC speaker if Sound Blaster initialization fails.

@@ -2,6 +2,25 @@
 
 All notable project milestones are recorded here.
 
+## 1.0.0 — Final release
+
+Promoted the frozen RC feature set to 1.0 after the release-hardening pass.
+
+Hardening since RC1:
+
+- corrected Fart-aware alpha-beta pruning so move-dependent tactical edge bonuses shift the recursive search window correctly
+- retained the v7 deterministic CPU regressions for Fart check escape, forcing discovered check, castling-right destruction by king displacement and own-pawn Fart promotion
+- promoted deterministic full Chromium games at Easy, Medium and Hard into the permanent browser playtest gate
+- each full browser hardening game must terminate with zero browser errors and exercise live Fart mechanics
+- kept natural CPU Fart frequency diagnostic rather than treating a particular frequency as correctness; tactical CPU Fart choices remain deterministic regression requirements
+- revalidated the strict host regression stack, Open Watcom 2.0 16-bit DOS build, DOSBox smoke and release packaging after the search correction
+
+Release policy:
+
+- no gameplay rules, evaluator weights, save formats or audio systems were added between RC1 and 1.0
+- zero known P0/P1 failures in the automated rules/build/browser/package gates at promotion
+- physical 386/486 systems, MS-DOS/FreeDOS variants, real Sound Blaster models and third-party DOS mouse drivers remain explicitly unverified platform targets rather than claimed coverage
+
 ## 1.0.0-rc1 — Build 12 release candidate
 
 Added/released:

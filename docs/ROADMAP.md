@@ -60,8 +60,17 @@ Session move/action history, help/rules overlays, terminal-state presentation, t
 Feature freeze, version stamp, full regression/profile/audit gate, real Open Watcom 16-bit DOS build, DOSBox platform smoke, compatibility matrix, DOSBox configuration, release documentation, verified distributable ZIP and SHA-256.
 
 ## RC follow-up / v1.0
+**Status: complete — 1.0.0**
 
-Collect physical/emulator compatibility reports, fix any RC-discovered P0/P1 defects, then promote the same feature set to v1.0 without adding new gameplay systems.
+The frozen RC feature set was hardened rather than expanded:
+
+- corrected the alpha-beta child window for move-dependent Fart tactical bonuses
+- locked the sound tactical Fart behaviors into deterministic CPU regressions
+- promoted deterministic Easy/Medium/Hard full Chromium games into the browser gate
+- revalidated strict host tests, Open Watcom 16-bit DOS compilation, DOSBox smoke and packaging
+- promoted final package/version metadata to 1.0.0 with no rule, save-format or evaluator-weight changes
+
+Physical 386/486 systems, MS-DOS/FreeDOS variants, real Sound Blaster hardware and third-party DOS mouse drivers remain explicitly unverified manual/community compatibility targets. They are documented platform scope, not claimed test coverage.
 
 ## Post-v1 ideas
 

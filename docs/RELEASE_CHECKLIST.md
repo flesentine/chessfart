@@ -1,6 +1,6 @@
-# Chess Fart 1.0.0-rc1 — Release Checklist
+# Chess Fart 1.0.0 — Release Checklist
 
-## Automated RC1 gate
+## Automated release gate
 
 - [x] permanent Build 4 standard-chess regression suite
 - [x] permanent Build 5 Gas regression suite
@@ -8,8 +8,13 @@
 - [x] permanent Build 8 audio regression suite
 - [x] permanent Build 9 persistence regression suite
 - [x] permanent Build 10 CPU regression suite
+- [x] deterministic tactical CPU Fart regressions for check escape, forcing check, castling-right damage and pushed promotion
+- [x] Fart-aware alpha-beta edge-bonus window correction
 - [x] permanent Build 11 UX regression suite
 - [x] Build 11 scripted host game and VGA/audio/save artifacts
+- [x] browser/WASM build and runtime smoke
+- [x] Chromium mouse/Fart/history/save-load playtest
+- [x] deterministic full Chromium games at EASY/MED/HARD, each reaching a terminal result with zero browser errors and exercising live Fart mechanics
 - [x] Build 12 release audit
 - [x] Build 12 host CPU/memory profile report
 - [x] Open Watcom 2.0 environment through maintained `setup-watcom` action
@@ -26,11 +31,11 @@ The Open Watcom `2026-07-13-Build` `ow-snapshot.tar.xz` asset is recorded as a r
 
 `35e9c56ca93234ba0b8b596387815399317ea0548aeac1318f0674dca3921314`
 
-RC1 CI uses the maintained `open-watcom/setup-watcom@v1` action with `version: 2.0` and `target: dos`; `BUILDINFO.TXT` distinguishes that actual CI compiler provenance from the separately pinned reference snapshot.
+Release CI uses the maintained `open-watcom/setup-watcom@v1` action with `version: 2.0` and `target: dos`; `BUILDINFO.TXT` distinguishes that actual CI compiler provenance from the separately pinned reference snapshot.
 
 ## Bug burn-down policy
 
-RC1 ships with zero known P0/P1 issues in the host/rules/build/package gates.
+1.0.0 ships with zero known P0/P1 issues in the automated rules/build/browser/package gates.
 
 P0: data corruption, impossible legal game completion, crash on normal startup, or broken release package.
 
@@ -38,7 +43,9 @@ P1: deterministic rules error, save/load mismatch, CPU illegal action, unusable 
 
 P2/platform notes may remain when documented in `release/KNOWNISS.TXT`, especially emulator/hardware timing differences that cannot be exhaustively validated in CI.
 
-## Manual/community matrix after RC cut
+## Manual/community compatibility expansion
+
+These are deliberately **not** marked verified by the 1.0 release:
 
 - [ ] physical 386DX/486 with VGA
 - [ ] MS-DOS 6.x
@@ -49,7 +56,7 @@ P2/platform notes may remain when documented in `release/KNOWNISS.TXT`, especial
 - [ ] DOSBox Staging interactive session
 - [ ] full human match at EASY/MED/HARD on slow DOS-class CPU profiles
 
-These unchecked items are compatibility expansion, not hidden automated-test failures. See `docs/COMPATIBILITY.md`.
+The unchecked items are documented compatibility-expansion targets, not hidden automated-test failures. See `docs/COMPATIBILITY.md`.
 
 ## Release contents
 
