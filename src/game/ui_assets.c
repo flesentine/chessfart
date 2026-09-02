@@ -1,65 +1,250 @@
 #include "ui_assets.h"
 #include "vga.h"
 
+#define COL_GOLD 4
 #define COL_GAS 8
 #define COL_WHITE_PIECE 11
 #define COL_WHITE_HI 12
 #define COL_BLACK_PIECE 13
 #define COL_BLACK_HI 14
+#define COL_CURSOR 15
 #define COL_SHADOW 17
 #define COL_CLOUD 25
 
 /*
- * Production VGA sprites.
- *
- * The first art pass embedded large per-pixel arrays generated from the
- * concept atlas.  They were hard to edit and produced inconsistent shapes.
- * These masks keep the same 18x16 runtime footprint but describe each chess
- * silhouette in a compact, hand-tunable form.  White and black share geometry
- * and get their identity from the VGA palette, which keeps the two sets
- * visually consistent and dramatically reduces the asset code.
+ * Production piece sprites, rebuilt from the approved transparent VGA art.
+ * Each character is a palette class rather than a raw pixel index:
+ *   0 transparent, 1 keyline/shadow, 2 dark shade, 3 body, 4 highlight.
+ * The geometry is color-specific so white and black sets can retain the
+ * details from the original art while sharing the same 18x16 blit API.
  */
 
-static const char *shape_pawn[16] = {
-    "................", ".......##.......", "......####......", "......####......",
-    ".......##.......", "......####......", ".....######.....", "......####......",
-    "......####......", "......####......", ".....######.....", "....########....",
-    "...##########...", "..############..", "..############..", "................"
+static const char *sprite_white_king[16] = {
+    "0000000000000000",
+    "0000000100000000",
+    "0000001411000000",
+    "0000001411000000",
+    "0000000410000000",
+    "0000131431100000",
+    "0000434433210000",
+    "0000133322300000",
+    "0000044433100000",
+    "0000014331000000",
+    "0000012221000000",
+    "0000122222100000",
+    "0000144323100000",
+    "0001122222110000",
+    "0013443333321000",
+    "0011111111111000",
 };
 
-static const char *shape_knight[16] = {
-    "..........##....", ".......#####....", ".....#######....", "....###.####....",
-    "...###..####....", "..###...####....", "..##########....", "...#########....",
-    "....########....", ".....#######....", ".....#######....", "....########....",
-    "...##########...", "..############..", "..############..", "................"
+static const char *sprite_white_queen[16] = {
+    "0000000000000000",
+    "0000000110000000",
+    "0000000431000000",
+    "0001100131011000",
+    "0004300130013100",
+    "0001121431011000",
+    "0001411431131000",
+    "0000134333330000",
+    "0000144333210000",
+    "0000033332300000",
+    "0000144444310000",
+    "0000122221210000",
+    "0000144433310000",
+    "0001122222211000",
+    "0014443333333100",
+    "0011111111111100",
 };
 
-static const char *shape_bishop[16] = {
-    ".......##.......", "......####......", ".....######.....", ".....###.##.....",
-    ".....##.###.....", ".....######.....", "......####......", ".....######.....",
-    ".....######.....", "....########....", "....########....", "...##########...",
-    "...##########...", "..############..", "..############..", "................"
+static const char *sprite_white_rook[16] = {
+    "0000000000000000",
+    "0001111111111000",
+    "0014311431143100",
+    "0014322332233100",
+    "0014333333333200",
+    "0001333323232000",
+    "0000144433310000",
+    "0000144322310000",
+    "0000144333310000",
+    "0000143322310000",
+    "0001444444431000",
+    "0001122222211000",
+    "0011443333331100",
+    "0114444444443110",
+    "0143443333332310",
+    "0111111111111110",
 };
 
-static const char *shape_rook[16] = {
-    "..##..##..##....", "..############..", "...##########...", "...##########...",
-    "....########....", "....########....", "....########....", "....########....",
-    "....########....", "....########....", "...##########...", "...##########...",
-    "..############..", ".##############.", ".##############.", "................"
+static const char *sprite_white_bishop[16] = {
+    "0000000000000000",
+    "0000000110000000",
+    "0000000430000000",
+    "0000000110000000",
+    "0000002432000000",
+    "0000014333200000",
+    "0000144333310000",
+    "0000144333310000",
+    "0000123333210000",
+    "0000013322100000",
+    "0000134433310000",
+    "0000233322220000",
+    "0000014333100000",
+    "0001112332111000",
+    "0014432113432100",
+    "0011111111111100",
 };
 
-static const char *shape_queen[16] = {
-    "..##...##...##..", "..###..##..###..", "...############.", "...##########...",
-    "....########....", "....########....", ".....######.....", ".....######.....",
-    "....########....", "....########....", "...##########...", "...##########...",
-    "..############..", ".##############.", ".##############.", "................"
+static const char *sprite_white_knight[16] = {
+    "0000000000000000",
+    "0000011000000000",
+    "0000042221100000",
+    "0000023322310000",
+    "0000143331121000",
+    "0000431343233100",
+    "0001433334313100",
+    "0014333234312100",
+    "0143333134312310",
+    "0133310434211310",
+    "0011121344314210",
+    "0000224343312310",
+    "0000143333132100",
+    "0014444444443100",
+    "0014444333332300",
+    "0011111111111100",
 };
 
-static const char *shape_king[16] = {
-    ".......##.......", ".....######.....", ".......##.......", ".....######.....",
-    "....########....", ".....######.....", "......####......", ".....######.....",
-    ".....######.....", "....########....", "....########....", "...##########...",
-    "...##########...", "..############..", "..############..", "................"
+static const char *sprite_white_pawn[16] = {
+    "0000000000000000",
+    "0000001110000000",
+    "0000013431000000",
+    "0000134433100000",
+    "0000144333100000",
+    "0000134333100000",
+    "0000013322000000",
+    "0000144444100000",
+    "0000112221100000",
+    "0000014321000000",
+    "0000124332100000",
+    "0001143333110000",
+    "0012443333211000",
+    "0114444444431100",
+    "0144333333323100",
+    "0111111111111100",
+};
+
+static const char *sprite_black_king[16] = {
+    "0000000000000000",
+    "0000000100000000",
+    "0000001310000000",
+    "0000001310000000",
+    "0000001110000000",
+    "0000134224210000",
+    "0001422222210000",
+    "0000111111100000",
+    "0000143222100000",
+    "0000012221000000",
+    "0000111111100000",
+    "0000111111100000",
+    "0000143222100000",
+    "0001111111110000",
+    "0013433322211000",
+    "0011111111111000",
+};
+
+static const char *sprite_black_queen[16] = {
+    "0000000000000000",
+    "0000000110000000",
+    "0000001431000000",
+    "0002100121011100",
+    "0014200121023100",
+    "0001311421141000",
+    "0001411421421000",
+    "0000334333320000",
+    "0000143221210000",
+    "0000043222100000",
+    "0000144333310000",
+    "0000142211210000",
+    "0001143332311000",
+    "0001111111111000",
+    "0014433222222100",
+    "0011111111111100",
+};
+
+static const char *sprite_black_rook[16] = {
+    "0000000000000000",
+    "0001111111111000",
+    "0004311431143000",
+    "0004332322232000",
+    "0004333222222000",
+    "0001221211111000",
+    "0000144322210000",
+    "0000143221210000",
+    "0000143221210000",
+    "0000132221110000",
+    "0001433333221000",
+    "0000143222210000",
+    "0004433323221000",
+    "0114443333332110",
+    "0143333322222210",
+    "0111111111111110",
+};
+
+static const char *sprite_black_bishop[16] = {
+    "0000000000000000",
+    "0000000110000000",
+    "0000000420000000",
+    "0000001111000000",
+    "0000013321100000",
+    "0000044332200000",
+    "0000143112210000",
+    "0000143332110000",
+    "0000043321200000",
+    "0000013311100000",
+    "0000144433310000",
+    "0000233221110000",
+    "0000013322100000",
+    "0001111231111000",
+    "0013422113321100",
+    "0011111001111100",
+};
+
+static const char *sprite_black_knight[16] = {
+    "0000000000000000",
+    "0000010000000000",
+    "0000141221100000",
+    "0000143322110000",
+    "0000143221431000",
+    "0000431322113100",
+    "0001333322211100",
+    "0014332122113100",
+    "0143321132111310",
+    "0133110132111210",
+    "0011101422213210",
+    "0000014332112210",
+    "0000133222122100",
+    "0001111111111100",
+    "0014333332221200",
+    "0011111111111100",
+};
+
+static const char *sprite_black_pawn[16] = {
+    "0000000000000000",
+    "0000001110000000",
+    "0000014431000000",
+    "0000144433100000",
+    "0000144322100000",
+    "0000143322100000",
+    "0000112211100000",
+    "0001144333110000",
+    "0001111111110000",
+    "0000013211000000",
+    "0000113321100000",
+    "0001443333310000",
+    "0012433322111000",
+    "0114444433321100",
+    "0144333322212100",
+    "0111111111111100",
 };
 
 static const char *puff1[16] = {
@@ -97,17 +282,42 @@ static const char *puff5[16] = {
     ".........##.....", "................", "................", "................"
 };
 
-static const char **piece_shape(CfPieceType type)
+static const char **piece_sprite(const CfPiece *piece)
 {
-    switch (type) {
-    case CF_PIECE_PAWN: return shape_pawn;
-    case CF_PIECE_KNIGHT: return shape_knight;
-    case CF_PIECE_BISHOP: return shape_bishop;
-    case CF_PIECE_ROOK: return shape_rook;
-    case CF_PIECE_QUEEN: return shape_queen;
-    case CF_PIECE_KING: return shape_king;
+    if (piece == 0 || piece->type == CF_PIECE_NONE) return 0;
+    if (piece->color == CF_COLOR_WHITE) {
+        switch (piece->type) {
+        case CF_PIECE_KING: return sprite_white_king;
+        case CF_PIECE_QUEEN: return sprite_white_queen;
+        case CF_PIECE_ROOK: return sprite_white_rook;
+        case CF_PIECE_BISHOP: return sprite_white_bishop;
+        case CF_PIECE_KNIGHT: return sprite_white_knight;
+        case CF_PIECE_PAWN: return sprite_white_pawn;
+        default: return 0;
+        }
+    }
+    switch (piece->type) {
+    case CF_PIECE_KING: return sprite_black_king;
+    case CF_PIECE_QUEEN: return sprite_black_queen;
+    case CF_PIECE_ROOK: return sprite_black_rook;
+    case CF_PIECE_BISHOP: return sprite_black_bishop;
+    case CF_PIECE_KNIGHT: return sprite_black_knight;
+    case CF_PIECE_PAWN: return sprite_black_pawn;
     default: return 0;
     }
+}
+
+static cf_u8 piece_color(const CfPiece *piece, int code)
+{
+    if (code <= 1) return COL_SHADOW;
+    if (piece->color == CF_COLOR_WHITE) {
+        if (code == 2) return COL_GOLD;
+        if (code == 3) return COL_WHITE_PIECE;
+        return COL_WHITE_HI;
+    }
+    if (code == 2) return COL_BLACK_PIECE;
+    if (code == 3) return COL_BLACK_HI;
+    return COL_CURSOR;
 }
 
 static int mask_pixel(const char **mask, int x, int y)
@@ -123,38 +333,20 @@ static int exposed_edge(const char **mask, int x, int y)
 
 void ui_assets_draw_piece(int x, int y, const CfPiece *piece, cf_u8 background)
 {
-    const char **shape;
-    cf_u8 body;
-    cf_u8 hi;
+    const char **sprite;
     int px;
     int py;
+    int code;
 
-    if (piece == 0 || piece->type == CF_PIECE_NONE) return;
-    shape = piece_shape(piece->type);
-    if (shape == 0) return;
-
-    body = piece->color == CF_COLOR_WHITE ? COL_WHITE_PIECE : COL_BLACK_PIECE;
-    hi = piece->color == CF_COLOR_WHITE ? COL_WHITE_HI : COL_BLACK_HI;
+    sprite = piece_sprite(piece);
+    if (sprite == 0) return;
 
     vga_fill_rect(x, y, CF_UI_PIECE_W, CF_UI_PIECE_H, background);
-
-    /* One-pixel dark keyline makes both sets readable on either board color. */
     for (py = 0; py < 16; ++py) {
         for (px = 0; px < 16; ++px) {
-            if (mask_pixel(shape, px, py)) continue;
-            if (mask_pixel(shape, px - 1, py) || mask_pixel(shape, px + 1, py) ||
-                mask_pixel(shape, px, py - 1) || mask_pixel(shape, px, py + 1)) {
-                vga_put_pixel(x + 1 + px, y + py, COL_SHADOW);
-            }
-        }
-    }
-
-    /* A light north/west rim gives the silhouettes a restrained VGA bevel. */
-    for (py = 0; py < 16; ++py) {
-        for (px = 0; px < 16; ++px) {
-            if (!mask_pixel(shape, px, py)) continue;
-            vga_put_pixel(x + 1 + px, y + py,
-                          exposed_edge(shape, px, py) ? hi : body);
+            code = sprite[py][px] - '0';
+            if (code <= 0) continue;
+            vga_put_pixel(x + 1 + px, y + py, piece_color(piece, code));
         }
     }
 }
