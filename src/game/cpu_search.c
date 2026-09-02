@@ -41,6 +41,8 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     CfCpuUndo undo;
     int best = -CPU_INF;
     int score;
+    int action_bonus;
+    int actor_was_in_check;
     int i;
 
     if (budget_expired(c)) {
@@ -60,6 +62,7 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     }
     if (depth <= 0) return cpu_internal_evaluate(b, g);
     cpu_internal_sort_actions(list);
+    actor_was_in_check = board_is_in_check(b, b->side_to_move);
 
     for (i = 0; i < list->count; ++i) {
         if (budget_expired(c)) {
@@ -68,7 +71,11 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
             break;
         }
         if (!cpu_apply_action(b, g, &list->actions[i], &undo)) continue;
-        score = -negamax(b, g, depth-1, -beta, -alpha, ply+1, c);
+        action_bonus = cpu_internal_action_bonus(b, g, &list->actions[i],
+                                                 &undo, &c->config,
+                                                 actor_was_in_check);
+        score = -negamax(b, g, depth-1, -beta, -alpha, ply+1, c) +
+                action_bonus;
         cpu_unapply_action(b, g, &undo);
         if (c->aborted) break;
         if (score > best) best = score;
@@ -97,6 +104,8 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     int best_score = -CPU_INF;
     int iteration_score;
     int score;
+    int action_bonus;
+    int actor_was_in_check;
     int depth;
     int i;
 
@@ -124,6 +133,7 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     c.stats = stats;
     c.start_clock = clock();
     c.aborted = 0;
+    actor_was_in_check = board_is_in_check(b, b->side_to_move);
 
     for (depth = 1; depth <= config->max_depth; ++depth) {
         int completed = 1;
@@ -138,7 +148,11 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
                 break;
             }
             if (!cpu_apply_action(b, g, &root->actions[i], &undo)) continue;
-            score = -negamax(b, g, depth-1, -CPU_INF, CPU_INF, 1, &c);
+            action_bonus = cpu_internal_action_bonus(b, g, &root->actions[i],
+                                                     &undo, &c.config,
+                                                     actor_was_in_check);
+            score = -negamax(b, g, depth-1, -CPU_INF, CPU_INF, 1, &c) +
+                    action_bonus;
             cpu_unapply_action(b, g, &undo);
             if (c.aborted) {
                 completed = 0;
