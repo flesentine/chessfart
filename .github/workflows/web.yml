@@ -39,8 +39,8 @@ jobs:
       - name: Chromium gameplay playtest
         run: |
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_playtest.mjs
-          test -s build/web-playtest/07-after-fart.png
-          test -s build/web-playtest/09-after-load.png
+          test -s build/web-playtest/08-after-fart.png
+          test -s build/web-playtest/10-after-load.png
           cat build/web-playtest/playtest.txt
       - name: Preserve web diagnostics
         if: always()
