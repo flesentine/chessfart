@@ -90,6 +90,10 @@ void ux_show_credits_modal(void);
 #include "main_build11_hooks.inc"
 #include "main_build11_ui.inc"
 
+#ifdef CF_WEB_REVIEW
+#include "main_build11_review.inc"
+#endif
+
 int main(void)
 {
     int result;

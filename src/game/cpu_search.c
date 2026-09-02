@@ -34,6 +34,15 @@ static int budget_expired(SearchContext *c)
     return time_expired(c);
 }
 
+static int shifted_bound(int bonus, int bound)
+{
+    long shifted;
+    shifted = (long)bonus - (long)bound;
+    if (shifted < -(long)CPU_INF) return -CPU_INF;
+    if (shifted > (long)CPU_INF) return CPU_INF;
+    return (int)shifted;
+}
+
 static int negamax(CfBoard *b, CfGasState *g, int depth,
                    int alpha, int beta, int ply, SearchContext *c)
 {
@@ -42,6 +51,8 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     int best = -CPU_INF;
     int score;
     int action_bonus;
+    int child_alpha;
+    int child_beta;
     int actor_was_in_check;
     int i;
 
@@ -74,7 +85,9 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
         action_bonus = cpu_internal_action_bonus(b, g, &list->actions[i],
                                                  &undo, &c->config,
                                                  actor_was_in_check);
-        score = -negamax(b, g, depth-1, -beta, -alpha, ply+1, c) +
+        child_alpha = shifted_bound(action_bonus, beta);
+        child_beta = shifted_bound(action_bonus, alpha);
+        score = -negamax(b, g, depth-1, child_alpha, child_beta, ply+1, c) +
                 action_bonus;
         cpu_unapply_action(b, g, &undo);
         if (c->aborted) break;
