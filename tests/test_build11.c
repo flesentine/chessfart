@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ux.h"
+#include "ui_layout.h"
 
 static int failures;
 #define CHECK(expr) do { if (!(expr)) { \
@@ -27,12 +28,23 @@ static void test_hit_testing(void)
 {
     int file = -1;
     int rank = -1;
-    CHECK(ux_board_hit_test(10, 24, &file, &rank));
+    int right = CF_UI_BOARD_X + CF_UI_BOARD_PIXELS - 1;
+    int bottom = CF_UI_BOARD_Y + CF_UI_BOARD_PIXELS - 1;
+
+    CHECK(ux_board_hit_test(CF_UI_BOARD_X, CF_UI_BOARD_Y, &file, &rank));
     CHECK(file == 0 && rank == 7);
-    CHECK(ux_board_hit_test(169, 183, &file, &rank));
+    CHECK(ux_board_hit_test(right, bottom, &file, &rank));
     CHECK(file == 7 && rank == 0);
-    CHECK(!ux_board_hit_test(9, 24, &file, &rank));
-    CHECK(!ux_board_hit_test(170, 184, &file, &rank));
+
+    CHECK(!ux_board_hit_test(CF_UI_BOARD_X - 1, CF_UI_BOARD_Y, &file, &rank));
+    CHECK(!ux_board_hit_test(CF_UI_BOARD_X, CF_UI_BOARD_Y - 1, &file, &rank));
+    CHECK(!ux_board_hit_test(right + 1, bottom, &file, &rank));
+    CHECK(!ux_board_hit_test(right, bottom + 1, &file, &rank));
+
+    CHECK(ux_board_hit_test(CF_UI_BOARD_X + 6 * CF_UI_SQUARE_SIZE + 9,
+                            CF_UI_BOARD_Y + 7 * CF_UI_SQUARE_SIZE + 9,
+                            &file, &rank));
+    CHECK(file == 6 && rank == 0);
 }
 
 static void test_terminal_labels(void)
