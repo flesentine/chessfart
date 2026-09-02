@@ -23,6 +23,7 @@ function decodePiece(code) {
 async function runCase(page, id, label, verify) {
   const targetScore = await call(page, 'cf_review_target_score', id);
   const targetBonus = await call(page, 'cf_review_target_bonus', id);
+  const targetDepth2 = await call(page, 'cf_review_target_depth2', id);
   const ok = await call(page, 'cf_review_run_tactic', id);
   if (ok !== 1) return { line: `${label}: runner failed (${ok})`, error: true };
   const state = {
@@ -35,15 +36,14 @@ async function runCase(page, id, label, verify) {
     result: await call(page, 'cf_review_action_fart_result'),
     promotion: await call(page, 'cf_review_action_promotion'),
     score: await call(page, 'cf_review_action_score'),
-    targetScore,
-    targetBonus,
+    targetScore, targetBonus, targetDepth2,
     whiteCheck: await call(page, 'cf_review_check', 1),
     blackCheck: await call(page, 'cf_review_check', 2),
     castle: await call(page, 'cf_review_castling_rights')
   };
   let error = null;
   try { await verify(state); } catch (e) { error = String(e.message || e); }
-  const base = `${label}: type=${state.type} from=${state.fromFile},${state.fromRank} to=${state.toFile},${state.toRank} dir=${state.dir} result=${state.result} promo=${state.promotion} depth2=${state.score} targetDepth1=${state.targetScore} targetBonus=${state.targetBonus} whiteCheck=${state.whiteCheck} blackCheck=${state.blackCheck} castle=${state.castle}`;
+  const base = `${label}: type=${state.type} from=${state.fromFile},${state.fromRank} to=${state.toFile},${state.toRank} dir=${state.dir} result=${state.result} promo=${state.promotion} chosenDepth2=${state.score} targetDepth1=${state.targetScore} targetDepth2=${state.targetDepth2} targetBonus=${state.targetBonus} whiteCheck=${state.whiteCheck} blackCheck=${state.blackCheck} castle=${state.castle}`;
   return { line: error ? `${base} FAIL ${error}` : `${base} PASS`, error: !!error };
 }
 
