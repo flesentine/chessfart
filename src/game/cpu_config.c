@@ -8,15 +8,18 @@ void cpu_config_for_difficulty(CfCpuConfig *config, CfCpuDifficulty difficulty)
         config->max_depth = 1;
         config->node_budget = 800UL;
         config->time_limit_ms = 100UL;
+        config->fart_bias = 8;
     } else if (difficulty == CF_CPU_HARD) {
         config->max_depth = 3;
         config->node_budget = 50000UL;
         config->time_limit_ms = 1500UL;
+        config->fart_bias = 38;
     } else {
         config->difficulty = CF_CPU_MEDIUM;
         config->max_depth = 2;
         config->node_budget = 8000UL;
         config->time_limit_ms = 500UL;
+        config->fart_bias = 28;
     }
 }
 
