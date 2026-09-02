@@ -2,6 +2,7 @@
 
 static CfCpuAction g_review_action;
 static int g_review_action_valid;
+static int g_review_score;
 
 static void review_reset_common(void)
 {
@@ -9,6 +10,7 @@ static void review_reset_common(void)
     gas_init(&g_gas);
     memset(&g_review_action, 0, sizeof(g_review_action));
     g_review_action_valid = 0;
+    g_review_score = 0;
     g_board.en_passant_file = -1;
     g_board.en_passant_rank = -1;
     g_board.halfmove_clock = 0U;
@@ -76,6 +78,7 @@ EMSCRIPTEN_KEEPALIVE int cf_review_run_tactic(int tactic)
     if (!cpu_choose_action(&g_board, &g_gas, &g_history,
                            &config, &g_review_action, &stats)) return 0;
     g_review_action_valid = 1;
+    g_review_score = stats.score;
     if (!cpu_apply_action(&g_board, &g_gas, &g_review_action, &undo)) return -1;
     gas_history_record(&g_history, &g_board, &g_gas);
     return 1;
@@ -84,6 +87,26 @@ EMSCRIPTEN_KEEPALIVE int cf_review_run_tactic(int tactic)
 EMSCRIPTEN_KEEPALIVE int cf_review_action_type(void)
 {
     return g_review_action_valid ? (int)g_review_action.type : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_action_from_file(void)
+{
+    return g_review_action_valid ? g_review_action.from_file : -1;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_action_from_rank(void)
+{
+    return g_review_action_valid ? g_review_action.from_rank : -1;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_action_to_file(void)
+{
+    return g_review_action_valid ? g_review_action.to_file : -1;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_action_to_rank(void)
+{
+    return g_review_action_valid ? g_review_action.to_rank : -1;
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_action_direction(void)
@@ -99,6 +122,11 @@ EMSCRIPTEN_KEEPALIVE int cf_review_action_fart_result(void)
 EMSCRIPTEN_KEEPALIVE int cf_review_action_promotion(void)
 {
     return g_review_action_valid ? (int)g_review_action.promotion : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_action_score(void)
+{
+    return g_review_score;
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_check(int color)
