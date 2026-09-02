@@ -1,4 +1,5 @@
 #include <emscripten/emscripten.h>
+#include "cpu_internal.h"
 
 static CfCpuAction g_review_action;
 static int g_review_action_valid;
@@ -63,6 +64,55 @@ static void review_setup_tactic(int tactic)
     gas_history_init(&g_history, &g_board, &g_gas);
 }
 
+static int review_target_action(int tactic, CfCpuAction *out)
+{
+    CfCpuActionList list;
+    int from_file;
+    int from_rank;
+    int direction;
+    int i;
+
+    if (out == 0) return 0;
+    if (tactic == 1) { from_file = 0; from_rank = 2; direction = CF_FART_E; }
+    else if (tactic == 2) { from_file = 3; from_rank = 1; direction = CF_FART_E; }
+    else if (tactic == 3) { from_file = 3; from_rank = 0; direction = CF_FART_E; }
+    else if (tactic == 4) { from_file = 3; from_rank = 2; direction = CF_FART_SE; }
+    else return 0;
+
+    cpu_generate_actions(&g_board, &g_gas, &list);
+    for (i = 0; i < list.count; ++i) {
+        if (list.actions[i].type != CF_CPU_ACTION_FART ||
+            list.actions[i].from_file != from_file ||
+            list.actions[i].from_rank != from_rank ||
+            (int)list.actions[i].direction != direction) continue;
+        if (tactic == 4 && list.actions[i].promotion != CF_PIECE_QUEEN) continue;
+        *out = list.actions[i];
+        return 1;
+    }
+    return 0;
+}
+
+static int review_target_metric(int tactic, int want_bonus)
+{
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuUndo undo;
+    int actor_was_in_check;
+    int bonus;
+    int score;
+
+    review_setup_tactic(tactic);
+    if (!review_target_action(tactic, &action)) return -32000;
+    cpu_config_for_difficulty(&config, CF_CPU_HARD);
+    actor_was_in_check = board_is_in_check(&g_board, g_board.side_to_move);
+    if (!cpu_apply_action(&g_board, &g_gas, &action, &undo)) return -32000;
+    bonus = cpu_internal_action_bonus(&g_board, &g_gas, &action,
+                                      &undo, &config, actor_was_in_check);
+    score = -cpu_internal_evaluate(&g_board, &g_gas) + bonus;
+    cpu_unapply_action(&g_board, &g_gas, &undo);
+    return want_bonus ? bonus : score;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_run_tactic(int tactic)
 {
     CfCpuConfig config;
@@ -82,6 +132,16 @@ EMSCRIPTEN_KEEPALIVE int cf_review_run_tactic(int tactic)
     if (!cpu_apply_action(&g_board, &g_gas, &g_review_action, &undo)) return -1;
     gas_history_record(&g_history, &g_board, &g_gas);
     return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_target_score(int tactic)
+{
+    return review_target_metric(tactic, 0);
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_target_bonus(int tactic)
+{
+    return review_target_metric(tactic, 1);
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_action_type(void)
