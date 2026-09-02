@@ -4,7 +4,7 @@ import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 
 const chrome = process.env.CHROME_BIN || '/usr/bin/google-chrome';
-const outDir = 'build/web-cpu-hardening';
+const outDir = 'build/web-playtest/hardening';
 fs.mkdirSync(outDir, { recursive: true });
 const server = spawn('python3', ['-m', 'http.server', '8127', '--directory', 'build/web'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
