@@ -33,16 +33,22 @@ static int same_gas(const CfGasState *a, const CfGasState *b)
 
 static void test_difficulty_config(void)
 {
-    CfCpuConfig config;
-    cpu_config_for_difficulty(&config, CF_CPU_EASY);
-    CHECK(config.max_depth == 1);
-    CHECK(config.node_budget > 0UL);
-    cpu_cycle_difficulty(&config);
-    CHECK(config.difficulty == CF_CPU_MEDIUM);
-    CHECK(config.max_depth == 2);
-    cpu_cycle_difficulty(&config);
-    CHECK(config.difficulty == CF_CPU_HARD);
-    CHECK(config.max_depth == 3);
+    CfCpuConfig easy;
+    CfCpuConfig medium;
+    CfCpuConfig hard;
+    cpu_config_for_difficulty(&easy, CF_CPU_EASY);
+    CHECK(easy.max_depth == 1);
+    CHECK(easy.node_budget > 0UL);
+    cpu_config_for_difficulty(&medium, CF_CPU_MEDIUM);
+    CHECK(medium.max_depth == 2);
+    cpu_config_for_difficulty(&hard, CF_CPU_HARD);
+    CHECK(hard.max_depth == 3);
+    CHECK(easy.fart_bias < medium.fart_bias);
+    CHECK(medium.fart_bias < hard.fart_bias);
+    cpu_cycle_difficulty(&easy);
+    CHECK(easy.difficulty == CF_CPU_MEDIUM);
+    cpu_cycle_difficulty(&easy);
+    CHECK(easy.difficulty == CF_CPU_HARD);
 }
 
 static void test_starting_position_deterministic(void)
@@ -147,6 +153,61 @@ static void test_fart_action_and_unmake(void)
     }
 }
 
+static void test_cpu_chooses_useful_enemy_push(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 3, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 3, CF_PIECE_ROOK, CF_COLOR_WHITE);
+    gas_set(&gas, 2, 3, 3U);
+    board.side_to_move = CF_COLOR_BLACK;
+    gas_history_init(&history, &board, &gas);
+
+    cpu_config_for_difficulty(&config, CF_CPU_MEDIUM);
+    config.max_depth = 1;
+    config.time_limit_ms = 0UL;
+    CHECK(cpu_choose_action(&board, &gas, &history, &config, &action, &stats));
+    CHECK(action.type == CF_CPU_ACTION_FART);
+    CHECK(action.from_file == 2 && action.from_rank == 3);
+    CHECK(action.direction == CF_FART_E);
+    CHECK(action.fart_result == CF_FART_PUSH);
+}
+
+static void test_cpu_avoids_useless_puff(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 0, 1, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 3, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+    gas_set(&gas, 2, 3, 2U);
+    board.side_to_move = CF_COLOR_BLACK;
+    gas_history_init(&history, &board, &gas);
+
+    cpu_config_for_difficulty(&config, CF_CPU_MEDIUM);
+    config.max_depth = 1;
+    config.time_limit_ms = 0UL;
+    CHECK(cpu_choose_action(&board, &gas, &history, &config, &action, &stats));
+    CHECK(action.type == CF_CPU_ACTION_MOVE);
+}
+
 static void test_budget_cap(void)
 {
     CfBoard board;
@@ -175,6 +236,8 @@ int main(void)
     test_starting_position_deterministic();
     test_mate_in_one();
     test_fart_action_and_unmake();
+    test_cpu_chooses_useful_enemy_push();
+    test_cpu_avoids_useless_puff();
     test_budget_cap();
     if (failures != 0) {
         printf("Build 10 CPU tests failed: %d\n", failures);
