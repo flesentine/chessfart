@@ -23,7 +23,6 @@ static void review_setup_tactic(int tactic)
     review_reset_common();
 
     if (tactic == 1) {
-        /* White is in rook check. A charged knight can push the checking rook away. */
         board_set_piece(&g_board, 1, 0, CF_PIECE_KING, CF_COLOR_WHITE);
         board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&g_board, 0, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
@@ -31,7 +30,6 @@ static void review_setup_tactic(int tactic)
         gas_set(&g_gas, 0, 2, 3U);
         g_board.side_to_move = CF_COLOR_WHITE;
     } else if (tactic == 2) {
-        /* Push our own e2 pawn aside to reveal the rook on e8 against the white king. */
         board_set_piece(&g_board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
         board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&g_board, 4, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
@@ -41,17 +39,15 @@ static void review_setup_tactic(int tactic)
         gas_set(&g_gas, 3, 1, 3U);
         g_board.side_to_move = CF_COLOR_BLACK;
     } else if (tactic == 3) {
-        /* Push the white king off e1 and destroy both white castling rights. */
         board_set_piece(&g_board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
         board_set_piece(&g_board, 0, 0, CF_PIECE_ROOK, CF_COLOR_WHITE);
         board_set_piece(&g_board, 7, 0, CF_PIECE_ROOK, CF_COLOR_WHITE);
-        board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 6, 7, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&g_board, 3, 0, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
         gas_set(&g_gas, 3, 0, 3U);
         g_board.castling_rights = CF_CASTLE_WHITE_KING | CF_CASTLE_WHITE_QUEEN;
         g_board.side_to_move = CF_COLOR_BLACK;
     } else if (tactic == 4) {
-        /* Black pawn cannot advance normally, but a SE Fart promotes it on f1. */
         board_set_piece(&g_board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
         board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&g_board, 3, 2, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
@@ -92,11 +88,15 @@ static int review_target_action(int tactic, CfCpuAction *out)
     return 0;
 }
 
-static int review_target_metric(int tactic, int want_bonus)
+static int review_target_metric(int tactic, int mode)
 {
     CfCpuConfig config;
+    CfCpuConfig reply_config;
     CfCpuAction action;
+    CfCpuAction reply;
     CfCpuUndo undo;
+    CfCpuStats reply_stats;
+    CfGasHistory reply_history;
     int actor_was_in_check;
     int bonus;
     int score;
@@ -108,9 +108,23 @@ static int review_target_metric(int tactic, int want_bonus)
     if (!cpu_apply_action(&g_board, &g_gas, &action, &undo)) return -32000;
     bonus = cpu_internal_action_bonus(&g_board, &g_gas, &action,
                                       &undo, &config, actor_was_in_check);
+    if (mode == 1) {
+        cpu_unapply_action(&g_board, &g_gas, &undo);
+        return bonus;
+    }
     score = -cpu_internal_evaluate(&g_board, &g_gas) + bonus;
+    if (mode == 2) {
+        gas_history_init(&reply_history, &g_board, &g_gas);
+        cpu_config_for_difficulty(&reply_config, CF_CPU_HARD);
+        reply_config.max_depth = 1;
+        reply_config.node_budget = 0UL;
+        reply_config.time_limit_ms = 0UL;
+        if (cpu_choose_action(&g_board, &g_gas, &reply_history,
+                              &reply_config, &reply, &reply_stats))
+            score = -reply_stats.score + bonus;
+    }
     cpu_unapply_action(&g_board, &g_gas, &undo);
-    return want_bonus ? bonus : score;
+    return score;
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_run_tactic(int tactic)
@@ -134,71 +148,20 @@ EMSCRIPTEN_KEEPALIVE int cf_review_run_tactic(int tactic)
     return 1;
 }
 
-EMSCRIPTEN_KEEPALIVE int cf_review_target_score(int tactic)
-{
-    return review_target_metric(tactic, 0);
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_target_bonus(int tactic)
-{
-    return review_target_metric(tactic, 1);
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_type(void)
-{
-    return g_review_action_valid ? (int)g_review_action.type : 0;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_from_file(void)
-{
-    return g_review_action_valid ? g_review_action.from_file : -1;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_from_rank(void)
-{
-    return g_review_action_valid ? g_review_action.from_rank : -1;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_to_file(void)
-{
-    return g_review_action_valid ? g_review_action.to_file : -1;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_to_rank(void)
-{
-    return g_review_action_valid ? g_review_action.to_rank : -1;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_direction(void)
-{
-    return g_review_action_valid ? (int)g_review_action.direction : -1;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_fart_result(void)
-{
-    return g_review_action_valid ? (int)g_review_action.fart_result : -1;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_promotion(void)
-{
-    return g_review_action_valid ? (int)g_review_action.promotion : 0;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_action_score(void)
-{
-    return g_review_score;
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_check(int color)
-{
-    return board_is_in_check(&g_board, (CfPieceColor)color);
-}
-
-EMSCRIPTEN_KEEPALIVE int cf_review_castling_rights(void)
-{
-    return (int)g_board.castling_rights;
-}
-
+EMSCRIPTEN_KEEPALIVE int cf_review_target_score(int tactic) { return review_target_metric(tactic, 0); }
+EMSCRIPTEN_KEEPALIVE int cf_review_target_bonus(int tactic) { return review_target_metric(tactic, 1); }
+EMSCRIPTEN_KEEPALIVE int cf_review_target_depth2(int tactic) { return review_target_metric(tactic, 2); }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_type(void) { return g_review_action_valid ? (int)g_review_action.type : 0; }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_from_file(void) { return g_review_action_valid ? g_review_action.from_file : -1; }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_from_rank(void) { return g_review_action_valid ? g_review_action.from_rank : -1; }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_to_file(void) { return g_review_action_valid ? g_review_action.to_file : -1; }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_to_rank(void) { return g_review_action_valid ? g_review_action.to_rank : -1; }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_direction(void) { return g_review_action_valid ? (int)g_review_action.direction : -1; }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_fart_result(void) { return g_review_action_valid ? (int)g_review_action.fart_result : -1; }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_promotion(void) { return g_review_action_valid ? (int)g_review_action.promotion : 0; }
+EMSCRIPTEN_KEEPALIVE int cf_review_action_score(void) { return g_review_score; }
+EMSCRIPTEN_KEEPALIVE int cf_review_check(int color) { return board_is_in_check(&g_board, (CfPieceColor)color); }
+EMSCRIPTEN_KEEPALIVE int cf_review_castling_rights(void) { return (int)g_board.castling_rights; }
 EMSCRIPTEN_KEEPALIVE int cf_review_piece_code(int file, int rank)
 {
     const CfPiece *piece;
@@ -206,7 +169,5 @@ EMSCRIPTEN_KEEPALIVE int cf_review_piece_code(int file, int rank)
     piece = board_piece_at(&g_board, file, rank);
     if (piece == 0 || piece->type == CF_PIECE_NONE) return 0;
     gas = (int)gas_at(&g_gas, file, rank);
-    return ((int)piece->type & 15) |
-           (((int)piece->color & 15) << 4) |
-           ((gas & 15) << 8);
+    return ((int)piece->type & 15) | (((int)piece->color & 15) << 4) | ((gas & 15) << 8);
 }
