@@ -42,6 +42,12 @@ jobs:
           test -s build/web-playtest/08-after-fart.png
           test -s build/web-playtest/10-after-load.png
           cat build/web-playtest/playtest.txt
+      - name: Full Chromium game review
+        run: |
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_full_game_review.mjs
+          test -s build/web-full-game/98-final.png
+          test -s build/web-full-game/99-final-log.png
+          cat build/web-full-game/full-game.txt
       - name: Preserve web diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,6 +58,7 @@ jobs:
             build/web-smoke.txt
             build/web-smoke.png
             build/web-playtest/
+            build/web-full-game/
       - name: Preserve browser bundle
         uses: actions/upload-artifact@v4
         with:
