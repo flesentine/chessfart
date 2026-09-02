@@ -30,19 +30,25 @@ static void review_setup_tactic(int tactic)
         gas_set(&g_gas, 0, 2, 3U);
         g_board.side_to_move = CF_COLOR_WHITE;
     } else if (tactic == 2) {
+        /* A protected charged rook pushes its own blocker aside for double discovered check. */
         board_set_piece(&g_board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
         board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&g_board, 4, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
         board_set_piece(&g_board, 4, 1, CF_PIECE_PAWN, CF_COLOR_BLACK);
         board_set_piece(&g_board, 3, 1, CF_PIECE_ROOK, CF_COLOR_BLACK);
         board_set_piece(&g_board, 3, 0, CF_PIECE_BISHOP, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 1, 2, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
         gas_set(&g_gas, 3, 1, 3U);
         g_board.side_to_move = CF_COLOR_BLACK;
     } else if (tactic == 3) {
+        /* Fart the uncastled king onto the f-file, give check, and delete both rights. */
         board_set_piece(&g_board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
         board_set_piece(&g_board, 0, 0, CF_PIECE_ROOK, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 1, 0, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 2, 0, CF_PIECE_BISHOP, CF_COLOR_WHITE);
         board_set_piece(&g_board, 7, 0, CF_PIECE_ROOK, CF_COLOR_WHITE);
         board_set_piece(&g_board, 6, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 5, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
         board_set_piece(&g_board, 3, 0, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
         gas_set(&g_gas, 3, 0, 3U);
         g_board.castling_rights = CF_CASTLE_WHITE_KING | CF_CASTLE_WHITE_QUEEN;
