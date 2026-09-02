@@ -28,4 +28,16 @@ fi
 
 git diff --check
 
+# Temporary test probe: find one deterministic position where the corrected
+# edge-bonus alpha-beta window and the pre-v8 unshifted window choose
+# different root actions. This is replaced by a frozen regression fixture
+# before the PR is ready to merge.
+mkdir -p build/host
+cc -std=c89 -pedantic -Wall -Wextra -Werror -O2 -Iinclude \
+  tests/scan_alpha_beta.c \
+  src/game/board.c src/game/gas.c src/game/cpu_config.c \
+  src/game/cpu_actions.c src/game/cpu_eval.c src/game/cpu_search.c \
+  src/game/cpu_format.c -o build/host/scan_alpha_beta
+./build/host/scan_alpha_beta
+
 echo "Release audit passed for Chess Fart $VERSION."
