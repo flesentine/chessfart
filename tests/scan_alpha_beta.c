@@ -208,6 +208,11 @@ int main(void)
     int current_ok;
     int old_ok;
 
+    memset(&current, 0, sizeof(current));
+    memset(&old, 0, sizeof(old));
+    memset(&stats, 0, sizeof(stats));
+    old_score = 0;
+
     cpu_config_for_difficulty(&config, CF_CPU_HARD);
     config.max_depth = 3;
     config.node_budget = 0UL;
