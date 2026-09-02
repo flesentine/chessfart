@@ -23,6 +23,7 @@ typedef struct CfCpuConfig {
     int max_depth;
     unsigned long node_budget;
     unsigned long time_limit_ms;
+    int fart_bias;
 } CfCpuConfig;
 
 typedef struct CfCpuAction {
