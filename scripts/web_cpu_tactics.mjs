@@ -21,6 +21,8 @@ function decodePiece(code) {
 }
 
 async function runCase(page, id, label, verify) {
+  const targetScore = await call(page, 'cf_review_target_score', id);
+  const targetBonus = await call(page, 'cf_review_target_bonus', id);
   const ok = await call(page, 'cf_review_run_tactic', id);
   if (ok !== 1) return { line: `${label}: runner failed (${ok})`, error: true };
   const state = {
@@ -33,13 +35,15 @@ async function runCase(page, id, label, verify) {
     result: await call(page, 'cf_review_action_fart_result'),
     promotion: await call(page, 'cf_review_action_promotion'),
     score: await call(page, 'cf_review_action_score'),
+    targetScore,
+    targetBonus,
     whiteCheck: await call(page, 'cf_review_check', 1),
     blackCheck: await call(page, 'cf_review_check', 2),
     castle: await call(page, 'cf_review_castling_rights')
   };
   let error = null;
   try { await verify(state); } catch (e) { error = String(e.message || e); }
-  const base = `${label}: type=${state.type} from=${state.fromFile},${state.fromRank} to=${state.toFile},${state.toRank} dir=${state.dir} result=${state.result} promo=${state.promotion} score=${state.score} whiteCheck=${state.whiteCheck} blackCheck=${state.blackCheck} castle=${state.castle}`;
+  const base = `${label}: type=${state.type} from=${state.fromFile},${state.fromRank} to=${state.toFile},${state.toRank} dir=${state.dir} result=${state.result} promo=${state.promotion} depth2=${state.score} targetDepth1=${state.targetScore} targetBonus=${state.targetBonus} whiteCheck=${state.whiteCheck} blackCheck=${state.blackCheck} castle=${state.castle}`;
   return { line: error ? `${base} FAIL ${error}` : `${base} PASS`, error: !!error };
 }
 
@@ -60,18 +64,15 @@ try {
     if (s.type !== 2 || s.dir !== 2 || s.result !== 2 || s.whiteCheck !== 0)
       throw new Error(`expected Fart E PUSH that escapes check`);
   }));
-
   results.push(await runCase(page, 2, 'give-check', async (s) => {
     if (s.type !== 2 || s.dir !== 2 || s.result !== 2 || s.whiteCheck !== 1)
       throw new Error(`expected discovered-check Fart E PUSH`);
   }));
-
   results.push(await runCase(page, 3, 'wreck-castling', async (s) => {
     const king = decodePiece(await call(page, 'cf_review_piece_code', 5, 0));
     if (s.type !== 2 || s.dir !== 2 || s.result !== 2 || (s.castle & 3) !== 0 || king.type !== 6 || king.color !== 1)
       throw new Error(`expected king-displacing Fart E PUSH and lost white rights`);
   }));
-
   results.push(await runCase(page, 4, 'own-promotion', async (s) => {
     const promoted = decodePiece(await call(page, 'cf_review_piece_code', 5, 0));
     if (s.type !== 2 || s.dir !== 3 || s.result !== 4 || s.promotion !== 5 || promoted.type !== 5 || promoted.color !== 2)
