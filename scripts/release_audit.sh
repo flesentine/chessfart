@@ -3,7 +3,7 @@ set -eu
 
 VERSION="$(cat VERSION)"
 case "$VERSION" in
-  1.0.0-rc1) ;;
+  1.0.0) ;;
   *) echo "Unexpected VERSION: $VERSION" >&2; exit 1 ;;
 esac
 
