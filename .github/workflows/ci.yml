@@ -1,4 +1,4 @@
-name: Release Candidate CI
+name: Release CI
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and test host release candidate
+      - name: Build and test host release
         run: make test-build12
 
       - name: Set up Open Watcom 2.0 for DOS
@@ -45,16 +45,16 @@ jobs:
           test -s build/dos/DOSSMOKE.OK
           cat build/dos/DOSSMOKE.OK
 
-      - name: Package 1.0.0-rc1
+      - name: Package 1.0.0
         run: sh scripts/package_release.sh
 
-      - name: Preserve RC build, diagnostics and previews
+      - name: Preserve 1.0 build, diagnostics and previews
         uses: actions/upload-artifact@v4
         with:
-          name: chessfart-1.0.0-rc1
+          name: chessfart-1.0.0
           path: |
-            build/release/chessfart-1.0.0-rc1-dos.zip
-            build/release/chessfart-1.0.0-rc1-dos.zip.sha256
+            build/release/chessfart-1.0.0-dos.zip
+            build/release/chessfart-1.0.0-dos.zip.sha256
             build/dos/CHESSFRT.EXE
             build/dos/DOSSMOKE.OK
             build/host/PROFILE.txt
