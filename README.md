@@ -6,12 +6,15 @@ The design goal is **real strategy first, toilet humor second**.
 
 ## Project status
 
-**Build 12 — Chess Fart 1.0.0-rc1: release candidate complete.**
+**Chess Fart 1.0.0 — final release.**
 
-The automated RC gate now covers the entire game from rules through the DOS package:
+The automated release gate covers the entire game from rules through the DOS package:
 
 - complete legal chess plus Gas/Fart displacement rules
 - human White versus deterministic CPU Black
+- Fart-aware CPU tactical regressions, including check escape, forcing check, castling-right damage and pushed promotion
+- corrected Fart edge-bonus alpha-beta pruning
+- deterministic full Chromium games at Easy, Medium and Hard, each exercising live Fart mechanics
 - 320x200 256-color VGA presentation
 - Sound Blaster / PC-speaker audio architecture
 - versioned save/load and audio config
@@ -21,11 +24,13 @@ The automated RC gate now covers the entire game from rules through the DOS pack
 - host CPU/memory profiling and release-source audit
 - real 16-bit DOS `CHESSFRT.EXE` built with Open Watcom 2.0
 - DOSBox platform smoke covering VGA, mouse probe and audio initialization
-- verified `chessfart-1.0.0-rc1-dos.zip` with SHA-256
+- verified `chessfart-1.0.0-dos.zip` with SHA-256
+
+The final release does **not** claim exhaustive physical-hardware compatibility. Physical 386/486 systems, MS-DOS/FreeDOS variants, real Sound Blaster models and third-party DOS mouse drivers remain documented manual/community targets.
 
 See [`docs/BUILD_12.md`](docs/BUILD_12.md), [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md), and [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
 
-## Play the RC
+## Play 1.0
 
 The CI/release package contains:
 
@@ -69,7 +74,7 @@ With a compatible DOS mouse driver, left-click targets board/menu items and righ
 
 ## Verification
 
-Host RC gate:
+Host release gate:
 
 ```sh
 make test-build12
@@ -93,7 +98,7 @@ Classic Open Watcom users may use:
 wmake -f makefile.build12.dos dos
 ```
 
-Automated verification is intentionally not described as exhaustive hardware compatibility. Physical 386/486 systems, MS-DOS/FreeDOS versions, real Sound Blaster models and third-party mouse drivers remain manual/community RC targets.
+Automated verification is intentionally not described as exhaustive hardware compatibility. See `docs/COMPATIBILITY.md` for exactly what is verified and what remains unverified.
 
 ## Documentation
 
