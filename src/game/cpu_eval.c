@@ -74,7 +74,9 @@ int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
     int pf;
     int pr;
     int bonus;
+    int promotion_gain;
     unsigned lost_rights;
+    unsigned lost_actor_rights;
 
     (void)gas;
     if (after == 0 || action == 0 || undo == 0 || config == 0)
@@ -84,15 +86,21 @@ int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
     actor_color = board_other_color(after->side_to_move);
     opponent_color = after->side_to_move;
     bonus = 0;
+    target = &undo->fart.previous_target_piece;
 
     if (action->fart_result == CF_FART_PROMOTION) {
-        bonus += config->fart_bias + 150 + piece_value(action->promotion) / 6;
+        promotion_gain = piece_value(action->promotion) - piece_value(CF_PIECE_PAWN);
+        if (target->type == CF_PIECE_PAWN && target->color == actor_color)
+            bonus += config->fart_bias + 45 + promotion_gain / 10;
+        else if (target->type == CF_PIECE_PAWN && target->color == opponent_color)
+            bonus -= config->fart_bias + 60 + promotion_gain / 6;
+        else
+            bonus -= 80;
     } else if (action->fart_result == CF_FART_PUSH) {
         tf = action->from_file + df[(int)action->direction];
         tr = action->from_rank + dr[(int)action->direction];
         pf = tf + df[(int)action->direction];
         pr = tr + dr[(int)action->direction];
-        target = &undo->fart.previous_target_piece;
 
         if (target->type != CF_PIECE_NONE && target->color == opponent_color) {
             bonus += config->fart_bias + 12 + piece_value(target->type) / 25;
@@ -118,6 +126,10 @@ int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
     lost_rights = undo->fart.previous_castling_rights &
                   ~after->castling_rights & rights_for_color(opponent_color);
     bonus += bit_count(lost_rights) * 24;
+
+    lost_actor_rights = undo->fart.previous_castling_rights &
+                        ~after->castling_rights & rights_for_color(actor_color);
+    bonus -= bit_count(lost_actor_rights) * 20;
 
     return bonus;
 }

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cpu.h"
+#include "cpu_internal.h"
 
 static int failures;
 #define CHECK(expr) do { if (!(expr)) { \
@@ -208,6 +208,45 @@ static void test_cpu_avoids_useless_puff(void)
     CHECK(action.type == CF_CPU_ACTION_MOVE);
 }
 
+static void test_enemy_fart_promotion_is_penalized(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfCpuActionList list;
+    CfCpuConfig config;
+    CfCpuUndo undo;
+    int i;
+    int found;
+    int bonus;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 2, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 5, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 6, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    gas_set(&gas, 2, 5, 3U);
+    board.side_to_move = CF_COLOR_BLACK;
+    cpu_config_for_difficulty(&config, CF_CPU_MEDIUM);
+
+    cpu_generate_actions(&board, &gas, &list);
+    found = 0;
+    for (i = 0; i < list.count; ++i) {
+        if (list.actions[i].type != CF_CPU_ACTION_FART ||
+            list.actions[i].from_file != 2 || list.actions[i].from_rank != 5 ||
+            list.actions[i].direction != CF_FART_NE ||
+            list.actions[i].fart_result != CF_FART_PROMOTION) continue;
+        ++found;
+        CHECK(list.actions[i].order_score < 0);
+        CHECK(cpu_apply_action(&board, &gas, &list.actions[i], &undo));
+        bonus = cpu_internal_action_bonus(&board, &gas, &list.actions[i],
+                                          &undo, &config, 0);
+        CHECK(bonus < 0);
+        cpu_unapply_action(&board, &gas, &undo);
+    }
+    CHECK(found == 4);
+}
+
 static void test_budget_cap(void)
 {
     CfBoard board;
@@ -238,6 +277,7 @@ int main(void)
     test_fart_action_and_unmake();
     test_cpu_chooses_useful_enemy_push();
     test_cpu_avoids_useless_puff();
+    test_enemy_fart_promotion_is_penalized();
     test_budget_cap();
     if (failures != 0) {
         printf("Build 10 CPU tests failed: %d\n", failures);

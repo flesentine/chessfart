@@ -46,22 +46,35 @@ static int action_order_score(const CfBoard *board, const CfGasState *gas,
     }
 
     if (action->type != CF_CPU_ACTION_FART) return -CF_CPU_INF;
-    if (action->fart_result == CF_FART_PROMOTION) score += 1100;
-    else if (action->fart_result == CF_FART_PUSH) score += 120;
-    else if (action->fart_result == CF_FART_BLOCKED) score -= 50;
-    else if (action->fart_result == CF_FART_PUFF) score -= 80;
 
     tf = action->from_file + df[(int)action->direction];
     tr = action->from_rank + dr[(int)action->direction];
-    if (in_bounds(tf, tr)) {
-        target = board_piece_at(board, tf, tr);
-        actor = board_piece_at(board, action->from_file, action->from_rank);
+    target = in_bounds(tf, tr) ? board_piece_at(board, tf, tr) : 0;
+    actor = board_piece_at(board, action->from_file, action->from_rank);
+
+    if (action->fart_result == CF_FART_PROMOTION) {
+        if (target != 0 && target->type != CF_PIECE_NONE && actor != 0) {
+            if (target->color == actor->color)
+                score += 1500 + piece_value(action->promotion);
+            else
+                score -= 1500 + piece_value(action->promotion);
+        } else {
+            score -= 1500;
+        }
+    } else if (action->fart_result == CF_FART_PUSH) {
+        score += 120;
         if (target != 0 && target->type != CF_PIECE_NONE && actor != 0) {
             if (target->color != actor->color)
                 score += piece_value(target->type) / 2 + 40;
-            else score -= piece_value(target->type) / 5;
+            else
+                score -= piece_value(target->type) / 5;
         }
+    } else if (action->fart_result == CF_FART_BLOCKED) {
+        score -= 50;
+    } else if (action->fart_result == CF_FART_PUFF) {
+        score -= 80;
     }
+
     if (gas_at(gas, action->from_file, action->from_rank) == 3U) score += 10;
     return score;
 }
