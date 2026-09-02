@@ -194,6 +194,7 @@ static void test_cpu_avoids_useless_puff(void)
     board_clear(&board);
     gas_init(&gas);
     board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 0, 1, CF_PIECE_PAWN, CF_COLOR_WHITE);
     board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
     board_set_piece(&board, 2, 3, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
     gas_set(&gas, 2, 3, 2U);
