@@ -81,41 +81,41 @@ try {
   await press(page, 'Enter', 700);
   report.push(`start=${await shot(page, '02-start')}`);
 
-  /* Mouse play: 1. e2-e4 */
+  /* Open the center with the mouse: 1. e2-e4. */
   await clickSquare(page, 4, 1);
+  report.push(`select_e2=${await shot(page, '03-select-e2')}`);
   await clickSquare(page, 4, 3);
   await sleep(1200);
-  report.push(`e4=${await shot(page, '03-after-e4')}`);
+  report.push(`e4=${await shot(page, '04-after-e4')}`);
 
-  /* 2. Ng1-f3 */
-  await clickSquare(page, 6, 0);
-  await clickSquare(page, 5, 2);
+  /* Charge a quiet edge pawn where the CPU cannot immediately win it. */
+  await clickSquare(page, 7, 1);
+  await clickSquare(page, 7, 2);
   await sleep(1200);
-  report.push(`nf3=${await shot(page, '04-after-nf3')}`);
+  report.push(`h3=${await shot(page, '05-after-h3-gas1')}`);
 
-  /* 3. Nf3-g5. The knight should now have two Gas. */
-  await clickSquare(page, 5, 2);
-  await clickSquare(page, 6, 4);
+  await clickSquare(page, 7, 2);
+  await clickSquare(page, 7, 3);
   await sleep(1200);
-  report.push(`ng5=${await shot(page, '05-knight-g5-gas2')}`);
+  report.push(`h4=${await shot(page, '06-after-h4-gas2')}`);
 
-  /* Right click the charged knight, aim north, then fire. */
-  await clickSquare(page, 6, 4, 'right');
+  /* Right-click the charged H4 pawn, aim north, and fire. */
+  await clickSquare(page, 7, 3, 'right');
   await sleep(250);
-  report.push(`fartmode=${await shot(page, '06-fart-mode')}`);
+  report.push(`fartmode=${await shot(page, '07-fart-mode')}`);
   await press(page, 'ArrowUp');
   await press(page, 'Enter', 1200);
-  report.push(`fart=${await shot(page, '07-after-fart')}`);
+  report.push(`fart=${await shot(page, '08-after-fart')}`);
 
-  /* Review the action log as a player would. */
+  /* Review the actual human + CPU action history. */
   await press(page, 'm', 250);
-  report.push(`history=${await shot(page, '08-history')}`);
+  report.push(`history=${await shot(page, '09-history')}`);
   await press(page, 'Enter', 250);
 
-  /* Verify save/load controls during an active game. */
+  /* Verify persistence controls during the played position. */
   await press(page, 's', 250);
   await press(page, 'l', 450);
-  report.push(`reload=${await shot(page, '09-after-load')}`);
+  report.push(`reload=${await shot(page, '10-after-load')}`);
 
   if (errors.length) throw new Error(errors.join(' | '));
   fs.writeFileSync(path.join(outDir, 'playtest.txt'), `PASS\n${report.join('\n')}\n`);
