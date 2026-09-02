@@ -130,3 +130,6 @@ try {
   if (browser) await browser.close();
   server.kill('SIGTERM');
 }
+
+/* The release playtest also runs deterministic full games at every CPU level. */
+await import('./web_cpu_hardening.mjs');
