@@ -33,7 +33,8 @@ static void review_setup_tactic(int tactic)
         board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&g_board, 4, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
         board_set_piece(&g_board, 4, 1, CF_PIECE_PAWN, CF_COLOR_BLACK);
-        board_set_piece(&g_board, 3, 1, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 3, 1, CF_PIECE_ROOK, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 3, 0, CF_PIECE_BISHOP, CF_COLOR_BLACK);
         gas_set(&g_gas, 3, 1, 3U);
         g_board.side_to_move = CF_COLOR_BLACK;
     } else if (tactic == 3) {
