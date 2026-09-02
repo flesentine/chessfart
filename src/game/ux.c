@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "ux.h"
+#include "ui_layout.h"
 
 static void square_name(char out[3], int file, int rank)
 {
@@ -114,9 +115,11 @@ int ux_board_hit_test(int x, int y, int *file, int *rank)
 {
     int screen_file;
     int screen_rank;
-    if (x < 10 || y < 24 || x >= 170 || y >= 184) return 0;
-    screen_file = (x - 10) / 20;
-    screen_rank = (y - 24) / 20;
+    if (x < CF_UI_BOARD_X || y < CF_UI_BOARD_Y ||
+        x >= CF_UI_BOARD_X + CF_UI_BOARD_PIXELS ||
+        y >= CF_UI_BOARD_Y + CF_UI_BOARD_PIXELS) return 0;
+    screen_file = (x - CF_UI_BOARD_X) / CF_UI_SQUARE_SIZE;
+    screen_rank = (y - CF_UI_BOARD_Y) / CF_UI_SQUARE_SIZE;
     if (file != 0) *file = screen_file;
     if (rank != 0) *rank = 7 - screen_rank;
     return 1;
