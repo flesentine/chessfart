@@ -225,10 +225,13 @@ int main(void)
                                        &config, &current, &stats);
         old_ok = old_choose_action(&board, &gas, &history,
                                    &config, &old, &old_score);
-        if (current_ok && old_ok && !same_action(&current, &old)) {
+        if (current_ok && old_ok &&
+            (!same_action(&current, &old) || stats.score != old_score)) {
             dump_position(&board, &gas, seed);
             dump_action("CORRECTED", &current, stats.score);
             dump_action("OLD_WINDOW", &old, old_score);
+            printf("ACTION_DIFFERENT=%d SCORE_DIFFERENT=%d\n",
+                   !same_action(&current, &old), stats.score != old_score);
             return 0;
         }
     }
