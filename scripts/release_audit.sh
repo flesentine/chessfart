@@ -28,10 +28,9 @@ fi
 
 git diff --check
 
-# Temporary test probe: find one deterministic position where the corrected
-# edge-bonus alpha-beta window and the pre-v8 unshifted window choose
-# different root actions. This is replaced by a frozen regression fixture
-# before the PR is ready to merge.
+# Temporary test probe, revision 2: find one deterministic position where the
+# corrected edge-bonus alpha-beta window and the pre-v8 unshifted window choose
+# different root actions. This block is removed before the PR is merge-ready.
 mkdir -p build/host
 cc -std=c89 -pedantic -Wall -Wextra -Werror -O2 -Iinclude \
   tests/scan_alpha_beta.c \
