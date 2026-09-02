@@ -1,5 +1,5 @@
 EMCC ?= emcc
-WEB_CFLAGS = -O2 -Iinclude -DCF_WEB_BUILD \
+WEB_CFLAGS = -O2 -Iinclude -DCF_WEB_BUILD -DCF_WEB_REVIEW \
 	-DCF_DEFAULT_SAVE_PATH='"/persist/CHESSFRT.SAV"' \
 	-DCF_DEFAULT_CONFIG_PATH='"/persist/CHESSFRT.CFG"'
 
@@ -43,7 +43,7 @@ $(WEB_OUT): $(WEB_SOURCES) web/shell.html
 		-sALLOW_MEMORY_GROWTH=1 \
 		-sENVIRONMENT=web \
 		-sFORCE_FILESYSTEM=1 \
-		-sEXPORTED_RUNTIME_METHODS='["FS","IDBFS"]' \
+		-sEXPORTED_RUNTIME_METHODS='["FS","IDBFS","UTF8ToString"]' \
 		-lidbfs.js
 	touch build/web/.nojekyll
 
