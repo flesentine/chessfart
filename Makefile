@@ -56,6 +56,7 @@ TEST6_BINARY = build/host/test_build6
 TEST8_BINARY = build/host/test_build8
 TEST9_BINARY = build/host/test_build9
 TEST10_BINARY = build/host/test_build10
+TEST10_ALPHA_BINARY = build/host/test_build10_alpha_beta
 TEST11_BINARY = build/host/test_build11
 PROFILE12_BINARY = build/host/profile_build12
 
@@ -93,6 +94,10 @@ $(TEST10_BINARY): tests/test_build10.c $(CPU_SOURCES) include/cpu.h include/cpu_
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build10.c $(CPU_SOURCES) -o $(TEST10_BINARY)
 
+$(TEST10_ALPHA_BINARY): tests/test_build10_alpha_beta.c $(CPU_SOURCES) include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
+	mkdir -p build/host
+	$(CC) $(CFLAGS) tests/test_build10_alpha_beta.c $(CPU_SOURCES) -o $(TEST10_ALPHA_BINARY)
+
 $(TEST11_BINARY): tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c include/ux.h include/cpu.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c -o $(TEST11_BINARY)
@@ -106,13 +111,14 @@ host-run: host
 
 test: test-build12
 
-test-build11: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) $(TEST9_BINARY) $(TEST10_BINARY) $(TEST11_BINARY) $(HOST_BINARY)
+test-build11: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) $(TEST9_BINARY) $(TEST10_BINARY) $(TEST10_ALPHA_BINARY) $(TEST11_BINARY) $(HOST_BINARY)
 	./$(TEST4_BINARY)
 	./$(TEST5_BINARY)
 	./$(TEST6_BINARY)
 	./$(TEST8_BINARY)
 	./$(TEST9_BINARY)
 	./$(TEST10_BINARY)
+	./$(TEST10_ALPHA_BINARY)
 	./$(TEST11_BINARY)
 	./$(HOST_BINARY)
 	test -s $(HOST_PREVIEW)
