@@ -22,18 +22,25 @@ function decodePiece(code) {
 
 async function runCase(page, id, label, verify) {
   const ok = await call(page, 'cf_review_run_tactic', id);
-  if (ok !== 1) throw new Error(`${label}: tactic runner failed (${ok})`);
+  if (ok !== 1) return { line: `${label}: runner failed (${ok})`, error: true };
   const state = {
     type: await call(page, 'cf_review_action_type'),
+    fromFile: await call(page, 'cf_review_action_from_file'),
+    fromRank: await call(page, 'cf_review_action_from_rank'),
+    toFile: await call(page, 'cf_review_action_to_file'),
+    toRank: await call(page, 'cf_review_action_to_rank'),
     dir: await call(page, 'cf_review_action_direction'),
     result: await call(page, 'cf_review_action_fart_result'),
     promotion: await call(page, 'cf_review_action_promotion'),
+    score: await call(page, 'cf_review_action_score'),
     whiteCheck: await call(page, 'cf_review_check', 1),
     blackCheck: await call(page, 'cf_review_check', 2),
     castle: await call(page, 'cf_review_castling_rights')
   };
-  await verify(state);
-  return `${label}: type=${state.type} dir=${state.dir} result=${state.result} promo=${state.promotion} whiteCheck=${state.whiteCheck} blackCheck=${state.blackCheck} castle=${state.castle}`;
+  let error = null;
+  try { await verify(state); } catch (e) { error = String(e.message || e); }
+  const base = `${label}: type=${state.type} from=${state.fromFile},${state.fromRank} to=${state.toFile},${state.toRank} dir=${state.dir} result=${state.result} promo=${state.promotion} score=${state.score} whiteCheck=${state.whiteCheck} blackCheck=${state.blackCheck} castle=${state.castle}`;
+  return { line: error ? `${base} FAIL ${error}` : `${base} PASS`, error: !!error };
 }
 
 let browser;
@@ -48,33 +55,36 @@ try {
   await page.waitForFunction(() => document.getElementById('status')?.textContent.startsWith('Ready'), { timeout: 15000 });
   await page.waitForFunction(() => typeof Module._cf_review_run_tactic === 'function', { timeout: 15000 });
 
-  const lines = [];
-  lines.push(await runCase(page, 1, 'escape-check', async (s) => {
+  const results = [];
+  results.push(await runCase(page, 1, 'escape-check', async (s) => {
     if (s.type !== 2 || s.dir !== 2 || s.result !== 2 || s.whiteCheck !== 0)
-      throw new Error(`escape-check chose wrong action ${JSON.stringify(s)}`);
+      throw new Error(`expected Fart E PUSH that escapes check`);
   }));
 
-  lines.push(await runCase(page, 2, 'give-check', async (s) => {
+  results.push(await runCase(page, 2, 'give-check', async (s) => {
     if (s.type !== 2 || s.dir !== 2 || s.result !== 2 || s.whiteCheck !== 1)
-      throw new Error(`give-check chose wrong action ${JSON.stringify(s)}`);
+      throw new Error(`expected discovered-check Fart E PUSH`);
   }));
 
-  lines.push(await runCase(page, 3, 'wreck-castling', async (s) => {
+  results.push(await runCase(page, 3, 'wreck-castling', async (s) => {
     const king = decodePiece(await call(page, 'cf_review_piece_code', 5, 0));
     if (s.type !== 2 || s.dir !== 2 || s.result !== 2 || (s.castle & 3) !== 0 || king.type !== 6 || king.color !== 1)
-      throw new Error(`wreck-castling chose wrong action ${JSON.stringify({...s,king})}`);
+      throw new Error(`expected king-displacing Fart E PUSH and lost white rights`);
   }));
 
-  lines.push(await runCase(page, 4, 'own-promotion', async (s) => {
+  results.push(await runCase(page, 4, 'own-promotion', async (s) => {
     const promoted = decodePiece(await call(page, 'cf_review_piece_code', 5, 0));
     if (s.type !== 2 || s.dir !== 3 || s.result !== 4 || s.promotion !== 5 || promoted.type !== 5 || promoted.color !== 2)
-      throw new Error(`own-promotion chose wrong action ${JSON.stringify({...s,promoted})}`);
+      throw new Error(`expected own-pawn Fart SE promotion to queen`);
   }));
 
-  if (errors.length) throw new Error(errors.join(' | '));
-  lines.push('PASS: all four CPU Fart tactics selected correctly in Chromium/WASM');
+  const lines = results.map(r => r.line);
+  if (errors.length) lines.push(...errors);
+  const failures = results.filter(r => r.error).length + errors.length;
+  lines.push(`TACTIC_FAILURES=${failures}`);
   fs.writeFileSync(`${outDir}/tactics.txt`, lines.join('\n') + '\n');
   console.log(lines.join('\n'));
+  if (failures) throw new Error(`${failures} tactical CPU case(s) failed`);
 } finally {
   if (browser) await browser.close();
   server.kill('SIGTERM');
