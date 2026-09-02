@@ -139,6 +139,24 @@ static CfInputKey5 ux_mouse_direction(int dx, int dy)
     return CF5_KEY_NONE;
 }
 
+static CfInputKey5 ux_begin_mouse_target(int file, int rank, int fart_after_select)
+{
+    int dx;
+    int dy;
+    if (!g_ux_cache.valid) return CF5_KEY_NONE;
+    g_ux_mouse_target_file = file;
+    g_ux_mouse_target_rank = rank;
+    g_ux_mouse_target_active = 1;
+    g_ux_mouse_fart_pending = fart_after_select ? 1 : 0;
+    dx = file - g_ux_cache.cursor_file;
+    dy = rank - g_ux_cache.cursor_rank;
+    if (dx != 0) return dx > 0 ? CF5_KEY_RIGHT : CF5_KEY_LEFT;
+    if (dy != 0) return dy > 0 ? CF5_KEY_UP : CF5_KEY_DOWN;
+    g_ux_mouse_target_active = 0;
+    if (g_ux_mouse_fart_pending == 1) g_ux_mouse_fart_pending = 2;
+    return CF5_KEY_ENTER;
+}
+
 CfInputKey5 ux_poll_key(void)
 {
     CfInputKey5 key;
@@ -152,18 +170,27 @@ CfInputKey5 ux_poll_key(void)
         g_ux_mouse_confirm_pending = 0;
         return CF5_KEY_ENTER;
     }
+    if (g_ux_mouse_fart_pending == 2) {
+        g_ux_mouse_fart_pending = 0;
+        return CF5_KEY_FART;
+    }
     if (g_ux_mouse_target_active && g_ux_cache.valid) {
         dx = g_ux_mouse_target_file - g_ux_cache.cursor_file;
         dy = g_ux_mouse_target_rank - g_ux_cache.cursor_rank;
         if (dx != 0) return dx > 0 ? CF5_KEY_RIGHT : CF5_KEY_LEFT;
         if (dy != 0) return dy > 0 ? CF5_KEY_UP : CF5_KEY_DOWN;
         g_ux_mouse_target_active = 0;
+        if (g_ux_mouse_fart_pending == 1) g_ux_mouse_fart_pending = 2;
         return CF5_KEY_ENTER;
     }
     if (mouse_poll(&mouse) && mouse.present) {
         pressed = mouse.buttons & ~g_ux_mouse_buttons;
         g_ux_mouse_buttons = mouse.buttons;
-        if ((pressed & 2U) != 0U) return CF5_KEY_FART;
+        if ((pressed & 2U) != 0U &&
+            ux_board_hit_test(mouse.x, mouse.y, &file, &rank) &&
+            g_ux_cache.valid && !g_ux_cache.fart_mode) {
+            return ux_begin_mouse_target(file, rank, 1);
+        }
         if ((pressed & 1U) != 0U &&
             ux_board_hit_test(mouse.x, mouse.y, &file, &rank) &&
             g_ux_cache.valid) {
@@ -179,15 +206,7 @@ CfInputKey5 ux_poll_key(void)
                     }
                 }
             } else {
-                g_ux_mouse_target_file = file;
-                g_ux_mouse_target_rank = rank;
-                g_ux_mouse_target_active = 1;
-                dx = file - g_ux_cache.cursor_file;
-                dy = rank - g_ux_cache.cursor_rank;
-                if (dx != 0) return dx > 0 ? CF5_KEY_RIGHT : CF5_KEY_LEFT;
-                if (dy != 0) return dy > 0 ? CF5_KEY_UP : CF5_KEY_DOWN;
-                g_ux_mouse_target_active = 0;
-                return CF5_KEY_ENTER;
+                return ux_begin_mouse_target(file, rank, 0);
             }
         }
     }
