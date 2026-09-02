@@ -48,6 +48,7 @@ static int g_ux_mouse_target_active;
 static int g_ux_mouse_target_file;
 static int g_ux_mouse_target_rank;
 static int g_ux_mouse_confirm_pending;
+static int g_ux_mouse_fart_pending;
 
 int ux_title_screen(const char *config_path);
 void ux_render_game(const CfBoard *, const CfGasState *, int, int, int, int, int,
@@ -102,6 +103,7 @@ int main(void)
     g_ux_mouse_buttons = 0U;
     g_ux_mouse_target_active = 0;
     g_ux_mouse_confirm_pending = 0;
+    g_ux_mouse_fart_pending = 0;
     (void)mouse_init();
     result = chessfart_build9_ux_main();
     mouse_shutdown();
