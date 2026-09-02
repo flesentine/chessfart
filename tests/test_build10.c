@@ -31,6 +31,14 @@ static int same_gas(const CfGasState *a, const CfGasState *b)
     return memcmp(a->squares, b->squares, sizeof(a->squares)) == 0;
 }
 
+static void tactical_hard_config(CfCpuConfig *config)
+{
+    cpu_config_for_difficulty(config, CF_CPU_HARD);
+    config->max_depth = 2;
+    config->node_budget = 0UL;
+    config->time_limit_ms = 0UL;
+}
+
 static void test_difficulty_config(void)
 {
     CfCpuConfig easy;
@@ -247,6 +255,149 @@ static void test_enemy_fart_promotion_is_penalized(void)
     CHECK(found == 4);
 }
 
+static void test_cpu_fart_escapes_check(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+    CfCpuUndo undo;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 1, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 0, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    board_set_piece(&board, 1, 2, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    gas_set(&gas, 0, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    gas_history_init(&history, &board, &gas);
+    CHECK(board_is_in_check(&board, CF_COLOR_WHITE));
+
+    tactical_hard_config(&config);
+    CHECK(cpu_choose_action(&board, &gas, &history, &config, &action, &stats));
+    CHECK(action.type == CF_CPU_ACTION_FART);
+    CHECK(action.from_file == 0 && action.from_rank == 2);
+    CHECK(action.direction == CF_FART_E);
+    CHECK(action.fart_result == CF_FART_PUSH);
+    CHECK(cpu_apply_action(&board, &gas, &action, &undo));
+    CHECK(!board_is_in_check(&board, CF_COLOR_WHITE));
+    cpu_unapply_action(&board, &gas, &undo);
+}
+
+static void test_cpu_fart_gives_forcing_check(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+    CfCpuUndo undo;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 4, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    board_set_piece(&board, 4, 1, CF_PIECE_PAWN, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 1, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 0, CF_PIECE_BISHOP, CF_COLOR_BLACK);
+    board_set_piece(&board, 1, 2, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+    gas_set(&gas, 3, 1, 3U);
+    board.side_to_move = CF_COLOR_BLACK;
+    gas_history_init(&history, &board, &gas);
+    CHECK(!board_is_in_check(&board, CF_COLOR_WHITE));
+
+    tactical_hard_config(&config);
+    CHECK(cpu_choose_action(&board, &gas, &history, &config, &action, &stats));
+    CHECK(action.type == CF_CPU_ACTION_FART);
+    CHECK(action.from_file == 3 && action.from_rank == 1);
+    CHECK(action.direction == CF_FART_E);
+    CHECK(action.fart_result == CF_FART_PUSH);
+    CHECK(cpu_apply_action(&board, &gas, &action, &undo));
+    CHECK(board.squares[1][5].type == CF_PIECE_PAWN);
+    CHECK(board.squares[1][5].color == CF_COLOR_BLACK);
+    CHECK(board_is_in_check(&board, CF_COLOR_WHITE));
+    cpu_unapply_action(&board, &gas, &undo);
+}
+
+static void test_cpu_fart_wrecks_castling_with_check(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+    CfCpuUndo undo;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 0, 0, CF_PIECE_ROOK, CF_COLOR_WHITE);
+    board_set_piece(&board, 1, 0, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    board_set_piece(&board, 2, 0, CF_PIECE_BISHOP, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 0, CF_PIECE_ROOK, CF_COLOR_WHITE);
+    board_set_piece(&board, 6, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 5, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 0, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+    gas_set(&gas, 3, 0, 3U);
+    board.castling_rights = CF_CASTLE_WHITE_KING | CF_CASTLE_WHITE_QUEEN;
+    board.side_to_move = CF_COLOR_BLACK;
+    gas_history_init(&history, &board, &gas);
+
+    tactical_hard_config(&config);
+    CHECK(cpu_choose_action(&board, &gas, &history, &config, &action, &stats));
+    CHECK(action.type == CF_CPU_ACTION_FART);
+    CHECK(action.from_file == 3 && action.from_rank == 0);
+    CHECK(action.direction == CF_FART_E);
+    CHECK(action.fart_result == CF_FART_PUSH);
+    CHECK(cpu_apply_action(&board, &gas, &action, &undo));
+    CHECK(board.squares[0][5].type == CF_PIECE_KING);
+    CHECK(board.squares[0][5].color == CF_COLOR_WHITE);
+    CHECK((board.castling_rights &
+           (CF_CASTLE_WHITE_KING | CF_CASTLE_WHITE_QUEEN)) == 0U);
+    CHECK(board_is_in_check(&board, CF_COLOR_WHITE));
+    cpu_unapply_action(&board, &gas, &undo);
+}
+
+static void test_cpu_fart_promotes_own_pawn(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+    CfCpuUndo undo;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 2, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+    board_set_piece(&board, 4, 1, CF_PIECE_PAWN, CF_COLOR_BLACK);
+    board_set_piece(&board, 4, 0, CF_PIECE_BISHOP, CF_COLOR_BLACK);
+    gas_set(&gas, 3, 2, 3U);
+    board.side_to_move = CF_COLOR_BLACK;
+    gas_history_init(&history, &board, &gas);
+
+    tactical_hard_config(&config);
+    CHECK(cpu_choose_action(&board, &gas, &history, &config, &action, &stats));
+    CHECK(action.type == CF_CPU_ACTION_FART);
+    CHECK(action.from_file == 3 && action.from_rank == 2);
+    CHECK(action.direction == CF_FART_SE);
+    CHECK(action.fart_result == CF_FART_PROMOTION);
+    CHECK(action.promotion == CF_PIECE_QUEEN);
+    CHECK(cpu_apply_action(&board, &gas, &action, &undo));
+    CHECK(board.squares[0][5].type == CF_PIECE_QUEEN);
+    CHECK(board.squares[0][5].color == CF_COLOR_BLACK);
+    cpu_unapply_action(&board, &gas, &undo);
+}
+
 static void test_budget_cap(void)
 {
     CfBoard board;
@@ -278,6 +429,10 @@ int main(void)
     test_cpu_chooses_useful_enemy_push();
     test_cpu_avoids_useless_puff();
     test_enemy_fart_promotion_is_penalized();
+    test_cpu_fart_escapes_check();
+    test_cpu_fart_gives_forcing_check();
+    test_cpu_fart_wrecks_castling_with_check();
+    test_cpu_fart_promotes_own_pawn();
     test_budget_cap();
     if (failures != 0) {
         printf("Build 10 CPU tests failed: %d\n", failures);
