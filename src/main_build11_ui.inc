@@ -179,7 +179,43 @@ static void ux_square_name(char *out, int file, int rank)
     out[2] = '\0';
 }
 
-static void ux_draw_retail_panel(const CfBoard *board,
+static void ux_draw_action_two_lines(int x, int y,
+                                     const char *text, cf_u8 color)
+{
+    char first[21];
+    char second[21];
+    int len;
+    int split;
+    int start;
+
+    if (text == 0 || text[0] == '\0') {
+        font_draw_text(x, y, "NONE YET", UX_COL_MUTED, 1);
+        return;
+    }
+
+    len = (int)strlen(text);
+    if (len <= 20) {
+        font_draw_text_clipped(x, y, text, color, 1, CF_UI_HUD_DIVIDER_W);
+        return;
+    }
+
+    split = 20;
+    while (split > 0 && text[split] != ' ') --split;
+    if (split == 0) split = 20;
+
+    strncpy(first, text, (size_t)split);
+    first[split] = '\0';
+    start = split;
+    while (text[start] == ' ') ++start;
+    strncpy(second, text + start, 20U);
+    second[20] = '\0';
+
+    font_draw_text_clipped(x, y, first, color, 1, CF_UI_HUD_DIVIDER_W);
+    font_draw_text_clipped(x, CF_UI_HUD_ACTION_LINE2_Y,
+                           second, color, 1, CF_UI_HUD_DIVIDER_W);
+}
+
+static void ux_draw_legacy_panel(const CfBoard *board,
                                  const CfGasState *gas,
                                  int cursor_file,
                                  int cursor_rank,
@@ -247,7 +283,113 @@ static void ux_draw_retail_panel(const CfBoard *board,
     }
 }
 
-static void ux_draw_command_bar(void)
+static void ux_draw_retail_panel(const CfBoard *board,
+                                 const CfGasState *gas,
+                                 int cursor_file,
+                                 int cursor_rank,
+                                 int has_selection,
+                                 int selected_file,
+                                 int selected_rank,
+                                 CfGameStatus status,
+                                 const char *action_text,
+                                 int fart_mode)
+{
+    const CfPiece *piece;
+    const char *mode_label;
+    int pf;
+    int pr;
+    cf_u8 piece_gas;
+    char square[3];
+    char line[16];
+
+    if (fart_mode) {
+        ux_draw_legacy_panel(board, gas, cursor_file, cursor_rank,
+                             has_selection, selected_file, selected_rank,
+                             status, action_text);
+        return;
+    }
+
+    pf = has_selection ? selected_file : cursor_file;
+    pr = has_selection ? selected_rank : cursor_rank;
+    piece = board_piece_at(board, pf, pr);
+    piece_gas = 0U;
+    ux_square_name(square, pf, pr);
+
+    if (has_selection)
+        mode_label = "SELECTED";
+    else if (piece != 0 && piece->type != CF_PIECE_NONE)
+        mode_label = "CURSOR";
+    else
+        mode_label = "EMPTY";
+
+    ux_panel_outline();
+
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_TURN_Y,
+                   "TURN", UX_COL_GOLD, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_TURN_Y,
+                   board_piece_color_name(board->side_to_move), UX_COL_TEXT, 1);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_STATE_Y,
+                   "STATE", UX_COL_MUTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_STATE_Y,
+                   board_game_status_name(status),
+                   status == CF_GAME_CHECK || status == CF_GAME_CHECKMATE ?
+                   CF_UI_COL_CHECK : UX_COL_GREEN, 1);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER1_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_PIECE_LABEL_Y,
+                   mode_label,
+                   has_selection ? UX_COL_SELECTED :
+                   (piece != 0 && piece->type != CF_PIECE_NONE ?
+                    UX_COL_CURSOR : UX_COL_MUTED), 1);
+    vga_fill_rect(CF_UI_HUD_PIECE_BOX_X, CF_UI_HUD_PIECE_BOX_Y,
+                  22, 22, UX_COL_PANEL_EDGE);
+    vga_fill_rect(CF_UI_HUD_PIECE_BOX_X + 2, CF_UI_HUD_PIECE_BOX_Y + 2,
+                  18, 18, UX_COL_PANEL_SOFT);
+
+    if (piece != 0 && piece->type != CF_PIECE_NONE) {
+        ui_assets_draw_piece(CF_UI_HUD_PIECE_BOX_X + 2,
+                             CF_UI_HUD_PIECE_BOX_Y + 3,
+                             piece, UX_COL_PANEL_SOFT);
+        font_draw_text(CF_UI_HUD_PIECE_TEXT_X, CF_UI_HUD_PIECE_NAME_Y,
+                       board_piece_type_name(piece->type), UX_COL_TEXT, 1);
+        piece_gas = gas_at(gas, pf, pr);
+    }
+    font_draw_text(CF_UI_HUD_PIECE_TEXT_X, CF_UI_HUD_PIECE_SQUARE_Y,
+                   square, UX_COL_CURSOR, 1);
+
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER2_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_GAS_LABEL_Y,
+                   "GAS", UX_COL_GOLD, 1);
+    if (piece != 0 && piece->type != CF_PIECE_NONE) {
+        ux_draw_gas_pips(CF_UI_HUD_LABEL_X + 1,
+                         CF_UI_HUD_GAS_PIPS_Y, piece_gas);
+        sprintf(line, "%u/3", (unsigned)piece_gas);
+        font_draw_text(CF_UI_HUD_VALUE_X + 9, CF_UI_HUD_GAS_PIPS_Y,
+                       line, piece_gas >= 2U ? UX_COL_GAS : UX_COL_MUTED, 1);
+    } else {
+        font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_GAS_LABEL_Y,
+                       "N/A", UX_COL_MUTED, 1);
+    }
+
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER3_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_CPU_Y,
+                   "CPU", UX_COL_SELECTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_CPU_Y,
+                   cpu_difficulty_name(g_cpu_config.difficulty), UX_COL_GOLD, 1);
+
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER4_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_ACTION_LABEL_Y,
+                   "LAST ACTION", UX_COL_SELECTED, 1);
+    ux_draw_action_two_lines(CF_UI_HUD_LABEL_X,
+                             CF_UI_HUD_ACTION_LINE1_Y,
+                             action_text, UX_COL_TEXT);
+}
+
+static void ux_draw_legacy_command_bar(void)
 {
     static const char *labels[8] = {
         "F FART", "S SAVE", "L LOAD", "H HELP",
@@ -267,6 +409,34 @@ static void ux_draw_command_bar(void)
         font_draw_text(x + 3, CF_UI_COMMAND_Y + 6, labels[i],
                        i == 0 ? UX_COL_GAS : UX_COL_TEXT, 1);
     }
+}
+
+static void ux_draw_command_bar(const CfBoard *board, int fart_mode)
+{
+    char line[16];
+
+    if (fart_mode) {
+        ux_draw_legacy_command_bar();
+        return;
+    }
+
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, CF_UI_COMMAND_H, UX_COL_BG);
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, 1, UX_COL_GOLD);
+    sprintf(line, "%s TO MOVE", board_piece_color_name(board->side_to_move));
+    font_draw_text(CF_UI_PROMPT_TURN_X, CF_UI_PROMPT_TEXT_Y,
+                   line, UX_COL_GOLD, 1);
+    font_draw_text(CF_UI_PROMPT_FART_X, CF_UI_PROMPT_TEXT_Y,
+                   "F FART", UX_COL_GAS, 1);
+    font_draw_text(CF_UI_PROMPT_SAVE_X, CF_UI_PROMPT_TEXT_Y,
+                   "S SAVE", UX_COL_TEXT, 1);
+    font_draw_text(CF_UI_PROMPT_LOAD_X, CF_UI_PROMPT_TEXT_Y,
+                   "L LOAD", UX_COL_TEXT, 1);
+    font_draw_text(CF_UI_PROMPT_HELP_X, CF_UI_PROMPT_TEXT_Y,
+                   "H HELP", UX_COL_TEXT, 1);
+    font_draw_text(CF_UI_PROMPT_ESC_X, CF_UI_PROMPT_TEXT_Y,
+                   "ESC MENU", UX_COL_MUTED, 1);
 }
 
 static void ux_render_cached_base(void)
@@ -297,8 +467,8 @@ static void ux_render_cached_base(void)
                          g_ux_cache.cursor_file, g_ux_cache.cursor_rank,
                          g_ux_cache.has_selection,
                          g_ux_cache.selected_file, g_ux_cache.selected_rank,
-                         g_ux_cache.status, action);
-    ux_draw_command_bar();
+                         g_ux_cache.status, action, g_ux_cache.fart_mode);
+    ux_draw_command_bar(&g_ux_cache.board, g_ux_cache.fart_mode);
 
     if (ux_terminal(g_ux_cache.status))
         ux_draw_terminal_overlay(g_ux_cache.status,
@@ -393,8 +563,8 @@ static void ux_run_attract(void)
                             1, CF_FART_NE, CF_FART_PUSH, 0,
                             CF_PIECE_QUEEN, "CHARGED KNIGHT");
     ux_draw_retail_panel(&before_board, &before_gas, 2, 2, 1, 2, 2,
-                         CF_GAME_ONGOING, "AIM NE TO PUSH");
-    ux_draw_command_bar();
+                         CF_GAME_ONGOING, "AIM NE TO PUSH", 1);
+    ux_draw_command_bar(&before_board, 1);
     vga_present();
 
     if (gas_make_fart(&after_board, &after_gas, 2, 2, CF_FART_NE,
@@ -406,8 +576,8 @@ static void ux_run_attract(void)
                                 0, CF_FART_NE, CF_FART_INVALID, 0,
                                 CF_PIECE_QUEEN, "D4 BLASTED TO E5");
         ux_draw_retail_panel(&after_board, &after_gas, 2, 2, 0, 0, 0,
-                             CF_GAME_ONGOING, "D4 BLASTED TO E5");
-        ux_draw_command_bar();
+                             CF_GAME_ONGOING, "D4 BLASTED TO E5", 0);
+        ux_draw_command_bar(&after_board, 0);
         vga_present();
     }
 }
@@ -427,8 +597,8 @@ static void ux_render_terminal_preview(void)
                             CF_FART_N, CF_FART_INVALID, 0,
                             CF_PIECE_QUEEN, "CHECKMATE");
     ux_draw_retail_panel(&board, &gas, 4, 1, 0, 0, 0,
-                         CF_GAME_CHECKMATE, "CHECKMATE");
-    ux_draw_command_bar();
+                         CF_GAME_CHECKMATE, "CHECKMATE", 0);
+    ux_draw_command_bar(&board, 0);
     ux_draw_terminal_overlay(CF_GAME_CHECKMATE, CF_COLOR_BLACK);
     vga_present();
 }
