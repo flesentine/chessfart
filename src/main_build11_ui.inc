@@ -283,6 +283,12 @@ static void ux_draw_legacy_panel(const CfBoard *board,
     }
 }
 
+static const char *ux_hud_status_name(CfGameStatus status)
+{
+    if (status == CF_GAME_DRAW_THREEFOLD) return "DRAW 3-FOLD";
+    return board_game_status_name(status);
+}
+
 static void ux_draw_retail_panel(const CfBoard *board,
                                  const CfGasState *gas,
                                  int cursor_file,
@@ -330,10 +336,12 @@ static void ux_draw_retail_panel(const CfBoard *board,
                    board_piece_color_name(board->side_to_move), UX_COL_TEXT, 1);
     font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_STATE_Y,
                    "STATE", UX_COL_MUTED, 1);
-    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_STATE_Y,
-                   board_game_status_name(status),
-                   status == CF_GAME_CHECK || status == CF_GAME_CHECKMATE ?
-                   CF_UI_COL_CHECK : UX_COL_GREEN, 1);
+    font_draw_text_clipped(CF_UI_HUD_VALUE_X, CF_UI_HUD_STATE_Y,
+                           ux_hud_status_name(status),
+                           status == CF_GAME_CHECK || status == CF_GAME_CHECKMATE ?
+                           CF_UI_COL_CHECK : UX_COL_GREEN, 1,
+                           CF_UI_PANEL_CONTENT_X + CF_UI_PANEL_CONTENT_W -
+                           CF_UI_HUD_VALUE_X);
     vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER1_Y,
                   CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
 
