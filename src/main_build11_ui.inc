@@ -1,5 +1,7 @@
 #include <time.h>
 #include "ui_assets.h"
+#include "ui_layout.h"
+#include "ui_theme.h"
 
 #ifdef CF_HOST_BUILD
 void vga_host_capture(const char *stem);
@@ -8,19 +10,19 @@ static void ux_capture(const char *stem) { vga_host_capture(stem); }
 static void ux_capture(const char *stem) { (void)stem; }
 #endif
 
-#define UX_COL_BG 0
-#define UX_COL_PANEL 1
-#define UX_COL_GOLD 4
-#define UX_COL_TEXT 5
-#define UX_COL_MUTED 6
-#define UX_COL_GREEN 7
-#define UX_COL_GAS 8
-#define UX_COL_PANEL_EDGE 10
-#define UX_COL_CURSOR 15
-#define UX_COL_SELECTED 16
-#define UX_COL_SHADOW 17
-#define UX_COL_PANEL_LINE 28
-#define UX_COL_PANEL_SOFT 29
+#define UX_COL_BG CF_UI_COL_BG
+#define UX_COL_PANEL CF_UI_COL_PANEL
+#define UX_COL_GOLD CF_UI_COL_GOLD
+#define UX_COL_TEXT CF_UI_COL_TEXT
+#define UX_COL_MUTED CF_UI_COL_MUTED
+#define UX_COL_GREEN CF_UI_COL_GREEN
+#define UX_COL_GAS CF_UI_COL_GAS
+#define UX_COL_PANEL_EDGE CF_UI_COL_PANEL_EDGE
+#define UX_COL_CURSOR CF_UI_COL_CURSOR
+#define UX_COL_SELECTED CF_UI_COL_SELECTED
+#define UX_COL_SHADOW CF_UI_COL_SHADOW
+#define UX_COL_PANEL_LINE CF_UI_COL_PANEL_LINE
+#define UX_COL_PANEL_SOFT CF_UI_COL_PANEL_SOFT
 
 static void ux_stamp_build11(void)
 {
@@ -143,10 +145,15 @@ static void ux_draw_title(int menu, int frame)
 
 static void ux_panel_outline(void)
 {
-    vga_fill_rect(170, 24, 143, 151, UX_COL_PANEL_EDGE);
-    vga_fill_rect(172, 26, 139, 147, UX_COL_PANEL);
-    vga_fill_rect(172, 26, 139, 1, UX_COL_GOLD);
-    vga_fill_rect(172, 172, 139, 1, UX_COL_SHADOW);
+    vga_fill_rect(CF_UI_PANEL_X, CF_UI_PANEL_Y,
+                  CF_UI_PANEL_W, CF_UI_PANEL_H, UX_COL_PANEL_EDGE);
+    vga_fill_rect(CF_UI_PANEL_X + 2, CF_UI_PANEL_Y + 2,
+                  CF_UI_PANEL_W - 4, CF_UI_PANEL_H - 4, UX_COL_PANEL);
+    vga_fill_rect(CF_UI_PANEL_X + 2, CF_UI_PANEL_Y + 2,
+                  CF_UI_PANEL_W - 4, 1, UX_COL_GOLD);
+    vga_fill_rect(CF_UI_PANEL_X + 2,
+                  CF_UI_PANEL_Y + CF_UI_PANEL_H - 3,
+                  CF_UI_PANEL_W - 4, 1, UX_COL_SHADOW);
 }
 
 static void ux_draw_gas_pips(int x, int y, cf_u8 gas)
@@ -249,13 +256,15 @@ static void ux_draw_command_bar(void)
     int i;
     int x;
 
-    vga_fill_rect(0, 181, 320, 19, UX_COL_BG);
-    vga_fill_rect(0, 181, 320, 1, UX_COL_GOLD);
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, CF_UI_COMMAND_H, UX_COL_BG);
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, 1, UX_COL_GOLD);
     for (i = 0; i < 8; ++i) {
         x = i * 40;
-        vga_fill_rect(x + 1, 183, 38, 15, UX_COL_PANEL_EDGE);
-        vga_fill_rect(x + 2, 184, 36, 13, UX_COL_PANEL_SOFT);
-        font_draw_text(x + 3, 187, labels[i],
+        vga_fill_rect(x + 1, CF_UI_COMMAND_Y + 2, 38, 15, UX_COL_PANEL_EDGE);
+        vga_fill_rect(x + 2, CF_UI_COMMAND_Y + 3, 36, 13, UX_COL_PANEL_SOFT);
+        font_draw_text(x + 3, CF_UI_COMMAND_Y + 6, labels[i],
                        i == 0 ? UX_COL_GAS : UX_COL_TEXT, 1);
     }
 }
