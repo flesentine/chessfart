@@ -77,3 +77,70 @@ EMSCRIPTEN_KEEPALIVE const char *cf_review_history_line(int index)
     line = ux_history_get(&g_ux_history, index);
     return line != 0 ? line : "";
 }
+
+/*
+ * Build 13 visual-review fixtures. These exist only in CF_WEB_REVIEW builds
+ * so Chromium can capture rare but important UI states deterministically.
+ * They never ship in the DOS/release gameplay path.
+ *
+ * fixture 0: charged H4 pawn, north Fart push preview H5 -> H6
+ * fixture 1: White to move in CHECK
+ * fixture 2: White to move in CHECKMATE
+ */
+EMSCRIPTEN_KEEPALIVE int cf_review_render_fixture(int fixture)
+{
+    CfMoveList moves;
+    CfGameStatus status;
+    CfFartPreview preview;
+
+    moves.count = 0;
+    board_clear(&g_board);
+    gas_init(&g_gas);
+
+    if (fixture == 0) {
+        board_set_piece(&g_board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 7, 3, CF_PIECE_PAWN, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 7, 4, CF_PIECE_PAWN, CF_COLOR_BLACK);
+        g_board.side_to_move = CF_COLOR_WHITE;
+        gas_set(&g_gas, 7, 3, 2U);
+        gas_history_init(&g_history, &g_board, &g_gas);
+        status = gas_game_status(&g_board, &g_gas, &g_history);
+        preview = gas_preview_fart(&g_board, &g_gas, 7, 3, CF_FART_N);
+        if (status != CF_GAME_ONGOING || preview != CF_FART_PUSH) return 0;
+        render(7, 3, 1, 7, 3, &moves, status,
+               0, CF_PIECE_QUEEN, 1, CF_FART_N, preview,
+               0, CF_PIECE_QUEEN, "PUSH H5-H6");
+        return 1;
+    }
+
+    if (fixture == 1) {
+        board_set_piece(&g_board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 0, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 4, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
+        g_board.side_to_move = CF_COLOR_WHITE;
+        gas_history_init(&g_history, &g_board, &g_gas);
+        status = gas_game_status(&g_board, &g_gas, &g_history);
+        if (status != CF_GAME_CHECK) return 0;
+        render(4, 0, 0, 0, 0, &moves, status,
+               0, CF_PIECE_QUEEN, 0, CF_FART_N, CF_FART_INVALID,
+               0, CF_PIECE_QUEEN, "CHECK");
+        return 1;
+    }
+
+    if (fixture == 2) {
+        board_set_piece(&g_board, 7, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 5, 2, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 6, 1, CF_PIECE_QUEEN, CF_COLOR_BLACK);
+        g_board.side_to_move = CF_COLOR_WHITE;
+        gas_history_init(&g_history, &g_board, &g_gas);
+        status = gas_game_status(&g_board, &g_gas, &g_history);
+        if (status != CF_GAME_CHECKMATE) return 0;
+        render(7, 0, 0, 0, 0, &moves, status,
+               0, CF_PIECE_QUEEN, 0, CF_FART_N, CF_FART_INVALID,
+               0, CF_PIECE_QUEEN, "CHECKMATE");
+        return 1;
+    }
+
+    return 0;
+}
