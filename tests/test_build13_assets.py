@@ -24,6 +24,26 @@ class Build13AssetTests(unittest.TestCase):
         self.assertEqual(build_assets.render_include(generated),
                          build_assets.render_include(generated))
 
+    def test_manifest_integer_validation_rejects_non_integers(self):
+        for value in ("16", 16.0, True, None):
+            with self.assertRaises(build_assets.AssetError):
+                build_assets._manifest_int(value, "test field")
+        self.assertEqual(build_assets._manifest_int(16, "test field"), 16)
+
+    def test_nibble_packing_rejects_out_of_range_values(self):
+        with self.assertRaises(build_assets.AssetError):
+            build_assets._pack_pixels("nibble", [0, 16])
+        with self.assertRaises(build_assets.AssetError):
+            build_assets._pack_pixels("nibble", [-1, 0])
+
+    def test_bit_packing_rejects_non_binary_values(self):
+        with self.assertRaises(build_assets.AssetError):
+            build_assets._pack_pixels("bit", [0, 0, 0, 0, 0, 0, 0, 2])
+
+    def test_unknown_packing_is_rejected(self):
+        with self.assertRaises(build_assets.AssetError):
+            build_assets._pack_pixels("raw", [0, 0])
+
     def test_empty_png_is_rejected(self):
         handle, path = tempfile.mkstemp(suffix=".png")
         os.close(handle)
