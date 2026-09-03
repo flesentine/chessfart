@@ -28,6 +28,7 @@ static void test_history_ring(void)
 static void test_layout_contract(void)
 {
     int turn_width = 13 * 6 - 1;
+    int state_width = 11 * 6 - 1;
     int short_prompt_width = 6 * 6 - 1;
     int esc_width = 8 * 6 - 1;
 
@@ -44,6 +45,8 @@ static void test_layout_contract(void)
     CHECK(CF_UI_PANEL_CONTENT_W == 123);
     CHECK(CF_UI_HUD_PIECE_BOX_X + CF_UI_HUD_PIECE_BOX_W <=
           CF_UI_PANEL_X + CF_UI_PANEL_W);
+    CHECK(CF_UI_HUD_VALUE_X + state_width <=
+          CF_UI_PANEL_CONTENT_X + CF_UI_PANEL_CONTENT_W);
     CHECK(CF_UI_HUD_ACTION_LINE2_Y + 7 <=
           CF_UI_PANEL_Y + CF_UI_PANEL_H - 3);
     CHECK(CF_UI_PROMPT_TURN_X + turn_width < CF_UI_PROMPT_FART_X);
