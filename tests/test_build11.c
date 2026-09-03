@@ -27,16 +27,32 @@ static void test_history_ring(void)
 
 static void test_layout_contract(void)
 {
+    int turn_width = 13 * 6 - 1;
+    int short_prompt_width = 6 * 6 - 1;
+    int esc_width = 8 * 6 - 1;
+
     CHECK(CF_UI_SCREEN_W == 320);
     CHECK(CF_UI_SCREEN_H == 200);
     CHECK(CF_UI_SQUARE_SIZE == 18);
     CHECK(CF_UI_BOARD_PIXELS == 144);
     CHECK(CF_UI_HEADER_Y + CF_UI_HEADER_H <= CF_UI_BOARD_FRAME_Y);
+    CHECK(CF_UI_HEADER_RULE_Y < CF_UI_BOARD_FRAME_Y);
     CHECK(CF_UI_BOARD_X + CF_UI_BOARD_PIXELS <= CF_UI_PANEL_X);
     CHECK(CF_UI_PANEL_X + CF_UI_PANEL_W <= CF_UI_SCREEN_W);
     CHECK(CF_UI_COMMAND_Y + CF_UI_COMMAND_H == CF_UI_SCREEN_H);
     CHECK(CF_UI_PANEL_CONTENT_X == 180);
     CHECK(CF_UI_PANEL_CONTENT_W == 123);
+    CHECK(CF_UI_HUD_PIECE_BOX_X + CF_UI_HUD_PIECE_BOX_W <=
+          CF_UI_PANEL_X + CF_UI_PANEL_W);
+    CHECK(CF_UI_HUD_ACTION_LINE2_Y + 7 <=
+          CF_UI_PANEL_Y + CF_UI_PANEL_H - 3);
+    CHECK(CF_UI_PROMPT_TURN_X + turn_width < CF_UI_PROMPT_FART_X);
+    CHECK(CF_UI_PROMPT_FART_X + short_prompt_width < CF_UI_PROMPT_SAVE_X);
+    CHECK(CF_UI_PROMPT_SAVE_X + short_prompt_width < CF_UI_PROMPT_LOAD_X);
+    CHECK(CF_UI_PROMPT_LOAD_X + short_prompt_width < CF_UI_PROMPT_HELP_X);
+    CHECK(CF_UI_PROMPT_HELP_X + short_prompt_width < CF_UI_PROMPT_ESC_X);
+    CHECK(CF_UI_PROMPT_ESC_X + esc_width < CF_UI_SCREEN_W);
+    CHECK(CF_UI_PROMPT_TEXT_Y + 7 <= CF_UI_SCREEN_H);
     CHECK(CF_UI_ACTIVE_COLOR_COUNT == 30);
     CHECK(CF_UI_GRAYSCALE_FIRST == 30);
 }
