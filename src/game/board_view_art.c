@@ -4,54 +4,56 @@
 #include "board_view_build7.h"
 #include "font.h"
 #include "ui_assets.h"
+#include "ui_layout.h"
+#include "ui_theme.h"
 #include "vga.h"
 
-/* 320x200 retail layout. */
-#define BOARD_X 18
-#define BOARD_Y 27
-#define SQUARE_SIZE 18
-#define BOARD_PIXELS (SQUARE_SIZE * 8)
-#define BOARD_FRAME_X 14
-#define BOARD_FRAME_Y 23
-#define BOARD_FRAME_W 152
-#define BOARD_FRAME_H 154
-#define PANEL_X 170
-#define PANEL_Y 24
-#define PANEL_W 143
-#define PANEL_H 151
-#define COMMAND_Y 181
+/* Legacy local names are aliases only; canonical values live in ui_layout.h. */
+#define BOARD_X CF_UI_BOARD_X
+#define BOARD_Y CF_UI_BOARD_Y
+#define SQUARE_SIZE CF_UI_SQUARE_SIZE
+#define BOARD_PIXELS CF_UI_BOARD_PIXELS
+#define BOARD_FRAME_X CF_UI_BOARD_FRAME_X
+#define BOARD_FRAME_Y CF_UI_BOARD_FRAME_Y
+#define BOARD_FRAME_W CF_UI_BOARD_FRAME_W
+#define BOARD_FRAME_H CF_UI_BOARD_FRAME_H
+#define PANEL_X CF_UI_PANEL_X
+#define PANEL_Y CF_UI_PANEL_Y
+#define PANEL_W CF_UI_PANEL_W
+#define PANEL_H CF_UI_PANEL_H
+#define COMMAND_Y CF_UI_COMMAND_Y
 
-/* Shared palette indices. */
-#define COL_BG 0
-#define COL_PANEL 1
-#define COL_SQUARE_LIGHT 2
-#define COL_SQUARE_DARK 3
-#define COL_GOLD 4
-#define COL_TEXT 5
-#define COL_MUTED 6
-#define COL_GREEN 7
-#define COL_GAS 8
-#define COL_BLACK 9
-#define COL_PANEL_EDGE 10
-#define COL_WHITE_PIECE 11
-#define COL_WHITE_HI 12
-#define COL_BLACK_PIECE 13
-#define COL_BLACK_HI 14
-#define COL_CURSOR 15
-#define COL_SELECTED 16
-#define COL_SHADOW 17
-#define COL_LEGAL 18
-#define COL_CAPTURE 19
-#define COL_CHECK 20
-#define COL_PROMOTE 21
-#define COL_FART 22
-#define COL_FART_PUSH 23
-#define COL_SKY 24
-#define COL_CLOUD 25
-#define COL_FLASH 26
-#define COL_COPPER 27
-#define COL_PANEL_LINE 28
-#define COL_PANEL_SOFT 29
+/* Legacy local names are aliases only; canonical roles live in ui_theme.h. */
+#define COL_BG CF_UI_COL_BG
+#define COL_PANEL CF_UI_COL_PANEL
+#define COL_SQUARE_LIGHT CF_UI_COL_SQUARE_LIGHT
+#define COL_SQUARE_DARK CF_UI_COL_SQUARE_DARK
+#define COL_GOLD CF_UI_COL_GOLD
+#define COL_TEXT CF_UI_COL_TEXT
+#define COL_MUTED CF_UI_COL_MUTED
+#define COL_GREEN CF_UI_COL_GREEN
+#define COL_GAS CF_UI_COL_GAS
+#define COL_BLACK CF_UI_COL_BLACK
+#define COL_PANEL_EDGE CF_UI_COL_PANEL_EDGE
+#define COL_WHITE_PIECE CF_UI_COL_WHITE_PIECE
+#define COL_WHITE_HI CF_UI_COL_WHITE_HI
+#define COL_BLACK_PIECE CF_UI_COL_BLACK_PIECE
+#define COL_BLACK_HI CF_UI_COL_BLACK_HI
+#define COL_CURSOR CF_UI_COL_CURSOR
+#define COL_SELECTED CF_UI_COL_SELECTED
+#define COL_SHADOW CF_UI_COL_SHADOW
+#define COL_LEGAL CF_UI_COL_LEGAL
+#define COL_CAPTURE CF_UI_COL_CAPTURE
+#define COL_CHECK CF_UI_COL_CHECK
+#define COL_PROMOTE CF_UI_COL_PROMOTE
+#define COL_FART CF_UI_COL_FART
+#define COL_FART_PUSH CF_UI_COL_FART_PUSH
+#define COL_SKY CF_UI_COL_SKY
+#define COL_CLOUD CF_UI_COL_CLOUD
+#define COL_FLASH CF_UI_COL_FLASH
+#define COL_COPPER CF_UI_COL_COPPER
+#define COL_PANEL_LINE CF_UI_COL_PANEL_LINE
+#define COL_PANEL_SOFT CF_UI_COL_PANEL_SOFT
 
 static void set_rgb(cf_u8 *palette, int index, int r, int g, int b)
 {
@@ -101,8 +103,9 @@ static void load_art_palette(int flash)
     set_rgb(palette, COL_PANEL_LINE, 24, 31, 43);
     set_rgb(palette, COL_PANEL_SOFT, 8, 15, 29);
 
-    for (i = 30; i < VGA_PALETTE_COLORS; ++i) {
-        shade = (i - 30) * 63 / (VGA_PALETTE_COLORS - 31);
+    for (i = CF_UI_GRAYSCALE_FIRST; i < VGA_PALETTE_COLORS; ++i) {
+        shade = (i - CF_UI_GRAYSCALE_FIRST) * 63 /
+                (VGA_PALETTE_COLORS - (CF_UI_GRAYSCALE_FIRST + 1));
         set_rgb(palette, i, shade, shade, shade);
     }
     vga_set_palette(palette);
@@ -409,10 +412,12 @@ static void draw_panel_art(const CfBoard *board, const CfGasState *gas,
 
 static void draw_header(void)
 {
-    vga_fill_rect(0, 0, 320, 21, COL_BG);
+    vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_Y,
+                  CF_UI_HEADER_W, CF_UI_HEADER_H, COL_BG);
     font_draw_text(12, 4, "CHESS FART", COL_GOLD, 2);
     font_draw_text(139, 7, "CHECK. MATE. VENTILATE.", COL_TEXT, 1);
-    vga_fill_rect(0, 20, 320, 1, COL_COPPER);
+    vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_Y + CF_UI_HEADER_H - 1,
+                  CF_UI_HEADER_W, 1, COL_COPPER);
 }
 
 static void draw_command_cell(int index, const char *label, int active)
@@ -435,8 +440,10 @@ static void draw_command_bar(void)
     };
     int i;
 
-    vga_fill_rect(0, COMMAND_Y, 320, 19, COL_BG);
-    vga_fill_rect(0, COMMAND_Y, 320, 1, COL_GOLD);
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, CF_UI_COMMAND_H, COL_BG);
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, 1, COL_GOLD);
     for (i = 0; i < 8; ++i)
         draw_command_cell(i, labels[i], i == 0);
 }

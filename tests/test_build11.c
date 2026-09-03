@@ -2,6 +2,7 @@
 #include <string.h>
 #include "ux.h"
 #include "ui_layout.h"
+#include "ui_theme.h"
 
 static int failures;
 #define CHECK(expr) do { if (!(expr)) { \
@@ -22,6 +23,22 @@ static void test_history_ring(void)
     CHECK(strcmp(ux_history_get(&history, 0), "ACTION 08") == 0);
     CHECK(strcmp(ux_history_get(&history, 31), "ACTION 39") == 0);
     CHECK(ux_history_get(&history, 32) == 0);
+}
+
+static void test_layout_contract(void)
+{
+    CHECK(CF_UI_SCREEN_W == 320);
+    CHECK(CF_UI_SCREEN_H == 200);
+    CHECK(CF_UI_SQUARE_SIZE == 18);
+    CHECK(CF_UI_BOARD_PIXELS == 144);
+    CHECK(CF_UI_HEADER_Y + CF_UI_HEADER_H <= CF_UI_BOARD_FRAME_Y);
+    CHECK(CF_UI_BOARD_X + CF_UI_BOARD_PIXELS <= CF_UI_PANEL_X);
+    CHECK(CF_UI_PANEL_X + CF_UI_PANEL_W <= CF_UI_SCREEN_W);
+    CHECK(CF_UI_COMMAND_Y + CF_UI_COMMAND_H == CF_UI_SCREEN_H);
+    CHECK(CF_UI_PANEL_CONTENT_X == 180);
+    CHECK(CF_UI_PANEL_CONTENT_W == 123);
+    CHECK(CF_UI_ACTIVE_COLOR_COUNT == 30);
+    CHECK(CF_UI_GRAYSCALE_FIRST == 30);
 }
 
 static void test_hit_testing(void)
@@ -45,6 +62,35 @@ static void test_hit_testing(void)
                             CF_UI_BOARD_Y + 7 * CF_UI_SQUARE_SIZE + 9,
                             &file, &rank));
     CHECK(file == 6 && rank == 0);
+}
+
+static void test_hit_testing_every_square(void)
+{
+    int file;
+    int rank;
+    int hit_file;
+    int hit_rank;
+    int x;
+    int y;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            x = CF_UI_BOARD_X + file * CF_UI_SQUARE_SIZE;
+            y = CF_UI_BOARD_Y + (7 - rank) * CF_UI_SQUARE_SIZE;
+
+            hit_file = -1;
+            hit_rank = -1;
+            CHECK(ux_board_hit_test(x, y, &hit_file, &hit_rank));
+            CHECK(hit_file == file && hit_rank == rank);
+
+            hit_file = -1;
+            hit_rank = -1;
+            CHECK(ux_board_hit_test(x + CF_UI_SQUARE_SIZE - 1,
+                                    y + CF_UI_SQUARE_SIZE - 1,
+                                    &hit_file, &hit_rank));
+            CHECK(hit_file == file && hit_rank == rank);
+        }
+    }
 }
 
 static void test_terminal_labels(void)
@@ -75,7 +121,9 @@ static void test_attract_push(void)
 int main(void)
 {
     test_history_ring();
+    test_layout_contract();
     test_hit_testing();
+    test_hit_testing_every_square();
     test_terminal_labels();
     test_attract_push();
     if (failures != 0) {
