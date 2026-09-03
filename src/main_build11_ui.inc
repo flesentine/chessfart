@@ -179,7 +179,7 @@ static void ux_square_name(char *out, int file, int rank)
     out[2] = '\0';
 }
 
-static void ux_draw_action_two_lines(int x, int y,
+static void ux_draw_action_two_lines(int x, int y, int second_y,
                                      const char *text, cf_u8 color)
 {
     char first[21];
@@ -211,76 +211,202 @@ static void ux_draw_action_two_lines(int x, int y,
     second[20] = '\0';
 
     font_draw_text_clipped(x, y, first, color, 1, CF_UI_HUD_DIVIDER_W);
-    font_draw_text_clipped(x, CF_UI_HUD_ACTION_LINE2_Y,
+    font_draw_text_clipped(x, second_y,
                            second, color, 1, CF_UI_HUD_DIVIDER_W);
 }
 
-static void ux_draw_legacy_panel(const CfBoard *board,
-                                 const CfGasState *gas,
-                                 int cursor_file,
-                                 int cursor_rank,
-                                 int has_selection,
-                                 int selected_file,
-                                 int selected_rank,
-                                 CfGameStatus status,
-                                 const char *action_text)
+static void ux_fart_delta(CfFartDirection direction, int *df, int *dr)
+{
+    static const int deltas[8][2] = {
+        {0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1}
+    };
+    int index = (int)direction;
+
+    if (index < 0 || index > 7) {
+        *df = 0;
+        *dr = 0;
+        return;
+    }
+    *df = deltas[index][0];
+    *dr = deltas[index][1];
+}
+
+static int ux_square_in_bounds(int file, int rank)
+{
+    return file >= 0 && file < 8 && rank >= 0 && rank < 8;
+}
+
+static void ux_draw_direction_arrow(int x, int y,
+                                    CfFartDirection direction, cf_u8 color)
+{
+    int df;
+    int dr;
+    int sx;
+    int sy;
+    int i;
+
+    ux_fart_delta(direction, &df, &dr);
+    if (df == 0 && dr == 0) return;
+    sy = -dr;
+    for (i = 0; i < 3; ++i)
+        vga_fill_rect(x + df * i * 2, y + sy * i * 2, 2, 2, color);
+    sx = x + df * 6;
+    sy = y + sy * 6;
+    vga_fill_rect(sx - 1, sy - 1, 3, 3, color);
+}
+
+static void ux_fart_preview_lines(int file, int rank,
+                                  CfFartDirection direction,
+                                  CfFartPreview preview,
+                                  int promotion_pending,
+                                  CfPieceType promotion_choice,
+                                  char *line1, char *line2)
+{
+    int df;
+    int dr;
+    int tf;
+    int tr;
+    int pf;
+    int pr;
+    char target[3];
+    char destination[3];
+
+    line1[0] = '\0';
+    line2[0] = '\0';
+    ux_fart_delta(direction, &df, &dr);
+    tf = file + df;
+    tr = rank + dr;
+    pf = tf + df;
+    pr = tr + dr;
+    ux_square_name(target, tf, tr);
+    ux_square_name(destination, pf, pr);
+
+    if (preview == CF_FART_PUSH || preview == CF_FART_PROMOTION) {
+        sprintf(line1, "PUSH %s TO %s", target, destination);
+        if (preview == CF_FART_PROMOTION) {
+            if (promotion_pending)
+                sprintf(line2, "PROMOTE %s",
+                        board_piece_type_name(promotion_choice));
+            else
+                strcpy(line2, "PROMOTION");
+        }
+    } else if (preview == CF_FART_PUFF) {
+        sprintf(line1, "PUFF INTO %s", target);
+    } else if (preview == CF_FART_BLOCKED) {
+        if (!ux_square_in_bounds(pf, pr))
+            strcpy(line1, "BLOCKED AT EDGE");
+        else
+            sprintf(line1, "BLOCKED AT %s", destination);
+    } else {
+        strcpy(line1, "INVALID");
+    }
+}
+
+static void ux_draw_fart_panel(const CfBoard *board,
+                               const CfGasState *gas,
+                               int cursor_file,
+                               int cursor_rank,
+                               int has_selection,
+                               int selected_file,
+                               int selected_rank,
+                               CfFartDirection fart_direction,
+                               CfFartPreview fart_preview,
+                               int fart_promotion_pending,
+                               CfPieceType fart_promotion_choice,
+                               const char *action_text)
 {
     const CfPiece *piece;
-    const CfAudioConfig *config = audio_get_config();
-    const CfAudioStats *audio_stats = audio_get_stats();
-    int pf = has_selection ? selected_file : cursor_file;
-    int pr = has_selection ? selected_rank : cursor_rank;
-    cf_u8 piece_gas = 0U;
+    int pf;
+    int pr;
+    cf_u8 piece_gas;
     char square[3];
-    char line[24];
+    char line[16];
+    char preview1[24];
+    char preview2[24];
+
+    pf = has_selection ? selected_file : cursor_file;
+    pr = has_selection ? selected_rank : cursor_rank;
+    piece = board_piece_at(board, pf, pr);
+    piece_gas = piece != 0 && piece->type != CF_PIECE_NONE ?
+                gas_at(gas, pf, pr) : 0U;
+    ux_square_name(square, pf, pr);
+    ux_fart_preview_lines(pf, pr, fart_direction, fart_preview,
+                          fart_promotion_pending, fart_promotion_choice,
+                          preview1, preview2);
 
     ux_panel_outline();
-    font_draw_text(180, 31, "TURN", UX_COL_GOLD, 1);
-    font_draw_text(223, 31, board_piece_color_name(board->side_to_move), UX_COL_TEXT, 1);
-    font_draw_text(180, 42, "STATE", UX_COL_MUTED, 1);
-    font_draw_text(223, 42, board_game_status_name(status),
-                   status == CF_GAME_CHECK || status == CF_GAME_CHECKMATE ?
-                   UX_COL_GOLD : UX_COL_GREEN, 1);
-    vga_fill_rect(180, 52, 123, 1, UX_COL_PANEL_LINE);
 
-    font_draw_text(180, 58, has_selection ? "SELECTED PIECE" : "CURSOR PIECE",
-                   UX_COL_SELECTED, 1);
-    ux_square_name(square, pf, pr);
-    piece = board_piece_at(board, pf, pr);
-    vga_fill_rect(181, 68, 22, 22, UX_COL_PANEL_EDGE);
-    vga_fill_rect(183, 70, 18, 18, UX_COL_PANEL_SOFT);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_TURN_Y,
+                   "TURN", UX_COL_GOLD, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_TURN_Y,
+                   board_piece_color_name(board->side_to_move), UX_COL_TEXT, 1);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_STATE_Y,
+                   "STATE", UX_COL_MUTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_STATE_Y,
+                   "FART MODE", UX_COL_GAS, 1);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER1_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_SOURCE_LABEL_Y,
+                   "SOURCE", UX_COL_SELECTED, 1);
+    vga_fill_rect(CF_UI_FART_PIECE_BOX_X, CF_UI_FART_PIECE_BOX_Y,
+                  CF_UI_FART_PIECE_BOX_W, CF_UI_FART_PIECE_BOX_H,
+                  UX_COL_PANEL_EDGE);
+    vga_fill_rect(CF_UI_FART_PIECE_BOX_X + 1, CF_UI_FART_PIECE_BOX_Y + 1,
+                  CF_UI_FART_PIECE_BOX_W - 2, CF_UI_FART_PIECE_BOX_H - 2,
+                  UX_COL_PANEL_SOFT);
     if (piece != 0 && piece->type != CF_PIECE_NONE) {
-        ui_assets_draw_piece(183, 71, piece, UX_COL_PANEL_SOFT);
-        font_draw_text(208, 69, board_piece_type_name(piece->type), UX_COL_TEXT, 1);
-        piece_gas = gas_at(gas, pf, pr);
-    } else {
-        font_draw_text(208, 69, "EMPTY", UX_COL_MUTED, 1);
+        ui_assets_draw_piece(CF_UI_FART_PIECE_BOX_X + 1,
+                             CF_UI_FART_PIECE_BOX_Y + 2,
+                             piece, UX_COL_PANEL_SOFT);
+        font_draw_text(CF_UI_FART_PIECE_TEXT_X, CF_UI_FART_PIECE_NAME_Y,
+                       board_piece_type_name(piece->type), UX_COL_TEXT, 1);
     }
-    font_draw_text(208, 80, square, UX_COL_CURSOR, 1);
+    font_draw_text(CF_UI_FART_PIECE_TEXT_X, CF_UI_FART_PIECE_SQUARE_Y,
+                   square, UX_COL_CURSOR, 1);
 
-    vga_fill_rect(180, 94, 123, 1, UX_COL_PANEL_LINE);
-    font_draw_text(180, 99, "GAS RESERVE", UX_COL_GOLD, 1);
-    ux_draw_gas_pips(181, 110, piece_gas);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_GAS_LABEL_Y,
+                   "GAS", UX_COL_GOLD, 1);
+    ux_draw_gas_pips(CF_UI_HUD_LABEL_X + 1,
+                     CF_UI_FART_GAS_PIPS_Y, piece_gas);
     sprintf(line, "%u/3", (unsigned)piece_gas);
-    font_draw_text(232, 110, line, piece_gas >= 2U ? UX_COL_GAS : UX_COL_MUTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X + 9, CF_UI_FART_GAS_PIPS_Y,
+                   line, piece_gas >= 2U ? UX_COL_GAS : UX_COL_MUTED, 1);
 
-    vga_fill_rect(180, 121, 123, 1, UX_COL_PANEL_LINE);
-    font_draw_text(180, 126, "AUDIO", UX_COL_SELECTED, 1);
-    sprintf(line, "%s %s", audio_device_name(audio_stats->actual_device),
-            audio_level_name(config->sfx_level));
-    font_draw_text(180, 137, line, UX_COL_TEXT, 1);
-    font_draw_text(244, 126, "CPU", UX_COL_SELECTED, 1);
-    font_draw_text(244, 137, cpu_difficulty_name(g_cpu_config.difficulty), UX_COL_GOLD, 1);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_DIRECTION_Y,
+                   "DIRECTION", UX_COL_SELECTED, 1);
+    font_draw_text(CF_UI_FART_DIRECTION_VALUE_X, CF_UI_FART_DIRECTION_Y,
+                   gas_direction_name(fart_direction), UX_COL_GAS, 1);
+    ux_draw_direction_arrow(286, CF_UI_FART_DIRECTION_Y + 3,
+                            fart_direction, UX_COL_GAS);
 
-    vga_fill_rect(180, 147, 123, 1, UX_COL_PANEL_LINE);
-    font_draw_text(180, 152, "LAST ACTION", UX_COL_SELECTED, 1);
-    if (action_text != 0 && action_text[0] != '\0') {
-        strncpy(line, action_text, sizeof(line) - 1U);
-        line[sizeof(line) - 1U] = '\0';
-        font_draw_text(180, 163, line, UX_COL_TEXT, 1);
-    } else {
-        font_draw_text(180, 163, "NONE YET", UX_COL_MUTED, 1);
-    }
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LABEL_Y,
+                   "PREVIEW", UX_COL_SELECTED, 1);
+    font_draw_text_clipped(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LINE1_Y,
+                           preview1,
+                           fart_preview == CF_FART_INVALID ?
+                           CF_UI_COL_CHECK : UX_COL_GAS,
+                           1, CF_UI_HUD_DIVIDER_W);
+    if (preview2[0] != '\0')
+        font_draw_text_clipped(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LINE2_Y,
+                               preview2,
+                               fart_preview == CF_FART_PROMOTION ?
+                               CF_UI_COL_PROMOTE : UX_COL_GAS,
+                               1, CF_UI_HUD_DIVIDER_W);
+
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_CPU_Y,
+                   "CPU", UX_COL_SELECTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_FART_CPU_Y,
+                   cpu_difficulty_name(g_cpu_config.difficulty), UX_COL_GOLD, 1);
+
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_FART_LAST_DIVIDER_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_ACTION_LABEL_Y,
+                   "LAST ACTION", UX_COL_SELECTED, 1);
+    ux_draw_action_two_lines(CF_UI_HUD_LABEL_X,
+                             CF_UI_FART_ACTION_LINE1_Y,
+                             CF_UI_FART_ACTION_LINE2_Y,
+                             action_text, UX_COL_TEXT);
 }
 
 static const char *ux_hud_status_name(CfGameStatus status)
@@ -298,7 +424,11 @@ static void ux_draw_retail_panel(const CfBoard *board,
                                  int selected_rank,
                                  CfGameStatus status,
                                  const char *action_text,
-                                 int fart_mode)
+                                 int fart_mode,
+                                 CfFartDirection fart_direction,
+                                 CfFartPreview fart_preview,
+                                 int fart_promotion_pending,
+                                 CfPieceType fart_promotion_choice)
 {
     const CfPiece *piece;
     const char *mode_label;
@@ -309,9 +439,11 @@ static void ux_draw_retail_panel(const CfBoard *board,
     char line[16];
 
     if (fart_mode) {
-        ux_draw_legacy_panel(board, gas, cursor_file, cursor_rank,
-                             has_selection, selected_file, selected_rank,
-                             status, action_text);
+        ux_draw_fart_panel(board, gas, cursor_file, cursor_rank,
+                           has_selection, selected_file, selected_rank,
+                           fart_direction, fart_preview,
+                           fart_promotion_pending, fart_promotion_choice,
+                           action_text);
         return;
     }
 
@@ -395,44 +527,33 @@ static void ux_draw_retail_panel(const CfBoard *board,
                    "LAST ACTION", UX_COL_SELECTED, 1);
     ux_draw_action_two_lines(CF_UI_HUD_LABEL_X,
                              CF_UI_HUD_ACTION_LINE1_Y,
+                             CF_UI_HUD_ACTION_LINE2_Y,
                              action_text, UX_COL_TEXT);
 }
 
-static void ux_draw_legacy_command_bar(void)
-{
-    static const char *labels[8] = {
-        "F FART", "S SAVE", "L LOAD", "H HELP",
-        "M LOG", "C CRED", "D CPU", "ESC"
-    };
-    int i;
-    int x;
-
-    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
-                  CF_UI_COMMAND_W, CF_UI_COMMAND_H, UX_COL_BG);
-    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
-                  CF_UI_COMMAND_W, 1, UX_COL_GOLD);
-    for (i = 0; i < 8; ++i) {
-        x = i * 40;
-        vga_fill_rect(x + 1, CF_UI_COMMAND_Y + 2, 38, 15, UX_COL_PANEL_EDGE);
-        vga_fill_rect(x + 2, CF_UI_COMMAND_Y + 3, 36, 13, UX_COL_PANEL_SOFT);
-        font_draw_text(x + 3, CF_UI_COMMAND_Y + 6, labels[i],
-                       i == 0 ? UX_COL_GAS : UX_COL_TEXT, 1);
-    }
-}
-
-static void ux_draw_command_bar(const CfBoard *board, int fart_mode)
+static void ux_draw_command_bar(const CfBoard *board,
+                                int fart_mode,
+                                int fart_promotion_pending)
 {
     char line[16];
 
-    if (fart_mode) {
-        ux_draw_legacy_command_bar();
-        return;
-    }
-
     vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
                   CF_UI_COMMAND_W, CF_UI_COMMAND_H, UX_COL_BG);
     vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
                   CF_UI_COMMAND_W, 1, UX_COL_GOLD);
+
+    if (fart_mode) {
+        font_draw_text(CF_UI_FART_PROMPT_ARROWS_X, CF_UI_PROMPT_TEXT_Y,
+                       fart_promotion_pending ?
+                       "ARROWS CHOOSE PIECE" : "ARROWS CHANGE DIRECTION",
+                       UX_COL_GAS, 1);
+        font_draw_text(CF_UI_FART_PROMPT_ENTER_X, CF_UI_PROMPT_TEXT_Y,
+                       "ENTER CONFIRM", UX_COL_TEXT, 1);
+        font_draw_text(CF_UI_FART_PROMPT_ESC_X, CF_UI_PROMPT_TEXT_Y,
+                       "ESC CANCEL", UX_COL_MUTED, 1);
+        return;
+    }
+
     sprintf(line, "%s TO MOVE", board_piece_color_name(board->side_to_move));
     font_draw_text(CF_UI_PROMPT_TURN_X, CF_UI_PROMPT_TEXT_Y,
                    line, UX_COL_GOLD, 1);
@@ -471,13 +592,20 @@ static void ux_render_cached_base(void)
 
     last = g_ux_history.count > 0 ?
            ux_history_get(&g_ux_history, g_ux_history.count - 1) : 0;
-    action = shown != 0 && shown[0] != '\0' ? shown : last;
+    if (g_ux_cache.fart_mode)
+        action = last;
+    else
+        action = shown != 0 && shown[0] != '\0' ? shown : last;
     ux_draw_retail_panel(&g_ux_cache.board, &g_ux_cache.gas,
                          g_ux_cache.cursor_file, g_ux_cache.cursor_rank,
                          g_ux_cache.has_selection,
                          g_ux_cache.selected_file, g_ux_cache.selected_rank,
-                         g_ux_cache.status, action, g_ux_cache.fart_mode);
-    ux_draw_command_bar(&g_ux_cache.board, g_ux_cache.fart_mode);
+                         g_ux_cache.status, action, g_ux_cache.fart_mode,
+                         g_ux_cache.fart_direction, g_ux_cache.fart_preview,
+                         g_ux_cache.fart_promotion_pending,
+                         g_ux_cache.fart_promotion_choice);
+    ux_draw_command_bar(&g_ux_cache.board, g_ux_cache.fart_mode,
+                        g_ux_cache.fart_promotion_pending);
 
     if (ux_terminal(g_ux_cache.status))
         ux_draw_terminal_overlay(g_ux_cache.status,
@@ -572,8 +700,9 @@ static void ux_run_attract(void)
                             1, CF_FART_NE, CF_FART_PUSH, 0,
                             CF_PIECE_QUEEN, "CHARGED KNIGHT");
     ux_draw_retail_panel(&before_board, &before_gas, 2, 2, 1, 2, 2,
-                         CF_GAME_ONGOING, "AIM NE TO PUSH", 1);
-    ux_draw_command_bar(&before_board, 1);
+                         CF_GAME_ONGOING, "AIM NE TO PUSH", 1,
+                         CF_FART_NE, CF_FART_PUSH, 0, CF_PIECE_QUEEN);
+    ux_draw_command_bar(&before_board, 1, 0);
     vga_present();
 
     if (gas_make_fart(&after_board, &after_gas, 2, 2, CF_FART_NE,
@@ -585,8 +714,10 @@ static void ux_run_attract(void)
                                 0, CF_FART_NE, CF_FART_INVALID, 0,
                                 CF_PIECE_QUEEN, "D4 BLASTED TO E5");
         ux_draw_retail_panel(&after_board, &after_gas, 2, 2, 0, 0, 0,
-                             CF_GAME_ONGOING, "D4 BLASTED TO E5", 0);
-        ux_draw_command_bar(&after_board, 0);
+                             CF_GAME_ONGOING, "D4 BLASTED TO E5", 0,
+                             CF_FART_N, CF_FART_INVALID,
+                             0, CF_PIECE_QUEEN);
+        ux_draw_command_bar(&after_board, 0, 0);
         vga_present();
     }
 }
@@ -606,8 +737,10 @@ static void ux_render_terminal_preview(void)
                             CF_FART_N, CF_FART_INVALID, 0,
                             CF_PIECE_QUEEN, "CHECKMATE");
     ux_draw_retail_panel(&board, &gas, 4, 1, 0, 0, 0,
-                         CF_GAME_CHECKMATE, "CHECKMATE", 0);
-    ux_draw_command_bar(&board, 0);
+                         CF_GAME_CHECKMATE, "CHECKMATE", 0,
+                         CF_FART_N, CF_FART_INVALID,
+                         0, CF_PIECE_QUEEN);
+    ux_draw_command_bar(&board, 0, 0);
     ux_draw_terminal_overlay(CF_GAME_CHECKMATE, CF_COLOR_BLACK);
     vga_present();
 }
