@@ -26,6 +26,12 @@ class AssetError(Exception):
     pass
 
 
+def _manifest_int(value, label):
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise AssetError("%s must be an integer" % label)
+    return value
+
+
 def _paeth(a, b, c):
     p = a + b - c
     pa = abs(p - a)
@@ -51,6 +57,9 @@ def read_indexed_png(path):
     palette_entries = 0
     transparency = None
     idat = bytearray()
+    saw_ihdr = False
+    saw_plte = False
+    saw_iend = False
 
     while offset + 12 <= len(data):
         length = struct.unpack(">I", data[offset:offset + 4])[0]
@@ -67,26 +76,38 @@ def read_indexed_png(path):
             raise AssetError("%s has a bad %s CRC" % (path, kind.decode("ascii", "replace")))
 
         if kind == b"IHDR":
+            if saw_ihdr:
+                raise AssetError("%s has duplicate IHDR" % path)
             if length != 13:
                 raise AssetError("%s has an invalid IHDR" % path)
             width, height, bit_depth, color_type, compression, filter_method, interlace = \
                 struct.unpack(">IIBBBBB", payload)
             if compression != 0 or filter_method != 0:
                 raise AssetError("%s uses unsupported PNG compression/filter methods" % path)
+            saw_ihdr = True
         elif kind == b"PLTE":
-            if length == 0 or length % 3 != 0:
+            if saw_plte:
+                raise AssetError("%s has duplicate PLTE" % path)
+            if length == 0 or length % 3 != 0 or length > 256 * 3:
                 raise AssetError("%s has an invalid palette" % path)
             palette_entries = length // 3
+            saw_plte = True
         elif kind == b"tRNS":
             transparency = bytes(payload)
         elif kind == b"IDAT":
             idat.extend(payload)
         elif kind == b"IEND":
+            if length != 0:
+                raise AssetError("%s has an invalid IEND" % path)
+            saw_iend = True
+            offset = crc_end
             break
         offset = crc_end
 
-    if width is None or height is None:
+    if not saw_ihdr or width is None or height is None:
         raise AssetError("%s is missing IHDR" % path)
+    if not saw_iend:
+        raise AssetError("%s is missing IEND" % path)
     if width <= 0 or height <= 0:
         raise AssetError("%s has invalid dimensions" % path)
     if bit_depth != 8 or color_type != 3:
@@ -171,16 +192,22 @@ def build_assets():
     report_sheets = []
     seen_names = set()
 
-    for sheet in manifest["sheets"]:
+    for sheet_index, sheet in enumerate(manifest["sheets"]):
+        if not isinstance(sheet, dict):
+            raise AssetError("sheet %d must be an object" % sheet_index)
         rel_path = sheet.get("path")
-        if not rel_path:
+        if not isinstance(rel_path, str) or not rel_path:
             raise AssetError("sheet path is missing")
         path = os.path.join(ROOT, rel_path)
         png = read_indexed_png(path)
-        if png["width"] != sheet.get("width") or png["height"] != sheet.get("height"):
+        expected_width = _manifest_int(sheet.get("width"), "%s width" % rel_path)
+        expected_height = _manifest_int(sheet.get("height"), "%s height" % rel_path)
+        if expected_width <= 0 or expected_height <= 0:
+            raise AssetError("%s manifest dimensions must be positive" % rel_path)
+        if png["width"] != expected_width or png["height"] != expected_height:
             raise AssetError("%s dimensions are %dx%d, expected %dx%d" % (
                 rel_path, png["width"], png["height"],
-                sheet.get("width"), sheet.get("height")))
+                expected_width, expected_height))
         transparency = png["transparency"]
         if transparency is None or len(transparency) < 1 or transparency[0] != 0:
             raise AssetError("%s must make palette index 0 transparent" % rel_path)
@@ -188,29 +215,40 @@ def build_assets():
         allowed = sheet.get("allowed_indices")
         if not isinstance(allowed, list) or not allowed:
             raise AssetError("%s has no allowed_indices" % rel_path)
-        allowed_set = set(int(value) for value in allowed)
+        allowed_set = set()
+        for allowed_index, value in enumerate(allowed):
+            parsed = _manifest_int(value, "%s allowed_indices[%d]" % (rel_path, allowed_index))
+            if parsed < 0 or parsed > 255:
+                raise AssetError("%s allowed index %d is outside 0..255" % (rel_path, parsed))
+            allowed_set.add(parsed)
         if 0 not in allowed_set:
             raise AssetError("%s must allow transparent index 0" % rel_path)
 
         packing = sheet.get("packing")
         if packing not in ("nibble", "bit"):
             raise AssetError("%s has unsupported packing %r" % (rel_path, packing))
+        if packing == "nibble" and any(value > 15 for value in allowed_set):
+            raise AssetError("%s nibble packing only supports indices 0..15" % rel_path)
+        if packing == "bit" and not allowed_set.issubset({0, 1}):
+            raise AssetError("%s bit packing only supports indices 0 and 1" % rel_path)
         sprites = sheet.get("sprites")
         if not isinstance(sprites, list) or not sprites:
             raise AssetError("%s defines no sprites" % rel_path)
 
-        for sprite in sprites:
+        for sprite_index, sprite in enumerate(sprites):
+            if not isinstance(sprite, dict):
+                raise AssetError("%s sprite %d must be an object" % (rel_path, sprite_index))
             name = sprite.get("name")
-            if not name or not name.replace("_", "").isalnum():
+            if not isinstance(name, str) or not name or not name.replace("_", "").isalnum():
                 raise AssetError("%s contains an invalid sprite name" % rel_path)
             if name in seen_names:
                 raise AssetError("duplicate sprite name %s" % name)
             seen_names.add(name)
 
-            x = int(sprite.get("x", -1))
-            y = int(sprite.get("y", -1))
-            w = int(sprite.get("w", 0))
-            h = int(sprite.get("h", 0))
+            x = _manifest_int(sprite.get("x"), "%s %s x" % (rel_path, name))
+            y = _manifest_int(sprite.get("y"), "%s %s y" % (rel_path, name))
+            w = _manifest_int(sprite.get("w"), "%s %s w" % (rel_path, name))
+            h = _manifest_int(sprite.get("h"), "%s %s h" % (rel_path, name))
             if w <= 0 or h <= 0:
                 raise AssetError("%s has empty sprite %s" % (rel_path, name))
             if x < 0 or y < 0 or x + w > png["width"] or y + h > png["height"]:
@@ -223,15 +261,15 @@ def build_assets():
             if unexpected:
                 raise AssetError("%s sprite %s uses disallowed indices %s" % (
                     rel_path, name, unexpected))
-            if packing == "bit" and any(value not in (0, 1) for value in pixels):
-                raise AssetError("%s sprite %s cannot use bit packing" % (rel_path, name))
             generated.append((name, w, h, packing, pixels))
 
         report_sheets.append((rel_path, png["width"], png["height"], png["sha256"]))
 
-    expected_count = manifest.get("expected_sprite_count")
+    expected_count = _manifest_int(manifest.get("expected_sprite_count"), "expected_sprite_count")
+    if expected_count <= 0:
+        raise AssetError("expected_sprite_count must be positive")
     if len(generated) != expected_count:
-        raise AssetError("generated %d sprites, expected %s" % (len(generated), expected_count))
+        raise AssetError("generated %d sprites, expected %d" % (len(generated), expected_count))
 
     return generated, report_sheets
 
@@ -239,11 +277,15 @@ def build_assets():
 def _pack_pixels(packing, pixels):
     packed = []
     if packing == "nibble":
+        if any(value < 0 or value > 15 for value in pixels):
+            raise AssetError("nibble-packed sprite contains a value outside 0..15")
         if len(pixels) % 2 != 0:
             raise AssetError("nibble-packed sprite has an odd pixel count")
         for index in range(0, len(pixels), 2):
-            packed.append(((pixels[index] & 15) << 4) | (pixels[index + 1] & 15))
-    else:
+            packed.append((pixels[index] << 4) | pixels[index + 1])
+    elif packing == "bit":
+        if any(value not in (0, 1) for value in pixels):
+            raise AssetError("bit-packed sprite contains a value other than 0 or 1")
         if len(pixels) % 8 != 0:
             raise AssetError("bit-packed sprite pixel count is not divisible by 8")
         for index in range(0, len(pixels), 8):
@@ -252,6 +294,8 @@ def _pack_pixels(packing, pixels):
                 if pixels[index + bit]:
                     value |= 1 << (7 - bit)
             packed.append(value)
+    else:
+        raise AssetError("unsupported packing %r" % packing)
     return packed
 
 
@@ -279,6 +323,7 @@ def render_include(generated):
         lines.append("};")
         lines.append("")
     return ("\n".join(lines) + "\n").encode("ascii")
+
 
 def write_report(generated, sheets):
     total_pixels = sum(len(pixels) for _name, _w, _h, _packing, pixels in generated)
