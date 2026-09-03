@@ -46,7 +46,7 @@ static cf_u8 piece_color(const CfPiece *piece, int code)
     }
     if (code == 2) return CF_UI_COL_BLACK_PIECE;
     if (code == 3) return CF_UI_COL_BLACK_HI;
-    return CF_UI_COL_BLACK_GLEAM;
+    return CF_UI_COL_MUTED;
 }
 
 static int piece_pixel(const cf_u8 *sprite, int x, int y)
