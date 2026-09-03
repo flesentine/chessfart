@@ -54,9 +54,6 @@
 #define COL_COPPER CF_UI_COL_COPPER
 #define COL_PANEL_LINE CF_UI_COL_PANEL_LINE
 #define COL_PANEL_SOFT CF_UI_COL_PANEL_SOFT
-#define COL_BLACK_GLEAM CF_UI_COL_BLACK_GLEAM
-#define COL_SQUARE_LIGHT_GRAIN CF_UI_COL_SQUARE_LIGHT_GRAIN
-#define COL_SQUARE_DARK_GRAIN CF_UI_COL_SQUARE_DARK_GRAIN
 
 static void set_rgb(cf_u8 *palette, int index, int r, int g, int b)
 {
@@ -105,9 +102,6 @@ static void load_art_palette(int flash)
     set_rgb(palette, COL_COPPER, 43, 27, 11);
     set_rgb(palette, COL_PANEL_LINE, 24, 31, 43);
     set_rgb(palette, COL_PANEL_SOFT, 8, 15, 29);
-    set_rgb(palette, COL_BLACK_GLEAM, 31, 43, 47);
-    set_rgb(palette, COL_SQUARE_LIGHT_GRAIN, 59, 51, 33);
-    set_rgb(palette, COL_SQUARE_DARK_GRAIN, 8, 40, 36);
 
     for (i = CF_UI_GRAYSCALE_FIRST; i < VGA_PALETTE_COLORS; ++i) {
         shade = (i - CF_UI_GRAYSCALE_FIRST) * 63 /
@@ -143,8 +137,7 @@ static void draw_square_surface(int x, int y, int file, int rank, cf_u8 color)
 {
     cf_u8 grain;
 
-    grain = color == COL_SQUARE_LIGHT ?
-            COL_SQUARE_LIGHT_GRAIN : COL_SQUARE_DARK_GRAIN;
+    grain = color == COL_SQUARE_LIGHT ? COL_COPPER : COL_PANEL_SOFT;
     vga_fill_rect(x, y, SQUARE_SIZE, SQUARE_SIZE, color);
     vga_put_pixel(x + 2, y + 2, grain);
     vga_put_pixel(x + 15, y + 15, grain);
