@@ -83,10 +83,10 @@ static void load_art_palette(int flash)
     set_rgb(palette, COL_GAS, flash ? 63 : 38, 58, flash ? 35 : 13);
     set_rgb(palette, COL_BLACK, 0, 0, 0);
     set_rgb(palette, COL_PANEL_EDGE, 13, 19, 32);
-    set_rgb(palette, COL_WHITE_PIECE, 55, 50, 38);
-    set_rgb(palette, COL_WHITE_HI, 63, 62, 53);
-    set_rgb(palette, COL_BLACK_PIECE, 3, 7, 13);
-    set_rgb(palette, COL_BLACK_HI, 29, 36, 43);
+    set_rgb(palette, COL_WHITE_PIECE, 58, 52, 41);
+    set_rgb(palette, COL_WHITE_HI, 63, 62, 55);
+    set_rgb(palette, COL_BLACK_PIECE, 3, 8, 14);
+    set_rgb(palette, COL_BLACK_HI, 23, 33, 39);
     set_rgb(palette, COL_CURSOR, 6, 51, 59);
     set_rgb(palette, COL_SELECTED, 8, 59, 54);
     set_rgb(palette, COL_SHADOW, 0, 1, 3);
@@ -131,6 +131,18 @@ static cf_u8 square_color(int file, int rank)
 {
     int screen_rank = 7 - rank;
     return ((file + screen_rank) & 1) ? COL_SQUARE_DARK : COL_SQUARE_LIGHT;
+}
+
+static void draw_square_surface(int x, int y, int file, int rank, cf_u8 color)
+{
+    cf_u8 grain;
+
+    grain = color == COL_SQUARE_LIGHT ? COL_COPPER : COL_PANEL_SOFT;
+    vga_fill_rect(x, y, SQUARE_SIZE, SQUARE_SIZE, color);
+    vga_put_pixel(x + 2, y + 2, grain);
+    vga_put_pixel(x + 15, y + 15, grain);
+    if (((file * 3 + rank) & 3) == 0)
+        vga_put_pixel(x + 13, y + 4, grain);
 }
 
 static int move_index_at(const CfMoveList *list, int file, int rank)
@@ -192,11 +204,19 @@ static void draw_piece_gas(int x, int y, cf_u8 gas)
 static void draw_board_frame(void)
 {
     vga_fill_rect(BOARD_FRAME_X, BOARD_FRAME_Y,
-                  BOARD_FRAME_W, BOARD_FRAME_H, COL_COPPER);
+                  BOARD_FRAME_W, BOARD_FRAME_H, COL_SHADOW);
+    vga_fill_rect(BOARD_FRAME_X + 1, BOARD_FRAME_Y + 1,
+                  BOARD_FRAME_W - 2, BOARD_FRAME_H - 2, COL_COPPER);
     vga_fill_rect(BOARD_FRAME_X + 2, BOARD_FRAME_Y + 2,
-                  BOARD_FRAME_W - 4, BOARD_FRAME_H - 4, COL_BG);
+                  BOARD_FRAME_W - 4, 1, COL_GOLD);
+    vga_fill_rect(BOARD_FRAME_X + 2, BOARD_FRAME_Y + 2,
+                  1, BOARD_FRAME_H - 4, COL_GOLD);
+    vga_fill_rect(BOARD_FRAME_X + 2, BOARD_FRAME_Y + BOARD_FRAME_H - 3,
+                  BOARD_FRAME_W - 4, 1, COL_SHADOW);
+    vga_fill_rect(BOARD_FRAME_X + BOARD_FRAME_W - 3, BOARD_FRAME_Y + 2,
+                  1, BOARD_FRAME_H - 4, COL_SHADOW);
     vga_fill_rect(BOARD_FRAME_X + 3, BOARD_FRAME_Y + 3,
-                  BOARD_FRAME_W - 6, 1, COL_GOLD);
+                  BOARD_FRAME_W - 6, BOARD_FRAME_H - 6, COL_BG);
 }
 
 static void draw_board(const CfBoard *board, const CfGasState *gas,
@@ -222,7 +242,7 @@ static void draw_board(const CfBoard *board, const CfGasState *gas,
             x = BOARD_X + file * SQUARE_SIZE;
             y = BOARD_Y + screen_rank * SQUARE_SIZE;
             color = square_color(file, rank);
-            vga_fill_rect(x, y, SQUARE_SIZE, SQUARE_SIZE, color);
+            draw_square_surface(x, y, file, rank, color);
 
             mi = move_index_at(legal_moves, file, rank);
             if (mi >= 0) {
@@ -234,7 +254,7 @@ static void draw_board(const CfBoard *board, const CfGasState *gas,
 
             piece = board_piece_at(board, file, rank);
             if (piece != 0 && piece->type != CF_PIECE_NONE) {
-                ui_assets_draw_piece(x, y + 1, piece, color);
+                ui_assets_draw_piece_overlay(x, y + 1, piece);
                 draw_piece_gas(x, y, gas_at(gas, file, rank));
             }
         }

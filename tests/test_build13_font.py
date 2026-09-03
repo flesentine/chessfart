@@ -49,6 +49,21 @@ class Build13FontTests(unittest.TestCase):
                         lit += 1
             self.assertGreater(lit, 0, ch)
 
+    def test_glyph_ink_stays_inside_runtime_draw_window(self):
+        png = build_assets.read_indexed_png(build_font.SOURCE_PATH)
+        for glyph in range(build_font.GLYPH_COUNT):
+            cell_x = (glyph & 15) * build_font.CELL_W
+            cell_y = (glyph >> 4) * build_font.CELL_H
+            for y in range(build_font.CELL_H):
+                row = png["rows"][cell_y + y]
+                for x in range(build_font.CELL_W):
+                    if x < 5 and y < 7:
+                        continue
+                    self.assertEqual(
+                        row[cell_x + x], 0,
+                        "glyph %r has ink outside the runtime 5x7 draw window at (%d,%d)" %
+                        (chr(build_font.FIRST_CHAR + glyph), x, y))
+
 
 if __name__ == "__main__":
     unittest.main()
