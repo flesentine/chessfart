@@ -11,6 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify Build 13 assets
+        run: |
+          python3 tools/build_assets.py --check
+          python3 -m unittest tests/test_build13_assets.py
+          cat build/assets/ASSET_REPORT.txt
+
       - name: Build and test host release
         run: make test-build12
 
@@ -57,6 +63,7 @@ jobs:
             build/release/chessfart-1.0.0-dos.zip.sha256
             build/dos/CHESSFRT.EXE
             build/dos/DOSSMOKE.OK
+            build/assets/ASSET_REPORT.txt
             build/host/PROFILE.txt
             build/host/SIZE.txt
             build/host/chessfart_build11.ppm
