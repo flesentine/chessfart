@@ -31,6 +31,10 @@ static void test_layout_contract(void)
     int state_width = 11 * 6 - 1;
     int short_prompt_width = 6 * 6 - 1;
     int esc_width = 8 * 6 - 1;
+    int fart_badge_text_width = 9 * 6 - 1;
+    int fart_arrows_width = 23 * 6 - 1;
+    int fart_enter_width = 13 * 6 - 1;
+    int fart_esc_width = 10 * 6 - 1;
 
     CHECK(CF_UI_SCREEN_W == 320);
     CHECK(CF_UI_SCREEN_H == 200);
@@ -56,6 +60,19 @@ static void test_layout_contract(void)
     CHECK(CF_UI_PROMPT_HELP_X + short_prompt_width < CF_UI_PROMPT_ESC_X);
     CHECK(CF_UI_PROMPT_ESC_X + esc_width < CF_UI_SCREEN_W);
     CHECK(CF_UI_PROMPT_TEXT_Y + 7 <= CF_UI_SCREEN_H);
+    CHECK(CF_UI_FART_BADGE_X >= 0);
+    CHECK(CF_UI_FART_BADGE_X + CF_UI_FART_BADGE_W <= CF_UI_SCREEN_W);
+    CHECK(CF_UI_FART_BADGE_TEXT_X + fart_badge_text_width <=
+          CF_UI_FART_BADGE_X + CF_UI_FART_BADGE_W);
+    CHECK(CF_UI_FART_PIECE_BOX_X + CF_UI_FART_PIECE_BOX_W <=
+          CF_UI_PANEL_X + CF_UI_PANEL_W);
+    CHECK(CF_UI_FART_ACTION_LINE2_Y + 7 <=
+          CF_UI_PANEL_Y + CF_UI_PANEL_H);
+    CHECK(CF_UI_FART_PROMPT_ARROWS_X + fart_arrows_width <
+          CF_UI_FART_PROMPT_ENTER_X);
+    CHECK(CF_UI_FART_PROMPT_ENTER_X + fart_enter_width <
+          CF_UI_FART_PROMPT_ESC_X);
+    CHECK(CF_UI_FART_PROMPT_ESC_X + fart_esc_width < CF_UI_SCREEN_W);
     CHECK(CF_UI_ACTIVE_COLOR_COUNT == 30);
     CHECK(CF_UI_GRAYSCALE_FIRST == 30);
 }
