@@ -154,7 +154,7 @@ void font_draw_text_clipped(int x, int y, const char *text,
     if (scale < 1) {
         scale = 1;
     }
-    if (accent_text_color(color)) {
+    if (accent_text_color(color) && max_width > scale) {
         draw_text_raw(x + scale, y + scale, text,
                       CF_UI_COL_SHADOW, scale,
                       max_width - scale);
