@@ -377,6 +377,8 @@ static void square_name(char *out, int file, int rank)
     out[2] = '\0';
 }
 
+static void draw_gas_pips(int x, int y, cf_u8 gas);
+
 static int square_in_bounds(int file, int rank)
 {
     return file >= 0 && file < 8 && rank >= 0 && rank < 8;
