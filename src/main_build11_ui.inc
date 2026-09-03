@@ -343,7 +343,8 @@ static void ux_draw_retail_panel(const CfBoard *board,
                    (piece != 0 && piece->type != CF_PIECE_NONE ?
                     UX_COL_CURSOR : UX_COL_MUTED), 1);
     vga_fill_rect(CF_UI_HUD_PIECE_BOX_X, CF_UI_HUD_PIECE_BOX_Y,
-                  22, 22, UX_COL_PANEL_EDGE);
+                  CF_UI_HUD_PIECE_BOX_W, CF_UI_HUD_PIECE_BOX_H,
+                  UX_COL_PANEL_EDGE);
     vga_fill_rect(CF_UI_HUD_PIECE_BOX_X + 2, CF_UI_HUD_PIECE_BOX_Y + 2,
                   18, 18, UX_COL_PANEL_SOFT);
 
