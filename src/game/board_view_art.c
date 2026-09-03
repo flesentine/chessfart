@@ -762,9 +762,6 @@ void board_view_render_build7_fx(const CfBoard *board,
 {
     int flash = fx != 0 && fx->active && fx->frame == 2;
 
-    (void)fart_promotion_pending;
-    (void)fart_promotion_choice;
-
     load_art_palette(flash);
     vga_clear(COL_BG);
     draw_header(fart_mode);
