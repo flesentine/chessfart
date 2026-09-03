@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "transparent_index": 0,
+  "expected_sprite_count": 17,
+  "sheets": [
+    {
+      "path": "assets_src/ui/pieces.png",
+      "width": 96,
+      "height": 32,
+      "allowed_indices": [0, 1, 2, 3, 4],
+      "sprites": [
+        {"name":"cf_asset_white_king","x":0,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_white_queen","x":16,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_white_rook","x":32,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_white_bishop","x":48,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_white_knight","x":64,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_white_pawn","x":80,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_black_king","x":0,"y":16,"w":16,"h":16},
+        {"name":"cf_asset_black_queen","x":16,"y":16,"w":16,"h":16},
+        {"name":"cf_asset_black_rook","x":32,"y":16,"w":16,"h":16},
+        {"name":"cf_asset_black_bishop","x":48,"y":16,"w":16,"h":16},
+        {"name":"cf_asset_black_knight","x":64,"y":16,"w":16,"h":16},
+        {"name":"cf_asset_black_pawn","x":80,"y":16,"w":16,"h":16}
+      ],
+      "packing": "nibble"
+    },
+    {
+      "path": "assets_src/ui/puffs.png",
+      "width": 80,
+      "height": 16,
+      "allowed_indices": [0, 1],
+      "sprites": [
+        {"name":"cf_asset_puff1","x":0,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_puff2","x":16,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_puff3","x":32,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_puff4","x":48,"y":0,"w":16,"h":16},
+        {"name":"cf_asset_puff5","x":64,"y":0,"w":16,"h":16}
+      ],
+      "packing": "bit"
+    }
+  ]
+}

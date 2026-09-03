@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Verify Build 13 assets
+        run: |
+          python3 tools/build_assets.py --check
+          python3 -m unittest tests/test_build13_assets.py
+          cat build/assets/ASSET_REPORT.txt
       - name: Setup Emscripten
         uses: emscripten-core/setup-emsdk@v15
         with:
@@ -61,6 +66,7 @@ jobs:
           name: chessfart-web-diagnostics
           path: |
             web-build.log
+            build/assets/ASSET_REPORT.txt
             build/web-smoke.txt
             build/web-smoke.png
             build/web-playtest/
