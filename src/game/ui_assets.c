@@ -46,7 +46,7 @@ static cf_u8 piece_color(const CfPiece *piece, int code)
     }
     if (code == 2) return CF_UI_COL_BLACK_PIECE;
     if (code == 3) return CF_UI_COL_BLACK_HI;
-    return CF_UI_COL_CURSOR;
+    return CF_UI_COL_BLACK_GLEAM;
 }
 
 static int piece_pixel(const cf_u8 *sprite, int x, int y)
@@ -78,7 +78,8 @@ static int exposed_edge(const cf_u8 *mask, int x, int y)
     return !mask_pixel(mask, x - 1, y) || !mask_pixel(mask, x, y - 1);
 }
 
-void ui_assets_draw_piece(int x, int y, const CfPiece *piece, cf_u8 background)
+static void draw_piece_pixels(int x, int y, const CfPiece *piece,
+                              cf_u8 background, int clear_background)
 {
     const cf_u8 *sprite;
     int px;
@@ -88,7 +89,8 @@ void ui_assets_draw_piece(int x, int y, const CfPiece *piece, cf_u8 background)
     sprite = piece_sprite(piece);
     if (sprite == 0) return;
 
-    vga_fill_rect(x, y, CF_UI_PIECE_W, CF_UI_PIECE_H, background);
+    if (clear_background)
+        vga_fill_rect(x, y, CF_UI_PIECE_W, CF_UI_PIECE_H, background);
     for (py = 0; py < 16; ++py) {
         for (px = 0; px < 16; ++px) {
             code = piece_pixel(sprite, px, py);
@@ -96,6 +98,16 @@ void ui_assets_draw_piece(int x, int y, const CfPiece *piece, cf_u8 background)
             vga_put_pixel(x + 1 + px, y + py, piece_color(piece, code));
         }
     }
+}
+
+void ui_assets_draw_piece(int x, int y, const CfPiece *piece, cf_u8 background)
+{
+    draw_piece_pixels(x, y, piece, background, 1);
+}
+
+void ui_assets_draw_piece_overlay(int x, int y, const CfPiece *piece)
+{
+    draw_piece_pixels(x, y, piece, 0U, 0);
 }
 
 void ui_assets_draw_puff(int x, int y, int frame)
