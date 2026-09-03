@@ -68,7 +68,7 @@ def render_include(packed):
             "0x%02X" % value for value in values) + ",")
     lines.append("};")
     lines.append("")
-    return ("\n".join(lines) + "\n").encode("ascii")
+    return "\n".join(lines).encode("ascii")
 
 
 def write_report(sha256):
