@@ -297,6 +297,32 @@ static void fart_delta(CfFartDirection direction, int *df, int *dr)
     *dr = deltas[index][1];
 }
 
+static void draw_fart_trail(int file, int rank,
+                            CfFartDirection direction,
+                            CfFartPreview preview)
+{
+    int df;
+    int dr;
+    int sx;
+    int sy;
+    int dy;
+    int i;
+    int steps;
+
+    fart_delta(direction, &df, &dr);
+    if (df == 0 && dr == 0) return;
+    sx = BOARD_X + file * SQUARE_SIZE + 9;
+    sy = BOARD_Y + (7 - rank) * SQUARE_SIZE + 9;
+    dy = -dr;
+    steps = preview == CF_FART_PUSH || preview == CF_FART_PROMOTION ? 6 : 3;
+    for (i = 1; i <= steps; ++i)
+        vga_fill_rect(sx + df * i * 5 - 1,
+                      sy + dy * i * 5 - 1,
+                      i == steps ? 2 : 1,
+                      i == steps ? 2 : 1,
+                      preview == CF_FART_INVALID ? COL_CHECK : COL_GAS);
+}
+
 static void draw_push_geometry(int file, int rank,
                                CfFartDirection direction,
                                CfFartPreview preview)
@@ -311,7 +337,6 @@ static void draw_push_geometry(int file, int rank,
     int y;
     cf_u8 color;
 
-    if (preview == CF_FART_INVALID || preview == CF_FART_PUFF) return;
     fart_delta(direction, &df, &dr);
     tf = file + df;
     tr = rank + dr;
@@ -321,6 +346,14 @@ static void draw_push_geometry(int file, int rank,
 
     x = BOARD_X + tf * SQUARE_SIZE;
     y = BOARD_Y + (7 - tr) * SQUARE_SIZE;
+    if (preview == CF_FART_PUFF) {
+        draw_outline(x + 5, y + 5, 8, 8, COL_GAS);
+        return;
+    }
+    if (preview == CF_FART_INVALID) {
+        draw_outline(x + 5, y + 5, 8, 8, COL_CHECK);
+        return;
+    }
     draw_selection_brackets(x, y, COL_FART_PUSH);
 
     if (pf < 0 || pf > 7 || pr < 0 || pr > 7) return;
@@ -344,6 +377,171 @@ static void square_name(char *out, int file, int rank)
     out[2] = '\0';
 }
 
+static int square_in_bounds(int file, int rank)
+{
+    return file >= 0 && file < 8 && rank >= 0 && rank < 8;
+}
+
+static void fart_preview_lines(int file, int rank,
+                               CfFartDirection direction,
+                               CfFartPreview preview,
+                               int promotion_pending,
+                               CfPieceType promotion_choice,
+                               char *line1, char *line2)
+{
+    int df;
+    int dr;
+    int tf;
+    int tr;
+    int pf;
+    int pr;
+    char target[3];
+    char destination[3];
+
+    line1[0] = '\0';
+    line2[0] = '\0';
+    fart_delta(direction, &df, &dr);
+    tf = file + df;
+    tr = rank + dr;
+    pf = tf + df;
+    pr = tr + dr;
+    square_name(target, tf, tr);
+    square_name(destination, pf, pr);
+
+    if (preview == CF_FART_PUSH || preview == CF_FART_PROMOTION) {
+        sprintf(line1, "PUSH %s TO %s", target, destination);
+        if (preview == CF_FART_PROMOTION) {
+            if (promotion_pending)
+                sprintf(line2, "PROMOTE %s",
+                        board_piece_type_name(promotion_choice));
+            else
+                strcpy(line2, "PROMOTION");
+        }
+    } else if (preview == CF_FART_PUFF) {
+        sprintf(line1, "PUFF INTO %s", target);
+    } else if (preview == CF_FART_BLOCKED) {
+        if (!square_in_bounds(pf, pr))
+            strcpy(line1, "BLOCKED AT EDGE");
+        else
+            sprintf(line1, "BLOCKED AT %s", destination);
+    } else {
+        strcpy(line1, "INVALID");
+    }
+}
+
+static void draw_direction_arrow(int x, int y,
+                                 CfFartDirection direction, cf_u8 color)
+{
+    int df;
+    int dr;
+    int sy;
+    int i;
+
+    fart_delta(direction, &df, &dr);
+    if (df == 0 && dr == 0) return;
+    sy = -dr;
+    for (i = 0; i < 3; ++i)
+        vga_fill_rect(x + df * i * 2, y + sy * i * 2, 2, 2, color);
+    vga_fill_rect(x + df * 6 - 1, y + sy * 6 - 1, 3, 3, color);
+}
+
+static void draw_fart_panel_art(const CfBoard *board, const CfGasState *gas,
+                                int cursor_file, int cursor_rank,
+                                int has_selection,
+                                int selected_file, int selected_rank,
+                                CfFartDirection fart_direction,
+                                CfFartPreview fart_preview,
+                                int fart_promotion_pending,
+                                CfPieceType fart_promotion_choice,
+                                const char *message)
+{
+    const CfPiece *piece;
+    int pf;
+    int pr;
+    cf_u8 piece_gas;
+    char square[3];
+    char line[16];
+    char preview1[24];
+    char preview2[24];
+
+    pf = has_selection ? selected_file : cursor_file;
+    pr = has_selection ? selected_rank : cursor_rank;
+    piece = board_piece_at(board, pf, pr);
+    piece_gas = piece != 0 && piece->type != CF_PIECE_NONE ?
+                gas_at(gas, pf, pr) : 0U;
+    square_name(square, pf, pr);
+    fart_preview_lines(pf, pr, fart_direction, fart_preview,
+                       fart_promotion_pending, fart_promotion_choice,
+                       preview1, preview2);
+
+    draw_panel_box(PANEL_X, PANEL_Y, PANEL_W, PANEL_H);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_TURN_Y,
+                   "TURN", COL_GOLD, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_TURN_Y,
+                   board_piece_color_name(board->side_to_move), COL_TEXT, 1);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_STATE_Y,
+                   "STATE", COL_MUTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_STATE_Y,
+                   "FART MODE", COL_GAS, 1);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER1_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, COL_PANEL_LINE);
+
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_SOURCE_LABEL_Y,
+                   "SOURCE", COL_SELECTED, 1);
+    vga_fill_rect(CF_UI_FART_PIECE_BOX_X, CF_UI_FART_PIECE_BOX_Y,
+                  CF_UI_FART_PIECE_BOX_W, CF_UI_FART_PIECE_BOX_H,
+                  COL_PANEL_EDGE);
+    vga_fill_rect(CF_UI_FART_PIECE_BOX_X + 1, CF_UI_FART_PIECE_BOX_Y + 1,
+                  CF_UI_FART_PIECE_BOX_W - 2, CF_UI_FART_PIECE_BOX_H - 2,
+                  COL_PANEL_SOFT);
+    if (piece != 0 && piece->type != CF_PIECE_NONE) {
+        ui_assets_draw_piece(CF_UI_FART_PIECE_BOX_X + 1,
+                             CF_UI_FART_PIECE_BOX_Y + 2,
+                             piece, COL_PANEL_SOFT);
+        font_draw_text(CF_UI_FART_PIECE_TEXT_X, CF_UI_FART_PIECE_NAME_Y,
+                       board_piece_type_name(piece->type), COL_TEXT, 1);
+    }
+    font_draw_text(CF_UI_FART_PIECE_TEXT_X, CF_UI_FART_PIECE_SQUARE_Y,
+                   square, COL_CURSOR, 1);
+
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_GAS_LABEL_Y,
+                   "GAS", COL_GOLD, 1);
+    draw_gas_pips(CF_UI_HUD_LABEL_X + 1, CF_UI_FART_GAS_PIPS_Y, piece_gas);
+    sprintf(line, "%u/3", (unsigned)piece_gas);
+    font_draw_text(CF_UI_HUD_VALUE_X + 9, CF_UI_FART_GAS_PIPS_Y,
+                   line, piece_gas >= 2U ? COL_GAS : COL_MUTED, 1);
+
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_DIRECTION_Y,
+                   "DIRECTION", COL_SELECTED, 1);
+    font_draw_text(CF_UI_FART_DIRECTION_VALUE_X, CF_UI_FART_DIRECTION_Y,
+                   gas_direction_name(fart_direction), COL_GAS, 1);
+    draw_direction_arrow(286, CF_UI_FART_DIRECTION_Y + 3,
+                         fart_direction, COL_GAS);
+
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LABEL_Y,
+                   "PREVIEW", COL_SELECTED, 1);
+    font_draw_text_clipped(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LINE1_Y,
+                           preview1,
+                           fart_preview == CF_FART_INVALID ?
+                           COL_CHECK : COL_GAS,
+                           1, CF_UI_HUD_DIVIDER_W);
+    if (preview2[0] != '\0')
+        font_draw_text_clipped(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LINE2_Y,
+                               preview2,
+                               fart_preview == CF_FART_PROMOTION ?
+                               COL_PROMOTE : COL_GAS,
+                               1, CF_UI_HUD_DIVIDER_W);
+
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_FART_LAST_DIVIDER_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, COL_PANEL_LINE);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_ACTION_LABEL_Y,
+                   "ACTION", COL_SELECTED, 1);
+    if (message != 0 && message[0] != '\0')
+        font_draw_text_clipped(CF_UI_HUD_LABEL_X,
+                               CF_UI_FART_ACTION_LINE1_Y,
+                               message, COL_TEXT, 1, CF_UI_HUD_DIVIDER_W);
+}
+
 static void draw_gas_pips(int x, int y, cf_u8 gas)
 {
     int i;
@@ -363,7 +561,10 @@ static void draw_panel_art(const CfBoard *board, const CfGasState *gas,
                            const CfMoveList *legal_moves, CfGameStatus status,
                            int promotion_pending, CfPieceType promotion_choice,
                            int fart_mode, CfFartDirection fart_direction,
-                           CfFartPreview fart_preview, const char *message)
+                           CfFartPreview fart_preview,
+                           int fart_promotion_pending,
+                           CfPieceType fart_promotion_choice,
+                           const char *message)
 {
     const CfPiece *piece;
     int piece_file;
@@ -371,6 +572,15 @@ static void draw_panel_art(const CfBoard *board, const CfGasState *gas,
     char square[3];
     char line[24];
     cf_u8 piece_gas = 0U;
+
+    if (fart_mode) {
+        draw_fart_panel_art(board, gas, cursor_file, cursor_rank,
+                            has_selection, selected_file, selected_rank,
+                            fart_direction, fart_preview,
+                            fart_promotion_pending, fart_promotion_choice,
+                            message);
+        return;
+    }
 
     draw_panel_box(PANEL_X, PANEL_Y, PANEL_W, PANEL_H);
 
@@ -410,11 +620,6 @@ static void draw_panel_art(const CfBoard *board, const CfGasState *gas,
     if (promotion_pending) {
         sprintf(line, "PROMOTE %s", board_piece_type_name(promotion_choice));
         font_draw_text(180, 128, line, COL_PROMOTE, 1);
-    } else if (fart_mode) {
-        sprintf(line, "FART %s", gas_direction_name(fart_direction));
-        font_draw_text(180, 128, line, COL_FART, 1);
-        font_draw_text(180, 139, gas_fart_preview_name(fart_preview),
-                       fart_preview == CF_FART_INVALID ? COL_CHECK : COL_GAS, 1);
     } else if (has_selection) {
         sprintf(line, "%d LEGAL MOVES", legal_moves != 0 ? legal_moves->count : 0);
         font_draw_text(180, 128, line, COL_MUTED, 1);
@@ -430,59 +635,58 @@ static void draw_panel_art(const CfBoard *board, const CfGasState *gas,
     }
 }
 
-static void draw_header(void)
+static void draw_header(int fart_mode)
 {
     vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_Y,
                   CF_UI_HEADER_W, CF_UI_HEADER_H, COL_BG);
     font_draw_heading(CF_UI_HEADER_TITLE_X, CF_UI_HEADER_TITLE_Y,
                       "CHESS FART", COL_GOLD, 1);
-    font_draw_text(CF_UI_HEADER_TAGLINE_X, CF_UI_HEADER_TAGLINE_Y,
-                   "CHECK. MATE. VENTILATE.", COL_TEXT, 1);
+    if (fart_mode) {
+        font_draw_text(CF_UI_FART_HEADER_TAGLINE_X, CF_UI_HEADER_TAGLINE_Y,
+                       "CHECK. MATE.", COL_TEXT, 1);
+        ui_assets_draw_puff(CF_UI_FART_HEADER_PUFF_X,
+                            CF_UI_FART_HEADER_PUFF_Y, 0);
+        vga_fill_rect(CF_UI_FART_BADGE_X, CF_UI_FART_BADGE_Y,
+                      CF_UI_FART_BADGE_W, CF_UI_FART_BADGE_H,
+                      COL_PANEL_EDGE);
+        vga_fill_rect(CF_UI_FART_BADGE_X + 1, CF_UI_FART_BADGE_Y + 1,
+                      CF_UI_FART_BADGE_W - 2, CF_UI_FART_BADGE_H - 2,
+                      COL_PANEL_SOFT);
+        vga_fill_rect(CF_UI_FART_BADGE_X + 1, CF_UI_FART_BADGE_Y + 1,
+                      CF_UI_FART_BADGE_W - 2, 1, COL_GAS);
+        font_draw_text(CF_UI_FART_BADGE_TEXT_X, CF_UI_FART_BADGE_TEXT_Y,
+                       "FART MODE", COL_GAS, 1);
+    } else {
+        font_draw_text(CF_UI_HEADER_TAGLINE_X, CF_UI_HEADER_TAGLINE_Y,
+                       "CHECK. MATE. VENTILATE.", COL_TEXT, 1);
+    }
     vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_RULE_Y,
                   CF_UI_HEADER_W, 1, COL_COPPER);
 }
 
-static void draw_command_cell(int index, const char *label, int active)
-{
-    int x = index * 40;
-    cf_u8 edge = active ? COL_GAS : COL_PANEL_EDGE;
-    cf_u8 text = active ? COL_GAS : COL_TEXT;
-
-    vga_fill_rect(x + 1, COMMAND_Y + 2, 38, 15, edge);
-    vga_fill_rect(x + 2, COMMAND_Y + 3, 36, 13, COL_PANEL_SOFT);
-    vga_fill_rect(x + 3, COMMAND_Y + 4, 34, 1, COL_PANEL_LINE);
-    font_draw_text(x + 4, COMMAND_Y + 7, label, text, 1);
-}
-
-static void draw_legacy_command_bar(void)
-{
-    static const char *labels[8] = {
-        "F FART", "S SAVE", "L LOAD", "H HELP",
-        "M LOG", "C CRED", "D CPU", "ESC"
-    };
-    int i;
-
-    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
-                  CF_UI_COMMAND_W, CF_UI_COMMAND_H, COL_BG);
-    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
-                  CF_UI_COMMAND_W, 1, COL_GOLD);
-    for (i = 0; i < 8; ++i)
-        draw_command_cell(i, labels[i], i == 0);
-}
-
-static void draw_command_bar(CfPieceColor side_to_move, int fart_mode)
+static void draw_command_bar(CfPieceColor side_to_move,
+                             int fart_mode,
+                             int fart_promotion_pending)
 {
     char line[16];
 
-    if (fart_mode) {
-        draw_legacy_command_bar();
-        return;
-    }
-
     vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
                   CF_UI_COMMAND_W, CF_UI_COMMAND_H, COL_BG);
     vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
                   CF_UI_COMMAND_W, 1, COL_GOLD);
+
+    if (fart_mode) {
+        font_draw_text(CF_UI_FART_PROMPT_ARROWS_X, CF_UI_PROMPT_TEXT_Y,
+                       fart_promotion_pending ?
+                       "ARROWS CHOOSE PIECE" : "ARROWS CHANGE DIRECTION",
+                       COL_GAS, 1);
+        font_draw_text(CF_UI_FART_PROMPT_ENTER_X, CF_UI_PROMPT_TEXT_Y,
+                       "ENTER CONFIRM", COL_TEXT, 1);
+        font_draw_text(CF_UI_FART_PROMPT_ESC_X, CF_UI_PROMPT_TEXT_Y,
+                       "ESC CANCEL", COL_MUTED, 1);
+        return;
+    }
+
     sprintf(line, "%s TO MOVE", board_piece_color_name(side_to_move));
     font_draw_text(CF_UI_PROMPT_TURN_X, CF_UI_PROMPT_TEXT_Y,
                    line, COL_GOLD, 1);
@@ -561,10 +765,12 @@ void board_view_render_build7_fx(const CfBoard *board,
 
     load_art_palette(flash);
     vga_clear(COL_BG);
-    draw_header();
+    draw_header(fart_mode);
     draw_board(board, gas, cursor_file, cursor_rank,
                has_selection, selected_file, selected_rank, legal_moves);
     if (has_selection && fart_mode) {
+        draw_fart_trail(selected_file, selected_rank,
+                        fart_direction, fart_preview);
         draw_push_geometry(selected_file, selected_rank,
                            fart_direction, fart_preview);
     }
@@ -572,8 +778,10 @@ void board_view_render_build7_fx(const CfBoard *board,
                    has_selection, selected_file, selected_rank,
                    legal_moves, status, promotion_pending,
                    promotion_choice, fart_mode, fart_direction,
-                   fart_preview, message);
-    draw_command_bar(board->side_to_move, fart_mode);
+                   fart_preview, fart_promotion_pending,
+                   fart_promotion_choice, message);
+    draw_command_bar(board->side_to_move, fart_mode,
+                     fart_promotion_pending);
     draw_fx(fx);
 }
 
