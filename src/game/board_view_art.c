@@ -434,9 +434,11 @@ static void draw_header(void)
 {
     vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_Y,
                   CF_UI_HEADER_W, CF_UI_HEADER_H, COL_BG);
-    font_draw_text(12, 4, "CHESS FART", COL_GOLD, 2);
-    font_draw_text(139, 7, "CHECK. MATE. VENTILATE.", COL_TEXT, 1);
-    vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_Y + CF_UI_HEADER_H - 1,
+    font_draw_heading(CF_UI_HEADER_TITLE_X, CF_UI_HEADER_TITLE_Y,
+                      "CHESS FART", COL_GOLD, 1);
+    font_draw_text(CF_UI_HEADER_TAGLINE_X, CF_UI_HEADER_TAGLINE_Y,
+                   "CHECK. MATE. VENTILATE.", COL_TEXT, 1);
+    vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_RULE_Y,
                   CF_UI_HEADER_W, 1, COL_COPPER);
 }
 
@@ -452,7 +454,7 @@ static void draw_command_cell(int index, const char *label, int active)
     font_draw_text(x + 4, COMMAND_Y + 7, label, text, 1);
 }
 
-static void draw_command_bar(void)
+static void draw_legacy_command_bar(void)
 {
     static const char *labels[8] = {
         "F FART", "S SAVE", "L LOAD", "H HELP",
@@ -466,6 +468,34 @@ static void draw_command_bar(void)
                   CF_UI_COMMAND_W, 1, COL_GOLD);
     for (i = 0; i < 8; ++i)
         draw_command_cell(i, labels[i], i == 0);
+}
+
+static void draw_command_bar(CfPieceColor side_to_move, int fart_mode)
+{
+    char line[16];
+
+    if (fart_mode) {
+        draw_legacy_command_bar();
+        return;
+    }
+
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, CF_UI_COMMAND_H, COL_BG);
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, 1, COL_GOLD);
+    sprintf(line, "%s TO MOVE", board_piece_color_name(side_to_move));
+    font_draw_text(CF_UI_PROMPT_TURN_X, CF_UI_PROMPT_TEXT_Y,
+                   line, COL_GOLD, 1);
+    font_draw_text(CF_UI_PROMPT_FART_X, CF_UI_PROMPT_TEXT_Y,
+                   "F FART", COL_GAS, 1);
+    font_draw_text(CF_UI_PROMPT_SAVE_X, CF_UI_PROMPT_TEXT_Y,
+                   "S SAVE", COL_TEXT, 1);
+    font_draw_text(CF_UI_PROMPT_LOAD_X, CF_UI_PROMPT_TEXT_Y,
+                   "L LOAD", COL_TEXT, 1);
+    font_draw_text(CF_UI_PROMPT_HELP_X, CF_UI_PROMPT_TEXT_Y,
+                   "H HELP", COL_TEXT, 1);
+    font_draw_text(CF_UI_PROMPT_ESC_X, CF_UI_PROMPT_TEXT_Y,
+                   "ESC MENU", COL_MUTED, 1);
 }
 
 static void draw_fx(const CfPresentationFx *fx)
@@ -543,7 +573,7 @@ void board_view_render_build7_fx(const CfBoard *board,
                    legal_moves, status, promotion_pending,
                    promotion_choice, fart_mode, fart_direction,
                    fart_preview, message);
-    draw_command_bar();
+    draw_command_bar(board->side_to_move, fart_mode);
     draw_fx(fx);
 }
 
