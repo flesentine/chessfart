@@ -14,8 +14,10 @@ jobs:
       - name: Verify Build 13 assets
         run: |
           python3 tools/build_assets.py --check
-          python3 -m unittest tests/test_build13_assets.py
+          python3 tools/build_font.py --check
+          python3 -m unittest tests/test_build13_assets.py tests/test_build13_font.py
           cat build/assets/ASSET_REPORT.txt
+          cat build/assets/FONT_REPORT.txt
 
       - name: Build and test host release
         run: make test-build12
@@ -64,6 +66,7 @@ jobs:
             build/dos/CHESSFRT.EXE
             build/dos/DOSSMOKE.OK
             build/assets/ASSET_REPORT.txt
+            build/assets/FONT_REPORT.txt
             build/host/PROFILE.txt
             build/host/SIZE.txt
             build/host/chessfart_build11.ppm
