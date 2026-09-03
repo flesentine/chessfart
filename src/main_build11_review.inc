@@ -121,6 +121,8 @@ EMSCRIPTEN_KEEPALIVE int cf_review_render_fixture(int fixture)
         g_board.side_to_move = CF_COLOR_WHITE;
         gas_set(&g_gas, 7, 3, 2U);
         gas_history_init(&g_history, &g_board, &g_gas);
+        ux_history_init(&g_ux_history);
+        ux_history_add(&g_ux_history, "WHITE PAWN TO H4");
         status = gas_game_status(&g_board, &g_gas, &g_history);
         preview = gas_preview_fart(&g_board, &g_gas, 7, 3, CF_FART_N);
         if (status != CF_GAME_ONGOING || preview != CF_FART_PUSH) return 0;
