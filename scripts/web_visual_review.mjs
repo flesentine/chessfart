@@ -11,6 +11,7 @@ const server = spawn('python3', ['-m', 'http.server', '8128', '--directory', 'bu
   stdio: 'ignore'
 });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+let reviewGeometry = null;
 
 async function call(page, name, ...args) {
   return await page.evaluate(({ name, args }) => {
@@ -55,12 +56,25 @@ async function nativeShot(page, name, source, states) {
   });
 }
 
+async function canonicalGeometry(page) {
+  if (reviewGeometry === null) {
+    reviewGeometry = {
+      boardX: await call(page, 'cf_review_board_x'),
+      boardY: await call(page, 'cf_review_board_y'),
+      square: await call(page, 'cf_review_square_size')
+    };
+    if (reviewGeometry.square <= 0) throw new Error('invalid canonical square size');
+  }
+  return reviewGeometry;
+}
+
 async function canvasPoint(page, file, rank) {
   const canvas = await page.$('#canvas');
   const box = await canvas.boundingBox();
+  const geometry = await canonicalGeometry(page);
   if (!box) throw new Error('canvas has no bounding box');
-  const vx = 18 + file * 18 + 9;
-  const vy = 27 + (7 - rank) * 18 + 9;
+  const vx = geometry.boardX + file * geometry.square + Math.floor(geometry.square / 2);
+  const vy = geometry.boardY + (7 - rank) * geometry.square + Math.floor(geometry.square / 2);
   return {
     x: box.x + (vx / 320) * box.width,
     y: box.y + (vy / 200) * box.height

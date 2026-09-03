@@ -1,4 +1,5 @@
 #include <emscripten/emscripten.h>
+#include "ui_layout.h"
 
 EMSCRIPTEN_KEEPALIVE int cf_review_status(void)
 {
@@ -25,6 +26,21 @@ EMSCRIPTEN_KEEPALIVE void cf_review_set_cpu_difficulty(int difficulty)
 EMSCRIPTEN_KEEPALIVE int cf_review_cpu_difficulty(void)
 {
     return (int)g_cpu_config.difficulty;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_board_x(void)
+{
+    return CF_UI_BOARD_X;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_board_y(void)
+{
+    return CF_UI_BOARD_Y;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_square_size(void)
+{
+    return CF_UI_SQUARE_SIZE;
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_piece(int file, int rank)
