@@ -97,9 +97,24 @@ static void ux_draw_help_page(int page)
         font_draw_text(x + 15, y + 76, "PUSHED PAWN CAN PROMOTE Q/R/B/N", UX_COL_TEXT, 1);
         font_draw_text(x + 15, y + 86, "HOME KING/ROOK PUSH KILLS CASTLING", UX_COL_TEXT, 1);
 
-        font_draw_heading(x + 15, y + 98, "CPU + SAVES", UX_COL_GOLD, 1);
-        font_draw_text(x + 15, y + 110, "CPU BLACK SEARCHES MOVES + FARTS", UX_COL_GAS, 1);
-        font_draw_text(x + 15, y + 120, "D ON TITLE: EASY / MED / HARD", UX_COL_TEXT, 1);
+        if (ux_match_mode_uses_cpu(g_match_mode)) {
+            font_draw_heading(x + 15, y + 98, "CPU + SAVES", UX_COL_GOLD, 1);
+            font_draw_text(x + 15, y + 110,
+                           "CPU BLACK SEARCHES MOVES + FARTS",
+                           UX_COL_GAS, 1);
+            font_draw_text(x + 15, y + 120,
+                           "D ON TITLE: EASY / MED / HARD",
+                           UX_COL_TEXT, 1);
+        } else {
+            font_draw_heading(x + 15, y + 98,
+                              "2 PLAYER + SAVES", UX_COL_GOLD, 1);
+            font_draw_text(x + 15, y + 110,
+                           "WHITE + BLACK TAKE TURNS LOCALLY",
+                           UX_COL_GAS, 1);
+            font_draw_text(x + 15, y + 120,
+                           "MODE CHOSEN ON TITLE SCREEN",
+                           UX_COL_TEXT, 1);
+        }
         font_draw_text(x + 15, y + 130, "GAS COUNTS IN THREEFOLD IDENTITY", UX_COL_TEXT, 1);
         font_draw_text(x + 15, y + 139, "SAVE STORES GAS + REPETITION HISTORY", UX_COL_MUTED, 1);
     }
