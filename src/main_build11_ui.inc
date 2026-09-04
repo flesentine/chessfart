@@ -167,8 +167,10 @@ static void ux_draw_terminal_overlay(CfGameStatus status,
 
     if (status == CF_GAME_CHECKMATE)
         detail = "CHECKMATE - NO LEGAL ESCAPE";
+    else if (status == CF_GAME_DRAW_THREEFOLD)
+        detail = "DRAW 3-FOLD";
     else
-        detail = ux_hud_status_name(status);
+        detail = board_game_status_name(status);
 
     ux_draw_modal_frame(x, y, w, h, "GAME OVER");
     ux_draw_centered(x, y + 30, w, result,
@@ -653,6 +655,36 @@ static void ux_draw_command_bar(const CfBoard *board,
                    "ESC MENU", UX_COL_MUTED, 1);
 }
 
+static void ux_draw_persistence_notice(const char *message)
+{
+    int inner_w;
+    int tw;
+    cf_u8 accent;
+
+    if (message == 0) return;
+    if (strncmp(message, "SAVE ", 5) != 0 &&
+        strncmp(message, "LOAD ", 5) != 0) return;
+
+    accent = strstr(message, " OK") != 0 ? UX_COL_GAS : UX_COL_CHECK;
+    vga_fill_rect(CF_UI_NOTICE_X + 2, CF_UI_NOTICE_Y + 2,
+                  CF_UI_NOTICE_W, CF_UI_NOTICE_H, UX_COL_SHADOW);
+    vga_fill_rect(CF_UI_NOTICE_X, CF_UI_NOTICE_Y,
+                  CF_UI_NOTICE_W, CF_UI_NOTICE_H, UX_COL_PANEL_EDGE);
+    vga_fill_rect(CF_UI_NOTICE_X + 2, CF_UI_NOTICE_Y + 2,
+                  CF_UI_NOTICE_W - 4, CF_UI_NOTICE_H - 4, UX_COL_PANEL_SOFT);
+    vga_fill_rect(CF_UI_NOTICE_X + 2, CF_UI_NOTICE_Y + 2,
+                  CF_UI_NOTICE_W - 4, 1, accent);
+    inner_w = CF_UI_NOTICE_W - 10;
+    tw = font_text_width(message, 1);
+    if (tw <= inner_w)
+        font_draw_text(CF_UI_NOTICE_X + (CF_UI_NOTICE_W - tw) / 2,
+                       CF_UI_NOTICE_TEXT_Y, message, accent, 1);
+    else
+        font_draw_text_clipped(CF_UI_NOTICE_X + 5,
+                               CF_UI_NOTICE_TEXT_Y, message,
+                               accent, 1, inner_w);
+}
+
 static void ux_render_cached_base(void)
 {
     const char *shown;
@@ -690,6 +722,7 @@ static void ux_render_cached_base(void)
                          g_ux_cache.fart_promotion_choice);
     ux_draw_command_bar(&g_ux_cache.board, g_ux_cache.fart_mode,
                         g_ux_cache.fart_promotion_pending);
+    ux_draw_persistence_notice(shown);
 
     if (ux_terminal(g_ux_cache.status))
         ux_draw_terminal_overlay(g_ux_cache.status,
