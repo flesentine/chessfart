@@ -58,8 +58,9 @@ jobs:
           test -s build/web-visual-review/12-fart-push-preview.png
           test -s build/web-visual-review/13-check.png
           test -s build/web-visual-review/14-checkmate.png
+          test -s build/web-visual-review/15-fart-edge-invalid.png
           grep -q '^PASS$' build/web-visual-review/visual-review.txt
-          grep -q '^states=14$' build/web-visual-review/visual-review.txt
+          grep -q '^states=15$' build/web-visual-review/visual-review.txt
           cat build/web-visual-review/visual-review.txt
       - name: Preserve web diagnostics
         if: always()
