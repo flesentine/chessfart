@@ -71,7 +71,8 @@ int ux_human_make_move(CfBoard *board, CfGasState *gas,
 {
     CfGasMove local;
     if (!audio_game_make_move(board, gas, ff, fr, tf, tr, &local)) return 0;
-    ux_log_move("YOU", &local);
+    ux_log_move(ux_match_actor_name(g_match_mode,
+                                    local.chess_move.moved.color), &local);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
     return 1;
@@ -84,7 +85,8 @@ int ux_human_make_move_ex(CfBoard *board, CfGasState *gas,
     CfGasMove local;
     if (!audio_game_make_move_ex(board, gas, ff, fr, tf, tr,
                                  promotion, &local)) return 0;
-    ux_log_move("YOU", &local);
+    ux_log_move(ux_match_actor_name(g_match_mode,
+                                    local.chess_move.moved.color), &local);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
     return 1;
@@ -97,7 +99,7 @@ int ux_human_make_fart(CfBoard *board, CfGasState *gas, int file, int rank,
     CfFartAction local;
     if (!audio_game_make_fart(board, gas, file, rank,
                               direction, promotion, &local)) return 0;
-    ux_log_fart("YOU", &local);
+    ux_log_fart(ux_match_actor_name(g_match_mode, local.previous_side), &local);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (action != 0) *action = local;
     return 1;

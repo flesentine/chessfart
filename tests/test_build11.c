@@ -206,6 +206,20 @@ static void test_match_modes(void)
     CHECK(strcmp(ux_match_mode_name(CF_MATCH_CPU), "CPU") == 0);
     CHECK(strcmp(ux_match_mode_name(CF_MATCH_LOCAL), "LOCAL 2P") == 0);
     CHECK(strcmp(ux_match_mode_name((CfMatchMode)99), "UNKNOWN") == 0);
+    CHECK(strcmp(ux_match_actor_name(CF_MATCH_CPU, CF_COLOR_WHITE),
+                 "YOU") == 0);
+    CHECK(strcmp(ux_match_actor_name(CF_MATCH_CPU, CF_COLOR_BLACK),
+                 "CPU") == 0);
+    CHECK(strcmp(ux_match_actor_name(CF_MATCH_CPU, CF_COLOR_NONE),
+                 "PLAYER") == 0);
+    CHECK(strcmp(ux_match_actor_name(CF_MATCH_LOCAL, CF_COLOR_WHITE),
+                 "WHITE") == 0);
+    CHECK(strcmp(ux_match_actor_name(CF_MATCH_LOCAL, CF_COLOR_BLACK),
+                 "BLACK") == 0);
+    CHECK(strcmp(ux_match_actor_name(CF_MATCH_LOCAL, CF_COLOR_NONE),
+                 "PLAYER") == 0);
+    CHECK(strcmp(ux_match_panel_label(CF_MATCH_CPU), "CPU") == 0);
+    CHECK(strcmp(ux_match_panel_label(CF_MATCH_LOCAL), "MODE") == 0);
 }
 
 static void test_terminal_labels(void)

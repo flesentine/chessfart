@@ -39,6 +39,18 @@ EMSCRIPTEN_KEEPALIVE int cf_review_match_mode(void)
     return (int)g_match_mode;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_history_has_local_pair(void)
+{
+    const char *white;
+    const char *black;
+    if (g_ux_history.count < 2) return 0;
+    white = ux_history_get(&g_ux_history, 0);
+    black = ux_history_get(&g_ux_history, 1);
+    if (white == 0 || black == 0) return 0;
+    return strncmp(white, "WHITE ", 6) == 0 &&
+           strncmp(black, "BLACK ", 6) == 0;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_ui_synced(void)
 {
     if (!g_ux_cache.valid) return 0;

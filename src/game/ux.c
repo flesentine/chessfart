@@ -116,6 +116,24 @@ const char *ux_match_mode_name(CfMatchMode mode)
     return "UNKNOWN";
 }
 
+const char *ux_match_actor_name(CfMatchMode mode, CfPieceColor color)
+{
+    if (mode == CF_MATCH_CPU) {
+        if (color == CF_COLOR_WHITE) return "YOU";
+        if (color == CF_COLOR_BLACK) return "CPU";
+    }
+    if (mode == CF_MATCH_LOCAL) {
+        if (color == CF_COLOR_WHITE) return "WHITE";
+        if (color == CF_COLOR_BLACK) return "BLACK";
+    }
+    return "PLAYER";
+}
+
+const char *ux_match_panel_label(CfMatchMode mode)
+{
+    return mode == CF_MATCH_LOCAL ? "MODE" : "CPU";
+}
+
 const char *ux_terminal_title(CfGameStatus status, CfPieceColor side_to_move)
 {
     if (status == CF_GAME_CHECKMATE)

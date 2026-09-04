@@ -144,9 +144,11 @@ static void ux_draw_history_screen(void)
         for (i = first; i < g_ux_history.count; ++i) {
             line = ux_history_get(&g_ux_history, i);
             if (line != 0) {
-                if (strncmp(line, "YOU", 3) == 0)
+                if (strncmp(line, "YOU", 3) == 0 ||
+                    strncmp(line, "WHITE", 5) == 0)
                     color = UX_COL_GAS;
-                else if (strncmp(line, "CPU", 3) == 0)
+                else if (strncmp(line, "CPU", 3) == 0 ||
+                         strncmp(line, "BLACK", 5) == 0)
                     color = UX_COL_GOLD;
                 else
                     color = UX_COL_MUTED;
@@ -304,6 +306,18 @@ static void ux_draw_action_two_lines(int x, int y, int second_y,
     font_draw_text_clipped(x, y, first, color, 1, CF_UI_HUD_DIVIDER_W);
     font_draw_text_clipped(x, second_y,
                            second, color, 1, CF_UI_HUD_DIVIDER_W);
+}
+
+static void ux_draw_match_row(int y)
+{
+    const char *label = ux_match_panel_label(g_match_mode);
+    const char *value = ux_match_mode_uses_cpu(g_match_mode) ?
+                        cpu_difficulty_name(g_cpu_config.difficulty) :
+                        ux_match_mode_name(g_match_mode);
+    font_draw_text(CF_UI_HUD_LABEL_X, y, label, UX_COL_SELECTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, y, value,
+                   ux_match_mode_uses_cpu(g_match_mode) ?
+                   UX_COL_GOLD : UX_COL_GAS, 1);
 }
 
 static void ux_fart_delta(CfFartDirection direction, int *df, int *dr)
@@ -485,10 +499,7 @@ static void ux_draw_fart_panel(const CfBoard *board,
                                CF_UI_COL_PROMOTE : UX_COL_GAS,
                                1, CF_UI_HUD_DIVIDER_W);
 
-    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_CPU_Y,
-                   "CPU", UX_COL_SELECTED, 1);
-    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_FART_CPU_Y,
-                   cpu_difficulty_name(g_cpu_config.difficulty), UX_COL_GOLD, 1);
+    ux_draw_match_row(CF_UI_FART_CPU_Y);
 
     vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_FART_LAST_DIVIDER_Y,
                   CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
@@ -607,10 +618,7 @@ static void ux_draw_retail_panel(const CfBoard *board,
 
     vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER3_Y,
                   CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
-    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_CPU_Y,
-                   "CPU", UX_COL_SELECTED, 1);
-    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_CPU_Y,
-                   cpu_difficulty_name(g_cpu_config.difficulty), UX_COL_GOLD, 1);
+    ux_draw_match_row(CF_UI_HUD_CPU_Y);
 
     vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER4_Y,
                   CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);

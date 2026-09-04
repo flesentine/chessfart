@@ -200,6 +200,7 @@ async function verifyMatchModes(browser) {
   await waitForMatchState(local,2,1);
   let piece = decodePiece(await call(local,'cf_review_piece',4,3));
   if (piece.type !== 1 || piece.color !== 1) throw new Error('local White e2-e4 did not land');
+  await canvasShot(local,'match-local-black-to-move-hud');
   await local.keyboard.press('s');
   await sleep(250);
 
@@ -208,6 +209,13 @@ async function verifyMatchModes(browser) {
   await waitForMatchState(local,1,2);
   piece = decodePiece(await call(local,'cf_review_piece',4,4));
   if (piece.type !== 1 || piece.color !== 2) throw new Error('local Black e7-e5 did not land');
+  if (await call(local,'cf_review_history_has_local_pair') !== 1)
+    throw new Error('local history did not record WHITE then BLACK');
+  await local.keyboard.press('m');
+  await sleep(220);
+  await canvasShot(local,'match-local-history-white-black');
+  await local.keyboard.press('Enter');
+  await sleep(180);
 
   await local.keyboard.press('l');
   await waitForMatchState(local,2,1);
@@ -222,7 +230,7 @@ async function verifyMatchModes(browser) {
   await clickSquare(local,4,4);
   await waitForMatchState(local,1,2);
   if (localErrors.length) throw new Error(`match-local: ${localErrors.join(' | ')}`);
-  summary.push('MATCH_LOCAL=PASS white=e2-e4 save/load-black-turn black=e7-e5');
+  summary.push('MATCH_LOCAL=PASS white=e2-e4 black=e7-e5 history=WHITE/BLACK save/load-black-turn');
   await local.close();
 
   const cpu = await browser.newPage();

@@ -33,6 +33,8 @@ void ux_format_cpu_line(const char *actor, const CfCpuAction *action,
 int ux_match_mode_valid(CfMatchMode mode);
 int ux_match_mode_uses_cpu(CfMatchMode mode);
 const char *ux_match_mode_name(CfMatchMode mode);
+const char *ux_match_actor_name(CfMatchMode mode, CfPieceColor color);
+const char *ux_match_panel_label(CfMatchMode mode);
 
 const char *ux_terminal_title(CfGameStatus status, CfPieceColor side_to_move);
 int ux_board_hit_test(int x, int y, int *file, int *rank);
