@@ -103,6 +103,7 @@ EMSCRIPTEN_KEEPALIVE const char *cf_review_history_line(int index)
  * fixture 1: White to move in CHECK
  * fixture 2: White to move in CHECKMATE
  * fixture 3: charged A8 knight aiming north off-board (INVALID)
+ * fixture 4: Black to move in STALEMATE
  */
 EMSCRIPTEN_KEEPALIVE int cf_review_render_fixture(int fixture)
 {
@@ -180,5 +181,43 @@ EMSCRIPTEN_KEEPALIVE int cf_review_render_fixture(int fixture)
         return 1;
     }
 
+    if (fixture == 4) {
+        board_set_piece(&g_board, 2, 5, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 2, 6, CF_PIECE_QUEEN, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 0, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        g_board.side_to_move = CF_COLOR_BLACK;
+        gas_history_init(&g_history, &g_board, &g_gas);
+        ux_history_init(&g_ux_history);
+        ux_history_add(&g_ux_history, "WHITE QUEEN TO C7");
+        status = gas_game_status(&g_board, &g_gas, &g_history);
+        if (status != CF_GAME_STALEMATE) return 0;
+        render(0, 7, 0, 0, 0, &moves, status,
+               0, CF_PIECE_QUEEN, 0, CF_FART_N, CF_FART_INVALID,
+               0, CF_PIECE_QUEEN, "STALEMATE");
+        return 1;
+    }
+
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_render_ui_fixture(int fixture)
+{
+    if (fixture == 0) {
+        ux_draw_title(0, 0);
+        ux_draw_help_page(1);
+        vga_present();
+        return 1;
+    }
+    if (fixture == 1) {
+        ux_draw_title(0, 0);
+        ux_draw_credits_screen();
+        vga_present();
+        return 1;
+    }
+    if (fixture == 2) {
+        ux_draw_title(3, 1);
+        vga_present();
+        return 1;
+    }
     return 0;
 }

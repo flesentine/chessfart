@@ -824,11 +824,11 @@ void board_view_render_title7(int menu_index, int frame)
     vga_clear(COL_BG);
     draw_outline(4, 4, 312, 192, COL_PANEL_EDGE);
     draw_outline(6, 6, 308, 188, COL_COPPER);
-    font_draw_text(100, 20, "CHESS FART", COL_GOLD, 2);
+    font_draw_heading(100, 20, "CHESS FART", COL_GOLD, 2);
     font_draw_text(88, 44, "CHECK. MATE. VENTILATE.", COL_SELECTED, 1);
     vga_fill_rect(52, 61, 216, 1, COL_PANEL_LINE);
     vga_fill_rect(52, 64, 216, 1, COL_COPPER);
     ui_assets_draw_puff(65 + phase, 33, 1);
     ui_assets_draw_puff(239 - phase, 33, 1);
-    font_draw_text(111, 77, "386 VGA EDITION", COL_MUTED, 1);
+    font_draw_text(116, 77, "DOS VGA EDITION", COL_MUTED, 1);
 }
