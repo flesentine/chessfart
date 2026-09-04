@@ -44,6 +44,7 @@ static int ux_cpu_take_turn(CfBoard *board, CfGasState *gas,
     CfGameStatus status;
     char line[CF_UX_HISTORY_LINE];
     if (board == 0 || gas == 0 || history == 0) return 0;
+    if (!ux_match_mode_uses_cpu(g_match_mode)) return 0;
     if (board->side_to_move != CF_COLOR_BLACK) return 0;
     g_cpu_search_history = *history;
     gas_history_record(&g_cpu_search_history, board, gas);

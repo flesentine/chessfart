@@ -28,6 +28,17 @@ EMSCRIPTEN_KEEPALIVE int cf_review_cpu_difficulty(void)
     return (int)g_cpu_config.difficulty;
 }
 
+EMSCRIPTEN_KEEPALIVE void cf_review_set_match_mode(int mode)
+{
+    CfMatchMode requested = (CfMatchMode)mode;
+    if (ux_match_mode_valid(requested)) g_match_mode = requested;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_match_mode(void)
+{
+    return (int)g_match_mode;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_ui_synced(void)
 {
     if (!g_ux_cache.valid) return 0;

@@ -15,6 +15,7 @@
 
 static CfCpuConfig g_cpu_config;
 static CfCpuStats g_cpu_stats;
+static CfMatchMode g_match_mode;
 static CfGasHistory g_cpu_search_history;
 static CfGasHistory g_cpu_history_backup;
 static char g_cpu_message[32];
@@ -99,6 +100,7 @@ int main(void)
     int result;
     if (0) ux_stamp_build11();
     cpu_config_for_difficulty(&g_cpu_config, CF_CPU_MEDIUM);
+    g_match_mode = CF_MATCH_CPU;
     memset(&g_cpu_stats, 0, sizeof(g_cpu_stats));
     memset(&g_ux_cache, 0, sizeof(g_ux_cache));
     ux_history_init(&g_ux_history);

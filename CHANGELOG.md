@@ -2,6 +2,15 @@
 
 All notable project milestones are recorded here.
 
+## Build 14 — Local two-player
+
+Build 14 restores the original hot-seat goal on top of the frozen 1.0 rules path.
+
+- 14.0 introduces an explicit CPU/local match-mode contract while keeping CPU mode as the default.
+- Automatic Black CPU replies are now gated through that contract instead of being unconditional.
+- Review-only Chromium probes verify that local White e2-e4 leaves Black to move, local Black can answer e7-e5, and CPU mode still performs its automatic Black reply.
+- The 1.0 save format and all player-facing title/menu pixels remain unchanged in 14.0.
+
 ## Build 13 — Post-v1 presentation refresh
 
 Build 13 refreshes the 320x200 VGA presentation without changing the 1.0 rules, Gas/Fart mechanics, CPU evaluator, persistence format, or input semantics.

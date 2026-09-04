@@ -4,7 +4,7 @@
 
 Build 13 is a post-v1 presentation refresh. The packaged/versioned game remains **1.0.0**; Build 13 deliberately does not introduce a new ruleset or save format.
 
-Build 13.8 is the closeout candidate for this pass.
+Build 13.8 is merged and the Build 13 presentation pass is complete.
 
 ## Frozen gameplay contract
 
@@ -108,7 +108,7 @@ The `main_build11*` implementation and host-capture names are historical lineage
 
 ## Closeout validation contract
 
-A Build 13.8 closeout is acceptable only when all of these remain green on the exact PR head:
+Build 13.8 was closed only after all of these remained green on the exact PR head and the merged `main` tree:
 
 - Build 13 asset/font freshness and regression tests
 - strict C89 host release suite

@@ -99,6 +99,23 @@ void ux_format_cpu_line(const char *actor, const CfCpuAction *action,
     cpu_format_action(action, out, capacity);
 }
 
+int ux_match_mode_valid(CfMatchMode mode)
+{
+    return mode == CF_MATCH_CPU || mode == CF_MATCH_LOCAL;
+}
+
+int ux_match_mode_uses_cpu(CfMatchMode mode)
+{
+    return mode == CF_MATCH_CPU;
+}
+
+const char *ux_match_mode_name(CfMatchMode mode)
+{
+    if (mode == CF_MATCH_CPU) return "CPU";
+    if (mode == CF_MATCH_LOCAL) return "LOCAL 2P";
+    return "UNKNOWN";
+}
+
 const char *ux_terminal_title(CfGameStatus status, CfPieceColor side_to_move)
 {
     if (status == CF_GAME_CHECKMATE)
