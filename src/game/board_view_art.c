@@ -320,8 +320,8 @@ static void draw_fart_trail(int file, int rank,
         int py = sy + dy * i * 5;
         int size = i == steps ? 2 : 1;
         if (px - 1 < BOARD_X || py - 1 < BOARD_Y ||
-            px - 1 + size >= BOARD_X + BOARD_PIXELS ||
-            py - 1 + size >= BOARD_Y + BOARD_PIXELS)
+            px - 1 + size > BOARD_X + BOARD_PIXELS ||
+            py - 1 + size > BOARD_Y + BOARD_PIXELS)
             break;
         vga_fill_rect(px - 1, py - 1, size, size,
                       preview == CF_FART_INVALID ? COL_CHECK : COL_GAS);
