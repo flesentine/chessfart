@@ -2,6 +2,22 @@
 
 All notable project milestones are recorded here.
 
+## Build 13 — Post-v1 presentation refresh
+
+Build 13 refreshes the 320x200 VGA presentation without changing the 1.0 rules, Gas/Fart mechanics, CPU evaluator, persistence format, or input semantics.
+
+- 13.0 centralized retail layout and palette-role contracts.
+- 13.1 added deterministic native 320x200 Chromium visual-review states and canonicalized review click geometry.
+- 13.2 added deterministic indexed-PNG asset generation and fail-closed metadata validation.
+- 13.3 moved the UI font to an authored bitmap atlas with generated 512-byte runtime data.
+- 13.4 refreshed the board and piece art while preserving the 30-color active VGA contract.
+- 13.5 replaced the normal diagnostic sidebar with the compact gameplay HUD and hardened draw-state bounds.
+- 13.6 added the dedicated Fart-mode HUD/preview and clamped invalid edge trails to the board.
+- 13.7 unified the title, Help, History, Credits, terminal overlays, and save/load notices; the visual suite now covers 19 canonical states.
+- 13.8 closes the pass with canonical title-menu hit testing, regression coverage for every title row/boundary, defensive centered-text clipping, and documentation cleanup.
+
+The historical `main_build11*` source/capture names remain implementation-lineage names; renaming them would add churn without changing the shipped interface.
+
 ## 1.0.0 — Final release
 
 Promoted the frozen RC feature set to 1.0 after the release-hardening pass.
