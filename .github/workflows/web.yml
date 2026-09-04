@@ -49,7 +49,7 @@ jobs:
           test -s build/web-playtest/08-after-fart.png
           test -s build/web-playtest/10-after-load.png
           cat build/web-playtest/playtest.txt
-      - name: Build 13 visual review states
+      - name: Build 14 visual review states
         run: |
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_visual_review.mjs
           test -s build/web-visual-review/manifest.json
@@ -63,8 +63,9 @@ jobs:
           test -s build/web-visual-review/17-help-page-2.png
           test -s build/web-visual-review/18-credits.png
           test -s build/web-visual-review/19-title-credits-selected.png
+          test -s build/web-visual-review/20-title-2-players-selected.png
           grep -q '^PASS$' build/web-visual-review/visual-review.txt
-          grep -q '^states=19$' build/web-visual-review/visual-review.txt
+          grep -q '^states=20$' build/web-visual-review/visual-review.txt
           cat build/web-visual-review/visual-review.txt
       - name: Preserve web diagnostics
         if: always()

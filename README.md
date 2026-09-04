@@ -116,5 +116,6 @@ Automated verification is intentionally not described as exhaustive hardware com
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - [`docs/BUILD_12.md`](docs/BUILD_12.md)
 - [`docs/BUILD_13.md`](docs/BUILD_13.md)
+- [`docs/BUILD_14.md`](docs/BUILD_14.md)
 
 **CHESS FART** — *Check. Mate. Ventilate.*

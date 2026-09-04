@@ -187,14 +187,18 @@ try {
   await nativeShot(page, '18-credits', 'fixture', states);
 
   if (await call(page, 'cf_review_render_ui_fixture', 2) !== 1)
-    throw new Error('Title selection fixture validation failed');
+    throw new Error('Credits title-selection fixture validation failed');
   await nativeShot(page, '19-title-credits-selected', 'fixture', states);
+
+  if (await call(page, 'cf_review_render_ui_fixture', 3) !== 1)
+    throw new Error('2 PLAYERS title-selection fixture validation failed');
+  await nativeShot(page, '20-title-2-players-selected', 'fixture', states);
 
   if (errors.length) throw new Error(errors.join(' | '));
 
   const manifest = {
     schema: 1,
-    purpose: 'Chess Fart Build 13 canonical visual review states',
+    purpose: 'Chess Fart Build 14 canonical visual review states',
     native_resolution: '320x200',
     commit: process.env.GITHUB_SHA || 'local',
     states
@@ -205,7 +209,7 @@ try {
     `PASS\nnative=320x200\nstates=${states.length}\n` +
       states.map((state) => `${state.name}=${state.signature} (${state.source})`).join('\n') + '\n'
   );
-  console.log(`Build 13 visual review passed: ${states.length} native 320x200 states`);
+  console.log(`Build 14 visual review passed: ${states.length} native 320x200 states`);
   for (const state of states) console.log(`${state.name}=${state.signature} (${state.source})`);
 } catch (error) {
   fs.writeFileSync(
