@@ -23,94 +23,158 @@ static void ux_capture(const char *stem) { (void)stem; }
 #define UX_COL_SHADOW CF_UI_COL_SHADOW
 #define UX_COL_PANEL_LINE CF_UI_COL_PANEL_LINE
 #define UX_COL_PANEL_SOFT CF_UI_COL_PANEL_SOFT
+#define UX_COL_CHECK CF_UI_COL_CHECK
 
 static void ux_stamp_build11(void)
 {
     /* Retail renderer deliberately hides internal build numbering. */
 }
 
-static void ux_draw_box(int x, int y, int w, int h)
+static void ux_draw_centered(int x, int y, int w,
+                             const char *text, cf_u8 color)
 {
-    vga_fill_rect(x, y, w, h, UX_COL_BG);
-    vga_fill_rect(x, y, w, 2, UX_COL_CURSOR);
-    vga_fill_rect(x, y + h - 2, w, 2, UX_COL_CURSOR);
-    vga_fill_rect(x, y, 2, h, UX_COL_CURSOR);
-    vga_fill_rect(x + w - 2, y, 2, h, UX_COL_CURSOR);
+    int tw;
+    if (text == 0) return;
+    tw = font_text_width(text, 1);
+    font_draw_text(x + (w - tw) / 2, y, text, color, 1);
+}
+
+static void ux_draw_modal_frame(int x, int y, int w, int h,
+                                const char *title)
+{
+    vga_fill_rect(x + 3, y + 3, w, h, UX_COL_SHADOW);
+    vga_fill_rect(x, y, w, h, UX_COL_PANEL_EDGE);
+    vga_fill_rect(x + 2, y + 2, w - 4, h - 4, UX_COL_PANEL);
+    vga_fill_rect(x + 2, y + 2, w - 4, 1, UX_COL_GOLD);
+    vga_fill_rect(x + 2, y + h - 3, w - 4, 1, UX_COL_SHADOW);
+    vga_fill_rect(x + 8, y + CF_UI_MODAL_RULE_Y_OFFSET,
+                  w - 16, 1, UX_COL_PANEL_LINE);
+    ux_draw_centered(x, y + CF_UI_MODAL_TITLE_Y_OFFSET, w,
+                     title, UX_COL_SELECTED);
+}
+
+static void ux_draw_modal_footer(int x, int y, int w, int h,
+                                 const char *text)
+{
+    int fy = y + h - CF_UI_MODAL_FOOTER_H;
+    vga_fill_rect(x + 8, fy, w - 16, 1, UX_COL_PANEL_LINE);
+    ux_draw_centered(x, fy + 6, w, text, UX_COL_MUTED);
 }
 
 static void ux_draw_help_page(int page)
 {
-    ux_draw_box(14, 12, 292, 176);
-    font_draw_text(92, 20, "CHESS FART HELP", UX_COL_CURSOR, 1);
+    int x = CF_UI_MODAL_HELP_X;
+    int y = CF_UI_MODAL_HELP_Y;
+    int w = CF_UI_MODAL_HELP_W;
+    int h = CF_UI_MODAL_HELP_H;
+
+    ux_draw_modal_frame(x, y, w, h, "CHESS FART HELP");
+    font_draw_text(x + w - 61, y + 10,
+                   page == 0 ? "PAGE 1/2" : "PAGE 2/2",
+                   UX_COL_MUTED, 1);
+
     if (page == 0) {
-        font_draw_text(27, 40, "ARROWS  MOVE CURSOR", UX_COL_GAS, 1);
-        font_draw_text(27, 51, "ENTER/SPACE  SELECT / CONFIRM", UX_COL_GAS, 1);
-        font_draw_text(27, 62, "F  FART MODE    S SAVE    L LOAD", UX_COL_GAS, 1);
-        font_draw_text(27, 73, "H/? HELP   TAB/M HISTORY   C CREDITS", UX_COL_GAS, 1);
-        font_draw_text(27, 91, "MOVE +1 GAS   CAPTURE +2 GAS", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(27, 102, "2 GAS = ONE FART ACTION", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(27, 113, "EMPTY TARGET = PUFF", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(27, 124, "PIECE TARGET = PUSH ONE SQUARE", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(27, 135, "FARTS NEVER CAPTURE DIRECTLY", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(27, 153, "RIGHT CLICK = FART   LEFT = BOARD", UX_COL_MUTED, 1);
-        font_draw_text(71, 170, "LEFT/RIGHT PAGE  ENTER CLOSE", UX_COL_MUTED, 1);
+        font_draw_heading(x + 15, y + 34, "CONTROLS", UX_COL_GOLD, 1);
+        font_draw_text(x + 15, y + 46, "ARROWS MOVE CURSOR", UX_COL_GAS, 1);
+        font_draw_text(x + 15, y + 56, "ENTER/SPACE SELECT / CONFIRM", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 66, "F FART   S SAVE   L LOAD", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 76, "H/? HELP   TAB/M LOG   C CREDITS", UX_COL_TEXT, 1);
+
+        font_draw_heading(x + 15, y + 90, "GAS + FARTS", UX_COL_GOLD, 1);
+        font_draw_text(x + 15, y + 102, "MOVE +1 GAS   CAPTURE +2 GAS", UX_COL_GAS, 1);
+        font_draw_text(x + 15, y + 112, "2 GAS = ONE FART ACTION", UX_COL_GAS, 1);
+        font_draw_text(x + 15, y + 122, "EMPTY TARGET = PUFF", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 132, "PIECE TARGET = PUSH ONE SQUARE", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 142, "RIGHT CLICK FART   LEFT CLICK BOARD", UX_COL_MUTED, 1);
     } else {
-        font_draw_text(27, 40, "ALL NORMAL CHESS RULES APPLY", UX_COL_GAS, 1);
-        font_draw_text(27, 51, "FART PUSHES MUST KEEP YOUR KING SAFE", UX_COL_GAS, 1);
-        font_draw_text(27, 62, "KINGS MAY BE PUSHED IF POSITION LEGAL", UX_COL_GAS, 1);
-        font_draw_text(27, 73, "PUSHED PAWN CAN PROMOTE Q/R/B/N", UX_COL_GAS, 1);
-        font_draw_text(27, 84, "PUSHING HOME KING/ROOK KILLS CASTLING", UX_COL_GAS, 1);
-        font_draw_text(27, 102, "CPU BLACK SEARCHES MOVES + FARTS", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(27, 113, "D ON TITLE: EASY / MED / HARD", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(27, 131, "GAS IS PART OF THREEFOLD IDENTITY", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(27, 142, "SAVE STORES EXACT GAS + REP HISTORY", UX_COL_PANEL_EDGE, 1);
-        font_draw_text(61, 170, "LEFT/RIGHT PAGE  ENTER CLOSE", UX_COL_MUTED, 1);
+        font_draw_heading(x + 15, y + 34, "CHESS SAFETY", UX_COL_GOLD, 1);
+        font_draw_text(x + 15, y + 46, "ALL NORMAL CHESS RULES APPLY", UX_COL_GAS, 1);
+        font_draw_text(x + 15, y + 56, "FART PUSHES MUST KEEP YOUR KING SAFE", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 66, "KINGS MAY BE PUSHED IF POSITION LEGAL", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 76, "PUSHED PAWN CAN PROMOTE Q/R/B/N", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 86, "HOME KING/ROOK PUSH KILLS CASTLING", UX_COL_TEXT, 1);
+
+        font_draw_heading(x + 15, y + 102, "CPU + SAVES", UX_COL_GOLD, 1);
+        font_draw_text(x + 15, y + 114, "CPU BLACK SEARCHES MOVES + FARTS", UX_COL_GAS, 1);
+        font_draw_text(x + 15, y + 124, "D ON TITLE: EASY / MED / HARD", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 134, "GAS COUNTS IN THREEFOLD IDENTITY", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 144, "SAVE STORES GAS + REPETITION HISTORY", UX_COL_MUTED, 1);
     }
+    ux_draw_modal_footer(x, y, w, h, "LEFT/RIGHT PAGE   ENTER CLOSE");
 }
 
 static void ux_draw_credits_screen(void)
 {
-    ux_draw_box(34, 24, 252, 150);
-    font_draw_text(101, 38, "CHESS FART", UX_COL_CURSOR, 1);
-    font_draw_text(70, 60, "A FLESENTINE DOS PRODUCTION", UX_COL_PANEL_EDGE, 1);
-    font_draw_text(61, 82, "320x200 VGA  /  256 COLORS", UX_COL_GAS, 1);
-    font_draw_text(66, 96, "SOUND BLASTER + PC SPEAKER", UX_COL_GAS, 1);
-    font_draw_text(75, 110, "OPEN WATCOM C89 TARGET", UX_COL_GAS, 1);
-    font_draw_text(72, 132, "CHECK. MATE. VENTILATE.", UX_COL_GOLD, 1);
-    font_draw_text(91, 156, "ENTER / ESC CLOSE", UX_COL_MUTED, 1);
+    int x = CF_UI_MODAL_CREDITS_X;
+    int y = CF_UI_MODAL_CREDITS_Y;
+    int w = CF_UI_MODAL_CREDITS_W;
+    int h = CF_UI_MODAL_CREDITS_H;
+
+    ux_draw_modal_frame(x, y, w, h, "CREDITS");
+    ui_assets_draw_puff(x + 23, y + 31, 1);
+    ui_assets_draw_puff(x + w - 39, y + 31, 1);
+    ux_draw_centered(x, y + 34, w, "CHESS FART", UX_COL_GOLD);
+    ux_draw_centered(x, y + 53, w, "A FLESENTINE DOS PRODUCTION", UX_COL_TEXT);
+    ux_draw_centered(x, y + 72, w, "320x200 VGA / 256 COLORS", UX_COL_GAS);
+    ux_draw_centered(x, y + 84, w, "SOUND BLASTER + PC SPEAKER", UX_COL_GAS);
+    ux_draw_centered(x, y + 96, w, "OPEN WATCOM C89 TARGET", UX_COL_TEXT);
+    ux_draw_centered(x, y + 111, w, "CHECK. MATE. VENTILATE.", UX_COL_GOLD);
+    ux_draw_modal_footer(x, y, w, h, "ENTER / ESC CLOSE");
 }
 
 static void ux_draw_history_screen(void)
 {
+    int x = CF_UI_MODAL_HISTORY_X;
+    int y = CF_UI_MODAL_HISTORY_Y;
+    int w = CF_UI_MODAL_HISTORY_W;
+    int h = CF_UI_MODAL_HISTORY_H;
     int first;
     int i;
     const char *line;
-    ux_draw_box(24, 16, 272, 168);
-    font_draw_text(105, 27, "ACTION LOG", UX_COL_CURSOR, 1);
+    cf_u8 color;
+
+    ux_draw_modal_frame(x, y, w, h, "ACTION LOG");
     if (g_ux_history.count == 0) {
-        font_draw_text(82, 91, "NO ACTIONS YET", UX_COL_PANEL_EDGE, 1);
+        ux_draw_centered(x, y + 73, w, "NO ACTIONS YET", UX_COL_MUTED);
     } else {
-        first = g_ux_history.count > 12 ? g_ux_history.count - 12 : 0;
+        first = g_ux_history.count > 11 ? g_ux_history.count - 11 : 0;
         for (i = first; i < g_ux_history.count; ++i) {
             line = ux_history_get(&g_ux_history, i);
-            if (line != 0)
-                font_draw_text(35, 46 + (i - first) * 10, line, UX_COL_GAS, 1);
+            if (line != 0) {
+                if (strncmp(line, "YOU", 3) == 0)
+                    color = UX_COL_GAS;
+                else if (strncmp(line, "CPU", 3) == 0)
+                    color = UX_COL_GOLD;
+                else
+                    color = UX_COL_MUTED;
+                font_draw_text_clipped(x + 13, y + 34 + (i - first) * 10,
+                                       line, color, 1, w - 26);
+            }
         }
     }
-    font_draw_text(91, 169, "TAB/M / ENTER CLOSE", UX_COL_MUTED, 1);
+    ux_draw_modal_footer(x, y, w, h, "TAB/M / ENTER CLOSE");
 }
 
 static void ux_draw_terminal_overlay(CfGameStatus status,
                                      CfPieceColor side_to_move)
 {
-    const char *title = ux_terminal_title(status, side_to_move);
-    ux_draw_box(42, 69, 236, 62);
-    font_draw_text(91, 82, title, UX_COL_CURSOR, 1);
+    int x = CF_UI_MODAL_TERMINAL_X;
+    int y = CF_UI_MODAL_TERMINAL_Y;
+    int w = CF_UI_MODAL_TERMINAL_W;
+    int h = CF_UI_MODAL_TERMINAL_H;
+    const char *result = ux_terminal_title(status, side_to_move);
+    const char *detail;
+
     if (status == CF_GAME_CHECKMATE)
-        font_draw_text(81, 101, "KING HAS NO LEGAL ESCAPE", UX_COL_PANEL_EDGE, 1);
+        detail = "CHECKMATE - NO LEGAL ESCAPE";
     else
-        font_draw_text(76, 101, board_game_status_name(status), UX_COL_PANEL_EDGE, 1);
-    font_draw_text(79, 118, "H HELP   M LOG   ESC QUIT", UX_COL_MUTED, 1);
+        detail = ux_hud_status_name(status);
+
+    ux_draw_modal_frame(x, y, w, h, "GAME OVER");
+    ux_draw_centered(x, y + 30, w, result,
+                     status == CF_GAME_CHECKMATE ? UX_COL_GAS : UX_COL_GOLD);
+    ux_draw_centered(x, y + 43, w, detail, UX_COL_TEXT);
+    ux_draw_modal_footer(x, y, w, h, "H HELP   M LOG   ESC QUIT");
 }
 
 static void ux_draw_title(int menu, int frame)
@@ -118,29 +182,49 @@ static void ux_draw_title(int menu, int frame)
     static const char *items[5] = {
         "PLAY CPU", "ATTRACT DEMO", "HELP / RULES", "CREDITS", "QUIT TO DOS"
     };
-    char line[40];
+    char line[32];
     const CfAudioConfig *config = audio_get_config();
     const CfAudioStats *stats = audio_get_stats();
     int i;
+    int iy;
 
-    board_view_render_title7(menu == 4 ? 1 : 0, frame);
-    vga_fill_rect(69, 102, 182, 78, UX_COL_PANEL_EDGE);
-    vga_fill_rect(71, 104, 178, 74, UX_COL_PANEL);
-    vga_fill_rect(71, 104, 178, 1, UX_COL_GOLD);
+    board_view_render_title7(menu, frame);
+
+    sprintf(line, "AUDIO %s/%s",
+            audio_device_name(stats->actual_device),
+            audio_level_name(config->sfx_level));
+    font_draw_text(CF_UI_TITLE_MENU_X + 3, CF_UI_TITLE_STATUS_Y,
+                   line, UX_COL_MUTED, 1);
+    sprintf(line, "CPU %s", cpu_difficulty_name(g_cpu_config.difficulty));
+    font_draw_text(201, CF_UI_TITLE_STATUS_Y, line, UX_COL_MUTED, 1);
+
+    vga_fill_rect(CF_UI_TITLE_MENU_X, CF_UI_TITLE_MENU_Y,
+                  CF_UI_TITLE_MENU_W, CF_UI_TITLE_MENU_H, UX_COL_PANEL_EDGE);
+    vga_fill_rect(CF_UI_TITLE_MENU_INNER_X, CF_UI_TITLE_MENU_INNER_Y,
+                  CF_UI_TITLE_MENU_INNER_W, CF_UI_TITLE_MENU_INNER_H,
+                  UX_COL_PANEL);
+    vga_fill_rect(CF_UI_TITLE_MENU_INNER_X, CF_UI_TITLE_MENU_INNER_Y,
+                  CF_UI_TITLE_MENU_INNER_W, 1, UX_COL_GOLD);
+    ux_draw_centered(CF_UI_TITLE_MENU_X, CF_UI_TITLE_MENU_LABEL_Y,
+                     CF_UI_TITLE_MENU_W, "MAIN MENU", UX_COL_SELECTED);
+    vga_fill_rect(CF_UI_TITLE_MENU_X + 10, CF_UI_TITLE_MENU_RULE_Y,
+                  CF_UI_TITLE_MENU_W - 20, 1, UX_COL_PANEL_LINE);
 
     for (i = 0; i < 5; ++i) {
-        sprintf(line, "%c %s", i == menu ? '>' : ' ', items[i]);
-        font_draw_text(94, 111 + i * 12, line,
+        iy = CF_UI_TITLE_MENU_ITEM_Y + i * CF_UI_TITLE_MENU_ITEM_STEP;
+        if (i == menu) {
+            vga_fill_rect(CF_UI_TITLE_MENU_X + 9, iy - 1,
+                          CF_UI_TITLE_MENU_W - 18, 9, UX_COL_PANEL_SOFT);
+            vga_fill_rect(CF_UI_TITLE_MENU_X + 13, iy + 2, 4, 4, UX_COL_GAS);
+        }
+        font_draw_text(CF_UI_TITLE_MENU_ITEM_X, iy, items[i],
                        i == menu ? UX_COL_GAS : UX_COL_TEXT, 1);
     }
 
-    sprintf(line, "AUDIO %s %s   CPU %s",
-            audio_device_name(stats->actual_device),
-            audio_level_name(config->sfx_level),
-            cpu_difficulty_name(g_cpu_config.difficulty));
-    font_draw_text(74, 89, line, UX_COL_MUTED, 1);
-    font_draw_text(43, 187, "D CPU   F SFX   LEFT/RIGHT AUDIO   MOUSE OPTIONAL",
-                   UX_COL_MUTED, 1);
+    ux_draw_centered(0, CF_UI_TITLE_FOOTER_Y, CF_UI_SCREEN_W,
+                     "UP/DOWN SELECT   ENTER CONFIRM", UX_COL_TEXT);
+    ux_draw_centered(0, CF_UI_TITLE_FOOTER2_Y, CF_UI_SCREEN_W,
+                     "D CPU   F SFX   LEFT/RIGHT AUDIO", UX_COL_MUTED);
 }
 
 static void ux_panel_outline(void)
