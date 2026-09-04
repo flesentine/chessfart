@@ -41,14 +41,18 @@ EMSCRIPTEN_KEEPALIVE int cf_review_match_mode(void)
 
 EMSCRIPTEN_KEEPALIVE int cf_review_history_has_local_pair(void)
 {
-    const char *white;
-    const char *black;
-    if (g_ux_history.count < 2) return 0;
-    white = ux_history_get(&g_ux_history, 0);
-    black = ux_history_get(&g_ux_history, 1);
-    if (white == 0 || black == 0) return 0;
-    return strncmp(white, "WHITE ", 6) == 0 &&
-           strncmp(black, "BLACK ", 6) == 0;
+    const char *line;
+    int saw_white = 0;
+    int i;
+    for (i = 0; i < g_ux_history.count; ++i) {
+        line = ux_history_get(&g_ux_history, i);
+        if (line == 0) continue;
+        if (!saw_white && strncmp(line, "WHITE ", 6) == 0)
+            saw_white = 1;
+        else if (saw_white && strncmp(line, "BLACK ", 6) == 0)
+            return 1;
+    }
+    return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_ui_synced(void)
