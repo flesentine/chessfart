@@ -185,7 +185,8 @@ static void ux_draw_terminal_overlay(CfGameStatus status,
 static void ux_draw_title(int menu, int frame)
 {
     static const char *items[CF_UI_TITLE_MENU_ITEM_COUNT] = {
-        "PLAY CPU", "ATTRACT DEMO", "HELP / RULES", "CREDITS", "QUIT TO DOS"
+        "PLAY CPU", "2 PLAYERS", "ATTRACT DEMO",
+        "HELP / RULES", "CREDITS", "QUIT TO DOS"
     };
     char line[32];
     const CfAudioConfig *config = audio_get_config();
@@ -937,15 +938,20 @@ int ux_title_screen(const char *config_path)
             ux_draw_credits_screen(); vga_present(); ux_wait_for_close(0); ++frame;
         } else if (key == CF5_KEY_ENTER) {
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
-            if (menu == 0) {
+            if (menu == CF_UI_TITLE_ITEM_PLAY_CPU ||
+                menu == CF_UI_TITLE_ITEM_PLAY_LOCAL) {
+                g_match_mode = menu == CF_UI_TITLE_ITEM_PLAY_LOCAL ?
+                               CF_MATCH_LOCAL : CF_MATCH_CPU;
                 (void)persistence_save_config(config_path, audio_get_config());
                 vga_shutdown();
                 return 1;
             }
-            if (menu == 1) ux_run_attract();
-            else if (menu == 2) { ux_draw_help_page(0); vga_present(); ux_wait_for_close(1); }
-            else if (menu == 3) { ux_draw_credits_screen(); vga_present(); ux_wait_for_close(0); }
-            else {
+            if (menu == CF_UI_TITLE_ITEM_ATTRACT) ux_run_attract();
+            else if (menu == CF_UI_TITLE_ITEM_HELP) {
+                ux_draw_help_page(0); vga_present(); ux_wait_for_close(1);
+            } else if (menu == CF_UI_TITLE_ITEM_CREDITS) {
+                ux_draw_credits_screen(); vga_present(); ux_wait_for_close(0);
+            } else if (menu == CF_UI_TITLE_ITEM_QUIT) {
                 (void)persistence_save_config(config_path, audio_get_config());
                 vga_shutdown();
                 return 0;

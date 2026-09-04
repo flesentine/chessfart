@@ -10,6 +10,7 @@ Build 14 restores the original hot-seat goal on top of the frozen 1.0 rules path
 - Automatic Black CPU replies are now gated through that contract instead of being unconditional.
 - Review-only Chromium probes verify that local White e2-e4 leaves Black to move, local Black can answer e7-e5, and CPU mode still performs its automatic Black reply.
 - The 1.0 save format and all player-facing title/menu pixels remain unchanged in 14.0.
+- 14.1 adds a dedicated `2 PLAYERS` title row, canonical six-row keyboard/mouse hit testing, real Chromium keyboard/mouse mode-selection checks, and a twentieth native visual-review state.
 
 ## Build 13 — Post-v1 presentation refresh
 

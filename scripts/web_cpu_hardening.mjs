@@ -50,6 +50,22 @@ async function clickSquare(page, file, rank, button='left') {
   await sleep(80);
 }
 
+async function clickTitleItem(page, item) {
+  const canvas = await page.$('#canvas');
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  const x = await call(page,'cf_review_title_menu_x');
+  const w = await call(page,'cf_review_title_menu_width');
+  const y = await call(page,'cf_review_title_menu_hit_y');
+  const step = await call(page,'cf_review_title_menu_item_step');
+  const vx = x + Math.floor(w / 2);
+  const vy = y + item * step + Math.floor(step / 2);
+  await page.mouse.click(box.x + vx / 320 * box.width,
+                         box.y + vy / 200 * box.height,
+                         {button:'left', delay:25});
+  await sleep(180);
+}
+
 function decodePiece(code) {
   return { type: code & 15, color: (code >> 4) & 15, gas: (code >> 8) & 15 };
 }
@@ -150,6 +166,19 @@ async function waitForMatchState(page, side, fullmove, timeoutMs=6000) {
 async function verifyMatchModes(browser) {
   const summary = [];
 
+  const keyboard = await browser.newPage();
+  await keyboard.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await keyboard.goto('http://127.0.0.1:8127/?hardening=title-keyboard-local',{waitUntil:'domcontentloaded',timeout:15000});
+  await keyboard.waitForFunction(()=>document.getElementById('status')?.textContent.startsWith('Ready'),{timeout:15000});
+  await keyboard.waitForFunction(()=>typeof Module._cf_review_match_mode==='function',{timeout:15000});
+  await keyboard.keyboard.press('ArrowDown');
+  await keyboard.keyboard.press('Enter');
+  await sleep(500);
+  if (await call(keyboard,'cf_review_match_mode') !== 1)
+    throw new Error('keyboard 2 PLAYERS selection did not enter local mode');
+  summary.push('TITLE_KEYBOARD_LOCAL=PASS');
+  await keyboard.close();
+
   const local = await browser.newPage();
   const localErrors = [];
   local.on('pageerror',e=>localErrors.push(`PAGE ${String(e)}`));
@@ -159,10 +188,10 @@ async function verifyMatchModes(browser) {
   await local.waitForFunction(()=>document.getElementById('status')?.textContent.startsWith('Ready'),{timeout:15000});
   await local.waitForFunction(()=>typeof Module._cf_review_match_mode==='function',{timeout:15000});
   if (await call(local,'cf_review_match_mode') !== 0) throw new Error('default match mode is not CPU');
-  await call(local,'cf_review_set_match_mode',1);
-  if (await call(local,'cf_review_match_mode') !== 1) throw new Error('local match mode did not stick');
-  await local.keyboard.press('Enter');
-  await sleep(500);
+  await clickTitleItem(local,1);
+  if (await call(local,'cf_review_match_mode') !== 1)
+    throw new Error('mouse 2 PLAYERS selection did not enter local mode');
+  summary.push('TITLE_MOUSE_LOCAL=PASS');
 
   /* Save a local game while Black is to move. Loading it must not wake the CPU. */
   await clickSquare(local,4,1);

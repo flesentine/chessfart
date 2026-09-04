@@ -64,6 +64,26 @@ EMSCRIPTEN_KEEPALIVE int cf_review_square_size(void)
     return CF_UI_SQUARE_SIZE;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_title_menu_x(void)
+{
+    return CF_UI_TITLE_MENU_X;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_title_menu_width(void)
+{
+    return CF_UI_TITLE_MENU_W;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_title_menu_hit_y(void)
+{
+    return CF_UI_TITLE_MENU_HIT_Y;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_title_menu_item_step(void)
+{
+    return CF_UI_TITLE_MENU_ITEM_STEP;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_piece(int file, int rank)
 {
     const CfPiece *piece;
@@ -236,7 +256,12 @@ EMSCRIPTEN_KEEPALIVE int cf_review_render_ui_fixture(int fixture)
         return 1;
     }
     if (fixture == 2) {
-        ux_draw_title(3, 1);
+        ux_draw_title(CF_UI_TITLE_ITEM_CREDITS, 1);
+        vga_present();
+        return 1;
+    }
+    if (fixture == 3) {
+        ux_draw_title(CF_UI_TITLE_ITEM_PLAY_LOCAL, 1);
         vga_present();
         return 1;
     }
