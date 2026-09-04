@@ -220,6 +220,23 @@ try {
     throw new Error('visual local history did not record WHITE then BLACK');
   await press(page, 'm', 220);
   await nativeShot(page, '22-local-history-white-black', 'real', states);
+  await press(page, 'Enter', 180);
+
+  /* Charge a local White pawn to 2 gas, alternate real Black replies, then
+   * prove the local Fart HUD also presents MODE / LOCAL 2P. */
+  await clickSquare(page, 7, 1);
+  await clickSquare(page, 7, 2);
+  await clickSquare(page, 7, 6);
+  await clickSquare(page, 7, 5);
+  await clickSquare(page, 7, 2);
+  await clickSquare(page, 7, 3);
+  await clickSquare(page, 7, 5);
+  await clickSquare(page, 7, 4);
+  await clickSquare(page, 7, 3, 'right');
+  await sleep(220);
+  if (await call(page, 'cf_review_fart_mode') !== 1)
+    throw new Error('visual local Fart mode did not activate');
+  await nativeShot(page, '23-local-fart-mode-hud', 'real', states);
 
   if (errors.length) throw new Error(errors.join(' | '));
 
