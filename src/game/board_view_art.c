@@ -315,12 +315,17 @@ static void draw_fart_trail(int file, int rank,
     sy = BOARD_Y + (7 - rank) * SQUARE_SIZE + 9;
     dy = -dr;
     steps = preview == CF_FART_PUSH || preview == CF_FART_PROMOTION ? 6 : 3;
-    for (i = 1; i <= steps; ++i)
-        vga_fill_rect(sx + df * i * 5 - 1,
-                      sy + dy * i * 5 - 1,
-                      i == steps ? 2 : 1,
-                      i == steps ? 2 : 1,
+    for (i = 1; i <= steps; ++i) {
+        int px = sx + df * i * 5;
+        int py = sy + dy * i * 5;
+        int size = i == steps ? 2 : 1;
+        if (px - 1 < BOARD_X || py - 1 < BOARD_Y ||
+            px - 1 + size >= BOARD_X + BOARD_PIXELS ||
+            py - 1 + size >= BOARD_Y + BOARD_PIXELS)
+            break;
+        vga_fill_rect(px - 1, py - 1, size, size,
                       preview == CF_FART_INVALID ? COL_CHECK : COL_GAS);
+    }
 }
 
 static void draw_push_geometry(int file, int rank,
