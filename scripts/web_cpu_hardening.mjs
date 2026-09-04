@@ -191,6 +191,7 @@ async function verifyMatchModes(browser) {
   await clickTitleItem(local,1);
   if (await call(local,'cf_review_match_mode') !== 1)
     throw new Error('mouse 2 PLAYERS selection did not enter local mode');
+  await waitForMatchState(local,1,1);
   summary.push('TITLE_MOUSE_LOCAL=PASS');
 
   /* Save a local game while Black is to move. Loading it must not wake the CPU. */
@@ -236,9 +237,11 @@ async function verifyMatchModes(browser) {
 
   /* Create a Black-to-move save in local mode, then load it in CPU mode.
    * The existing load hook must immediately consume Black's CPU turn. */
-  await call(cpu,'cf_review_set_match_mode',1);
   await cpu.keyboard.press('Enter');
   await sleep(500);
+  await call(cpu,'cf_review_set_match_mode',1);
+  if (await call(cpu,'cf_review_match_mode') !== 1)
+    throw new Error('review local mode did not stick after CPU title selection');
   await clickSquare(cpu,4,1);
   await clickSquare(cpu,4,3);
   await waitForMatchState(cpu,2,1);
