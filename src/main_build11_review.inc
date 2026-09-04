@@ -28,6 +28,16 @@ EMSCRIPTEN_KEEPALIVE int cf_review_cpu_difficulty(void)
     return (int)g_cpu_config.difficulty;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_ui_synced(void)
+{
+    if (!g_ux_cache.valid) return 0;
+    if (g_ux_cache.fart_mode ||
+        g_ux_cache.promotion_pending ||
+        g_ux_cache.fart_promotion_pending) return 0;
+    return g_ux_cache.board.side_to_move == g_board.side_to_move &&
+           g_ux_cache.board.fullmove_number == g_board.fullmove_number;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_board_x(void)
 {
     return CF_UI_BOARD_X;
