@@ -238,6 +238,11 @@ try {
     throw new Error('visual local Fart mode did not activate');
   await nativeShot(page, '23-local-fart-mode-hud', 'real', states);
 
+  await press(page, 'Escape', 180);
+  await press(page, 'h', 220);
+  await press(page, 'ArrowRight', 180);
+  await nativeShot(page, '24-local-help-page-2', 'real', states);
+
   if (errors.length) throw new Error(errors.join(' | '));
 
   const manifest = {
