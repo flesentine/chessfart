@@ -55,6 +55,11 @@ EMSCRIPTEN_KEEPALIVE int cf_review_history_has_local_pair(void)
     return 0;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_fart_mode(void)
+{
+    return g_ux_cache.valid && g_ux_cache.fart_mode;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_ui_synced(void)
 {
     if (!g_ux_cache.valid) return 0;
