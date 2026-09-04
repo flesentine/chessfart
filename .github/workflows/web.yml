@@ -59,46 +59,8 @@ jobs:
           test -s build/web-visual-review/13-check.png
           test -s build/web-visual-review/14-checkmate.png
           test -s build/web-visual-review/15-fart-edge-invalid.png
-          grep -q '^PASS
-      - name: Preserve web diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web-diagnostics
-          path: |
-            web-build.log
-            build/assets/ASSET_REPORT.txt
-            build/assets/FONT_REPORT.txt
-            build/web-smoke.txt
-            build/web-smoke.png
-            build/web-playtest/
-            build/web-visual-review/
-      - name: Preserve browser bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web
-          path: build/web/
- build/web-visual-review/visual-review.txt
-          grep -q '^states=15
-      - name: Preserve web diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web-diagnostics
-          path: |
-            web-build.log
-            build/assets/ASSET_REPORT.txt
-            build/assets/FONT_REPORT.txt
-            build/web-smoke.txt
-            build/web-smoke.png
-            build/web-playtest/
-            build/web-visual-review/
-      - name: Preserve browser bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web
-          path: build/web/
- build/web-visual-review/visual-review.txt
+          grep -q '^PASS$' build/web-visual-review/visual-review.txt
+          grep -q '^states=15$' build/web-visual-review/visual-review.txt
           cat build/web-visual-review/visual-review.txt
       - name: Preserve web diagnostics
         if: always()
