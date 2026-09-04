@@ -163,19 +163,36 @@ async function verifyMatchModes(browser) {
   if (await call(local,'cf_review_match_mode') !== 1) throw new Error('local match mode did not stick');
   await local.keyboard.press('Enter');
   await sleep(500);
+
+  /* Save a local game while Black is to move. Loading it must not wake the CPU. */
   await clickSquare(local,4,1);
   await clickSquare(local,4,3);
   await waitForMatchState(local,2,1);
   let piece = decodePiece(await call(local,'cf_review_piece',4,3));
   if (piece.type !== 1 || piece.color !== 1) throw new Error('local White e2-e4 did not land');
+  await local.keyboard.press('s');
+  await sleep(250);
+
   await clickSquare(local,4,6);
   await clickSquare(local,4,4);
   await waitForMatchState(local,1,2);
   piece = decodePiece(await call(local,'cf_review_piece',4,4));
   if (piece.type !== 1 || piece.color !== 2) throw new Error('local Black e7-e5 did not land');
-  await canvasShot(local,'match-local-after-e5');
+
+  await local.keyboard.press('l');
+  await waitForMatchState(local,2,1);
+  piece = decodePiece(await call(local,'cf_review_piece',4,6));
+  if (piece.type !== 1 || piece.color !== 2) throw new Error('local load did not restore Black pawn on e7');
+  piece = decodePiece(await call(local,'cf_review_piece',4,4));
+  if (piece.type !== 0) throw new Error('local load did not remove later Black e7-e5');
+  await canvasShot(local,'match-local-after-load-black-to-move');
+
+  /* The restored Black turn must remain playable by the second local player. */
+  await clickSquare(local,4,6);
+  await clickSquare(local,4,4);
+  await waitForMatchState(local,1,2);
   if (localErrors.length) throw new Error(`match-local: ${localErrors.join(' | ')}`);
-  summary.push('MATCH_LOCAL=PASS white=e2-e4 black=e7-e5');
+  summary.push('MATCH_LOCAL=PASS white=e2-e4 save/load-black-turn black=e7-e5');
   await local.close();
 
   const cpu = await browser.newPage();
@@ -187,14 +204,23 @@ async function verifyMatchModes(browser) {
   await cpu.waitForFunction(()=>document.getElementById('status')?.textContent.startsWith('Ready'),{timeout:15000});
   await cpu.waitForFunction(()=>typeof Module._cf_review_match_mode==='function',{timeout:15000});
   if (await call(cpu,'cf_review_match_mode') !== 0) throw new Error('fresh CPU match mode changed');
+
+  /* Create a Black-to-move save in local mode, then load it in CPU mode.
+   * The existing load hook must immediately consume Black's CPU turn. */
+  await call(cpu,'cf_review_set_match_mode',1);
   await cpu.keyboard.press('Enter');
   await sleep(500);
   await clickSquare(cpu,4,1);
   await clickSquare(cpu,4,3);
+  await waitForMatchState(cpu,2,1);
+  await cpu.keyboard.press('s');
+  await sleep(250);
+  await call(cpu,'cf_review_set_match_mode',0);
+  await cpu.keyboard.press('l');
   await waitForMatchState(cpu,1,2);
-  await canvasShot(cpu,'match-cpu-after-reply');
+  await canvasShot(cpu,'match-cpu-after-loading-black-turn');
   if (cpuErrors.length) throw new Error(`match-cpu: ${cpuErrors.join(' | ')}`);
-  summary.push('MATCH_CPU=PASS automatic_black_reply=1');
+  summary.push('MATCH_CPU=PASS black-to-move-load-triggered-reply=1');
   await cpu.close();
 
   return summary;
