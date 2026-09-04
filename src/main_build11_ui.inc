@@ -220,7 +220,8 @@ static void ux_draw_title(int menu, int frame)
         iy = CF_UI_TITLE_MENU_ITEM_Y + i * CF_UI_TITLE_MENU_ITEM_STEP;
         if (i == menu) {
             vga_fill_rect(CF_UI_TITLE_MENU_X + 9, iy - 1,
-                          CF_UI_TITLE_MENU_W - 18, 9, UX_COL_PANEL_SOFT);
+                          CF_UI_TITLE_MENU_W - 18,
+                          CF_UI_TITLE_MENU_ITEM_H, UX_COL_PANEL_SOFT);
             vga_fill_rect(CF_UI_TITLE_MENU_X + 13, iy + 2, 4, 4, UX_COL_GAS);
         }
         font_draw_text(CF_UI_TITLE_MENU_ITEM_X, iy, items[i],
