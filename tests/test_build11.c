@@ -186,6 +186,19 @@ static void test_title_menu_hit_testing(void)
                                  CF_UI_TITLE_MENU_HIT_Y, 0));
 }
 
+static void test_match_modes(void)
+{
+    CHECK(ux_match_mode_valid(CF_MATCH_CPU));
+    CHECK(ux_match_mode_valid(CF_MATCH_LOCAL));
+    CHECK(!ux_match_mode_valid((CfMatchMode)-1));
+    CHECK(!ux_match_mode_valid((CfMatchMode)2));
+    CHECK(ux_match_mode_uses_cpu(CF_MATCH_CPU));
+    CHECK(!ux_match_mode_uses_cpu(CF_MATCH_LOCAL));
+    CHECK(strcmp(ux_match_mode_name(CF_MATCH_CPU), "CPU") == 0);
+    CHECK(strcmp(ux_match_mode_name(CF_MATCH_LOCAL), "LOCAL 2P") == 0);
+    CHECK(strcmp(ux_match_mode_name((CfMatchMode)99), "UNKNOWN") == 0);
+}
+
 static void test_terminal_labels(void)
 {
     CHECK(strcmp(ux_terminal_title(CF_GAME_CHECKMATE, CF_COLOR_WHITE),
@@ -218,6 +231,7 @@ int main(void)
     test_hit_testing();
     test_hit_testing_every_square();
     test_title_menu_hit_testing();
+    test_match_modes();
     test_terminal_labels();
     test_attract_push();
     if (failures != 0) {

@@ -8,6 +8,11 @@
 #define CF_UX_HISTORY_CAPACITY 32
 #define CF_UX_HISTORY_LINE 40
 
+typedef enum CfMatchMode {
+    CF_MATCH_CPU = 0,
+    CF_MATCH_LOCAL = 1
+} CfMatchMode;
+
 typedef struct CfUxHistory {
     char lines[CF_UX_HISTORY_CAPACITY][CF_UX_HISTORY_LINE];
     int start;
@@ -24,6 +29,10 @@ void ux_format_fart_line(const char *actor, const CfFartAction *fart,
                          char *out, unsigned capacity);
 void ux_format_cpu_line(const char *actor, const CfCpuAction *action,
                         char *out, unsigned capacity);
+
+int ux_match_mode_valid(CfMatchMode mode);
+int ux_match_mode_uses_cpu(CfMatchMode mode);
+const char *ux_match_mode_name(CfMatchMode mode);
 
 const char *ux_terminal_title(CfGameStatus status, CfPieceColor side_to_move);
 int ux_board_hit_test(int x, int y, int *file, int *rank);

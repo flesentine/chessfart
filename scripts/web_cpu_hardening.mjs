@@ -136,6 +136,96 @@ async function waitForCpu(page, timeoutMs) {
   throw new Error('CPU turn/UI sync timeout');
 }
 
+async function waitForMatchState(page, side, fullmove, timeoutMs=6000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await call(page,'cf_review_side') === side &&
+        await call(page,'cf_review_fullmove') === fullmove &&
+        await call(page,'cf_review_ui_synced')) return;
+    await sleep(80);
+  }
+  throw new Error(`match state timeout: side=${side} fullmove=${fullmove}`);
+}
+
+async function verifyMatchModes(browser) {
+  const summary = [];
+
+  const local = await browser.newPage();
+  const localErrors = [];
+  local.on('pageerror',e=>localErrors.push(`PAGE ${String(e)}`));
+  local.on('console',m=>{ if(m.type()==='error') localErrors.push(`CONSOLE ${m.text()}`); });
+  await local.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await local.goto('http://127.0.0.1:8127/?hardening=match-local',{waitUntil:'domcontentloaded',timeout:15000});
+  await local.waitForFunction(()=>document.getElementById('status')?.textContent.startsWith('Ready'),{timeout:15000});
+  await local.waitForFunction(()=>typeof Module._cf_review_match_mode==='function',{timeout:15000});
+  if (await call(local,'cf_review_match_mode') !== 0) throw new Error('default match mode is not CPU');
+  await call(local,'cf_review_set_match_mode',1);
+  if (await call(local,'cf_review_match_mode') !== 1) throw new Error('local match mode did not stick');
+  await local.keyboard.press('Enter');
+  await sleep(500);
+
+  /* Save a local game while Black is to move. Loading it must not wake the CPU. */
+  await clickSquare(local,4,1);
+  await clickSquare(local,4,3);
+  await waitForMatchState(local,2,1);
+  let piece = decodePiece(await call(local,'cf_review_piece',4,3));
+  if (piece.type !== 1 || piece.color !== 1) throw new Error('local White e2-e4 did not land');
+  await local.keyboard.press('s');
+  await sleep(250);
+
+  await clickSquare(local,4,6);
+  await clickSquare(local,4,4);
+  await waitForMatchState(local,1,2);
+  piece = decodePiece(await call(local,'cf_review_piece',4,4));
+  if (piece.type !== 1 || piece.color !== 2) throw new Error('local Black e7-e5 did not land');
+
+  await local.keyboard.press('l');
+  await waitForMatchState(local,2,1);
+  piece = decodePiece(await call(local,'cf_review_piece',4,6));
+  if (piece.type !== 1 || piece.color !== 2) throw new Error('local load did not restore Black pawn on e7');
+  piece = decodePiece(await call(local,'cf_review_piece',4,4));
+  if (piece.type !== 0) throw new Error('local load did not remove later Black e7-e5');
+  await canvasShot(local,'match-local-after-load-black-to-move');
+
+  /* The restored Black turn must remain playable by the second local player. */
+  await clickSquare(local,4,6);
+  await clickSquare(local,4,4);
+  await waitForMatchState(local,1,2);
+  if (localErrors.length) throw new Error(`match-local: ${localErrors.join(' | ')}`);
+  summary.push('MATCH_LOCAL=PASS white=e2-e4 save/load-black-turn black=e7-e5');
+  await local.close();
+
+  const cpu = await browser.newPage();
+  const cpuErrors = [];
+  cpu.on('pageerror',e=>cpuErrors.push(`PAGE ${String(e)}`));
+  cpu.on('console',m=>{ if(m.type()==='error') cpuErrors.push(`CONSOLE ${m.text()}`); });
+  await cpu.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await cpu.goto('http://127.0.0.1:8127/?hardening=match-cpu',{waitUntil:'domcontentloaded',timeout:15000});
+  await cpu.waitForFunction(()=>document.getElementById('status')?.textContent.startsWith('Ready'),{timeout:15000});
+  await cpu.waitForFunction(()=>typeof Module._cf_review_match_mode==='function',{timeout:15000});
+  if (await call(cpu,'cf_review_match_mode') !== 0) throw new Error('fresh CPU match mode changed');
+
+  /* Create a Black-to-move save in local mode, then load it in CPU mode.
+   * The existing load hook must immediately consume Black's CPU turn. */
+  await call(cpu,'cf_review_set_match_mode',1);
+  await cpu.keyboard.press('Enter');
+  await sleep(500);
+  await clickSquare(cpu,4,1);
+  await clickSquare(cpu,4,3);
+  await waitForMatchState(cpu,2,1);
+  await cpu.keyboard.press('s');
+  await sleep(250);
+  await call(cpu,'cf_review_set_match_mode',0);
+  await cpu.keyboard.press('l');
+  await waitForMatchState(cpu,1,2);
+  await canvasShot(cpu,'match-cpu-after-loading-black-turn');
+  if (cpuErrors.length) throw new Error(`match-cpu: ${cpuErrors.join(' | ')}`);
+  summary.push('MATCH_CPU=PASS black-to-move-load-triggered-reply=1');
+  await cpu.close();
+
+  return summary;
+}
+
 async function executeAction(page, a) {
   if (a.kind==='move') {
     await clickSquare(page,a.f,a.r);
@@ -222,6 +312,7 @@ let browser;
 try {
   await sleep(500);
   browser = await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  const matchSummary = await verifyMatchModes(browser);
   const cases = [
     ['easy-a',0,0x00E451A1],
     ['medium-a',1,0x00C0FFEE],
@@ -229,7 +320,7 @@ try {
   ];
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
-  const summary = [];
+  const summary = [...matchSummary];
   for (const r of results) {
     summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
     for (const line of r.fartLines) summary.push(`  ${line}`);
