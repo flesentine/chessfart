@@ -174,6 +174,22 @@ try {
     throw new Error('Fart edge-invalid fixture validation failed');
   await nativeShot(page, '15-fart-edge-invalid', 'fixture', states);
 
+  if (await call(page, 'cf_review_render_fixture', 4) !== 1)
+    throw new Error('STALEMATE fixture validation failed');
+  await nativeShot(page, '16-stalemate', 'fixture', states);
+
+  if (await call(page, 'cf_review_render_ui_fixture', 0) !== 1)
+    throw new Error('Help page 2 fixture validation failed');
+  await nativeShot(page, '17-help-page-2', 'fixture', states);
+
+  if (await call(page, 'cf_review_render_ui_fixture', 1) !== 1)
+    throw new Error('Credits fixture validation failed');
+  await nativeShot(page, '18-credits', 'fixture', states);
+
+  if (await call(page, 'cf_review_render_ui_fixture', 2) !== 1)
+    throw new Error('Title selection fixture validation failed');
+  await nativeShot(page, '19-title-credits-selected', 'fixture', states);
+
   if (errors.length) throw new Error(errors.join(' | '));
 
   const manifest = {
