@@ -27,6 +27,7 @@ void ux_format_cpu_line(const char *actor, const CfCpuAction *action,
 
 const char *ux_terminal_title(CfGameStatus status, CfPieceColor side_to_move);
 int ux_board_hit_test(int x, int y, int *file, int *rank);
+int ux_title_menu_hit_test(int x, int y, int *menu);
 int ux_build_attract_push(CfBoard *board, CfGasState *gas,
                           CfFartAction *action);
 

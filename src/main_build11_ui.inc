@@ -34,9 +34,12 @@ static void ux_draw_centered(int x, int y, int w,
                              const char *text, cf_u8 color)
 {
     int tw;
-    if (text == 0) return;
+    if (text == 0 || w <= 0) return;
     tw = font_text_width(text, 1);
-    font_draw_text(x + (w - tw) / 2, y, text, color, 1);
+    if (tw <= w)
+        font_draw_text(x + (w - tw) / 2, y, text, color, 1);
+    else
+        font_draw_text_clipped(x, y, text, color, 1, w);
 }
 
 static void ux_draw_modal_frame(int x, int y, int w, int h,
@@ -181,7 +184,7 @@ static void ux_draw_terminal_overlay(CfGameStatus status,
 
 static void ux_draw_title(int menu, int frame)
 {
-    static const char *items[5] = {
+    static const char *items[CF_UI_TITLE_MENU_ITEM_COUNT] = {
         "PLAY CPU", "ATTRACT DEMO", "HELP / RULES", "CREDITS", "QUIT TO DOS"
     };
     char line[32];
@@ -212,7 +215,7 @@ static void ux_draw_title(int menu, int frame)
     vga_fill_rect(CF_UI_TITLE_MENU_X + 10, CF_UI_TITLE_MENU_RULE_Y,
                   CF_UI_TITLE_MENU_W - 20, 1, UX_COL_PANEL_LINE);
 
-    for (i = 0; i < 5; ++i) {
+    for (i = 0; i < CF_UI_TITLE_MENU_ITEM_COUNT; ++i) {
         iy = CF_UI_TITLE_MENU_ITEM_Y + i * CF_UI_TITLE_MENU_ITEM_STEP;
         if (i == menu) {
             vga_fill_rect(CF_UI_TITLE_MENU_X + 9, iy - 1,
@@ -903,17 +906,8 @@ int ux_title_screen(const char *config_path)
             pressed = mouse.buttons & ~old_buttons;
             old_buttons = mouse.buttons;
             if ((pressed & 1U) != 0U &&
-                mouse.x >= CF_UI_TITLE_MENU_X &&
-                mouse.x < CF_UI_TITLE_MENU_X + CF_UI_TITLE_MENU_W &&
-                mouse.y >= CF_UI_TITLE_MENU_ITEM_Y - 2 &&
-                mouse.y < CF_UI_TITLE_MENU_ITEM_Y +
-                          4 * CF_UI_TITLE_MENU_ITEM_STEP + 8) {
-                menu = (mouse.y - (CF_UI_TITLE_MENU_ITEM_Y - 2)) /
-                       CF_UI_TITLE_MENU_ITEM_STEP;
-                if (menu < 0) menu = 0;
-                if (menu > 4) menu = 4;
+                ux_title_menu_hit_test(mouse.x, mouse.y, &menu))
                 key = CF5_KEY_ENTER;
-            }
         }
         if (key != CF5_KEY_NONE) last_input = clock();
         if (key == CF5_KEY_ESCAPE) {
@@ -922,10 +916,11 @@ int ux_title_screen(const char *config_path)
             return 0;
         }
         if (key == CF5_KEY_UP) {
-            menu = (menu + 4) % 5;
+            menu = (menu + CF_UI_TITLE_MENU_ITEM_COUNT - 1) %
+                   CF_UI_TITLE_MENU_ITEM_COUNT;
             ++frame; audio_play_event(CF_AUDIO_CURSOR);
         } else if (key == CF5_KEY_DOWN) {
-            menu = (menu + 1) % 5;
+            menu = (menu + 1) % CF_UI_TITLE_MENU_ITEM_COUNT;
             ++frame; audio_play_event(CF_AUDIO_CURSOR);
         } else if (key == CF5_KEY_LEFT || key == CF5_KEY_RIGHT) {
             audio_cycle_device(); ++frame; audio_play_event(CF_AUDIO_MENU_CONFIRM);
