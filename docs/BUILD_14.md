@@ -46,7 +46,7 @@ The original master plan listed local hot-seat two-player as a required product 
 - the gameplay and Fart HUD replace the CPU difficulty row with `MODE / LOCAL 2P` during local play
 - the command bar continues to show the side to move
 - Chromium asserts the real local history buffer contains White then Black after e2-e4 / e7-e5
-- the native visual suite adds local Black-to-move HUD and local action-log states
+- the native visual suite adds local Black-to-move HUD, local action-log and local Fart-mode HUD states
 
 ## Frozen 14.2 contracts
 
@@ -76,7 +76,8 @@ The browser hardening run must prove:
 7. the existing Easy/Medium/Hard full games still terminate with zero browser errors
 8. the local action log records `WHITE` then `BLACK` after e2-e4 / e7-e5
 9. local gameplay shows `MODE / LOCAL 2P` instead of CPU difficulty
-10. the visual-review suite contains 22 native 320x200 states, including local HUD and history states
+10. local Fart mode also shows `MODE / LOCAL 2P`
+11. the visual-review suite contains 23 native 320x200 states, including local normal, history and Fart HUD states
 
 ## Next
 
