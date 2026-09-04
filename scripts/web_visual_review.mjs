@@ -170,6 +170,10 @@ try {
     throw new Error('CHECKMATE fixture validation failed');
   await nativeShot(page, '14-checkmate', 'fixture', states);
 
+  if (await call(page, 'cf_review_render_fixture', 3) !== 1)
+    throw new Error('Fart edge-invalid fixture validation failed');
+  await nativeShot(page, '15-fart-edge-invalid', 'fixture', states);
+
   if (errors.length) throw new Error(errors.join(' | '));
 
   const manifest = {
