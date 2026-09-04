@@ -128,11 +128,12 @@ async function waitForCpu(page, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const status = await call(page,'cf_review_status');
-    if (status >= 2) return;
-    if (await call(page,'cf_review_side') === 1) return;
+    const side = await call(page,'cf_review_side');
+    const uiSynced = await call(page,'cf_review_ui_synced');
+    if (uiSynced && (status >= 2 || side === 1)) return;
     await sleep(80);
   }
-  throw new Error('CPU turn timeout');
+  throw new Error('CPU turn/UI sync timeout');
 }
 
 async function executeAction(page, a) {
