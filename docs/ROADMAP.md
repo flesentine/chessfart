@@ -72,6 +72,23 @@ The frozen RC feature set was hardened rather than expanded:
 
 Physical 386/486 systems, MS-DOS/FreeDOS variants, real Sound Blaster hardware and third-party DOS mouse drivers remain explicitly unverified manual/community compatibility targets. They are documented platform scope, not claimed test coverage.
 
+## Build 13 — Post-v1 VGA presentation refresh
+**Status: 13.8 closeout candidate**
+
+Build 13 keeps the frozen 1.0 gameplay/save contract and refreshes presentation in small reviewable slices:
+
+- 13.0 shared layout/theme foundation
+- 13.1 canonical Chromium visual-review harness
+- 13.2 indexed PNG asset pipeline
+- 13.3 bitmap font and accent text
+- 13.4 board and piece art refresh
+- 13.5 normal gameplay HUD
+- 13.6 dedicated Fart-mode presentation
+- 13.7 title/modal consistency
+- 13.8 final input/layout hardening and documentation closeout
+
+The permanent browser review suite covers 19 native 320x200 states, including normal play, Fart states, save/load notices, CHECK/CHECKMATE/STALEMATE, both Help pages, Credits, and a non-default title selection. See `docs/BUILD_13.md`.
+
 ## Post-v1 ideas
 
 Alternate boards/pieces, replay browser, Turbo Gas, puzzle challenges, AI personalities, null-modem multiplayer, OPL2 expansion, and a shareware-style episode screen.

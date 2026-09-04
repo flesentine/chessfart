@@ -76,6 +76,10 @@ static void test_layout_contract(void)
     CHECK(CF_UI_TITLE_MENU_X >= 0);
     CHECK(CF_UI_TITLE_MENU_Y >= 0);
     CHECK(CF_UI_TITLE_MENU_X + CF_UI_TITLE_MENU_W <= CF_UI_SCREEN_W);
+    CHECK(CF_UI_TITLE_MENU_ITEM_COUNT == 5);
+    CHECK(CF_UI_TITLE_MENU_HIT_Y >= CF_UI_TITLE_MENU_Y);
+    CHECK(CF_UI_TITLE_MENU_HIT_Y + CF_UI_TITLE_MENU_HIT_H <=
+          CF_UI_TITLE_MENU_Y + CF_UI_TITLE_MENU_H);
     CHECK(CF_UI_TITLE_MENU_Y + CF_UI_TITLE_MENU_H < CF_UI_TITLE_FOOTER_Y);
     CHECK(CF_UI_TITLE_FOOTER2_Y + 7 < CF_UI_SCREEN_H);
     CHECK(CF_UI_MODAL_HELP_X + CF_UI_MODAL_HELP_W <= CF_UI_SCREEN_W);
@@ -147,6 +151,41 @@ static void test_hit_testing_every_square(void)
     }
 }
 
+static void test_title_menu_hit_testing(void)
+{
+    int item;
+    int i;
+    int top;
+    int bottom;
+    int right = CF_UI_TITLE_MENU_X + CF_UI_TITLE_MENU_W - 1;
+
+    for (i = 0; i < CF_UI_TITLE_MENU_ITEM_COUNT; ++i) {
+        top = CF_UI_TITLE_MENU_HIT_Y + i * CF_UI_TITLE_MENU_ITEM_STEP;
+        bottom = top + CF_UI_TITLE_MENU_ITEM_STEP - 1;
+
+        item = -1;
+        CHECK(ux_title_menu_hit_test(CF_UI_TITLE_MENU_X, top, &item));
+        CHECK(item == i);
+
+        item = -1;
+        CHECK(ux_title_menu_hit_test(right, bottom, &item));
+        CHECK(item == i);
+    }
+
+    item = -1;
+    CHECK(!ux_title_menu_hit_test(CF_UI_TITLE_MENU_X - 1,
+                                  CF_UI_TITLE_MENU_HIT_Y, &item));
+    CHECK(!ux_title_menu_hit_test(CF_UI_TITLE_MENU_X + CF_UI_TITLE_MENU_W,
+                                  CF_UI_TITLE_MENU_HIT_Y, &item));
+    CHECK(!ux_title_menu_hit_test(CF_UI_TITLE_MENU_X,
+                                  CF_UI_TITLE_MENU_HIT_Y - 1, &item));
+    CHECK(!ux_title_menu_hit_test(CF_UI_TITLE_MENU_X,
+                                  CF_UI_TITLE_MENU_HIT_Y +
+                                  CF_UI_TITLE_MENU_HIT_H, &item));
+    CHECK(ux_title_menu_hit_test(CF_UI_TITLE_MENU_X,
+                                 CF_UI_TITLE_MENU_HIT_Y, 0));
+}
+
 static void test_terminal_labels(void)
 {
     CHECK(strcmp(ux_terminal_title(CF_GAME_CHECKMATE, CF_COLOR_WHITE),
@@ -178,6 +217,7 @@ int main(void)
     test_layout_contract();
     test_hit_testing();
     test_hit_testing_every_square();
+    test_title_menu_hit_testing();
     test_terminal_labels();
     test_attract_push();
     if (failures != 0) {

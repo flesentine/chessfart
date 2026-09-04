@@ -1,6 +1,6 @@
 # Chess Fart — UX Design Notes
 
-Build 11 treats UX as a shell around stable game truth.
+Build 13 preserves the Build 11 UX contract: presentation is a shell around stable game truth.
 
 ## Principles
 
@@ -22,7 +22,7 @@ The last normal game render is cached so Help/Log/Credits can redraw the underly
 
 ## Title flow
 
-The Build 11 title menu is:
+The Build 13 title menu is:
 
 1. Play CPU
 2. Attract Demo
@@ -30,7 +30,7 @@ The Build 11 title menu is:
 4. Credits
 5. Quit to DOS
 
-Audio and CPU difficulty controls remain available from the title screen.
+Audio and CPU difficulty controls remain available from the title screen. Title rendering and mouse hit testing share canonical layout constants, and the hit-test boundaries are covered by host regressions.
 
 ## Mouse mapping
 

@@ -125,6 +125,19 @@ int ux_board_hit_test(int x, int y, int *file, int *rank)
     return 1;
 }
 
+int ux_title_menu_hit_test(int x, int y, int *menu)
+{
+    int item;
+    if (x < CF_UI_TITLE_MENU_X ||
+        x >= CF_UI_TITLE_MENU_X + CF_UI_TITLE_MENU_W ||
+        y < CF_UI_TITLE_MENU_HIT_Y ||
+        y >= CF_UI_TITLE_MENU_HIT_Y + CF_UI_TITLE_MENU_HIT_H) return 0;
+    item = (y - CF_UI_TITLE_MENU_HIT_Y) / CF_UI_TITLE_MENU_ITEM_STEP;
+    if (item < 0 || item >= CF_UI_TITLE_MENU_ITEM_COUNT) return 0;
+    if (menu != 0) *menu = item;
+    return 1;
+}
+
 int ux_build_attract_push(CfBoard *board, CfGasState *gas,
                           CfFartAction *action)
 {

@@ -8,6 +8,8 @@ The design goal is **real strategy first, toilet humor second**.
 
 **Chess Fart 1.0.0 — final release.**
 
+The source on `main` also includes the post-v1 **Build 13 presentation refresh**. It keeps the 1.0 gameplay/save contract while modernizing the authored VGA assets, bitmap font, board/piece art, gameplay HUD, Fart mode, title, and modal presentation.
+
 The automated release gate covers the entire game from rules through the DOS package:
 
 - complete legal chess plus Gas/Fart displacement rules
@@ -113,5 +115,6 @@ Automated verification is intentionally not described as exhaustive hardware com
 - [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - [`docs/BUILD_12.md`](docs/BUILD_12.md)
+- [`docs/BUILD_13.md`](docs/BUILD_13.md)
 
 **CHESS FART** — *Check. Mate. Ventilate.*
