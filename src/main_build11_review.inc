@@ -203,11 +203,13 @@ EMSCRIPTEN_KEEPALIVE int cf_review_render_fixture(int fixture)
 EMSCRIPTEN_KEEPALIVE int cf_review_render_ui_fixture(int fixture)
 {
     if (fixture == 0) {
+        ux_draw_title(0, 0);
         ux_draw_help_page(1);
         vga_present();
         return 1;
     }
     if (fixture == 1) {
+        ux_draw_title(0, 0);
         ux_draw_credits_screen();
         vga_present();
         return 1;
