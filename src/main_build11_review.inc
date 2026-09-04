@@ -102,6 +102,7 @@ EMSCRIPTEN_KEEPALIVE const char *cf_review_history_line(int index)
  * fixture 0: charged H4 pawn, north Fart push preview H5 -> H6
  * fixture 1: White to move in CHECK
  * fixture 2: White to move in CHECKMATE
+ * fixture 3: charged A8 knight aiming north off-board (INVALID)
  */
 EMSCRIPTEN_KEEPALIVE int cf_review_render_fixture(int fixture)
 {
@@ -157,6 +158,24 @@ EMSCRIPTEN_KEEPALIVE int cf_review_render_fixture(int fixture)
         render(7, 0, 0, 0, 0, &moves, status,
                0, CF_PIECE_QUEEN, 0, CF_FART_N, CF_FART_INVALID,
                0, CF_PIECE_QUEEN, "CHECKMATE");
+        return 1;
+    }
+
+    if (fixture == 3) {
+        board_set_piece(&g_board, 7, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&g_board, 0, 7, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+        g_board.side_to_move = CF_COLOR_WHITE;
+        gas_set(&g_gas, 0, 7, 2U);
+        gas_history_init(&g_history, &g_board, &g_gas);
+        ux_history_init(&g_ux_history);
+        ux_history_add(&g_ux_history, "WHITE KNIGHT TO A8");
+        status = gas_game_status(&g_board, &g_gas, &g_history);
+        preview = gas_preview_fart(&g_board, &g_gas, 0, 7, CF_FART_N);
+        if (status != CF_GAME_ONGOING || preview != CF_FART_INVALID) return 0;
+        render(0, 7, 1, 0, 7, &moves, status,
+               0, CF_PIECE_QUEEN, 1, CF_FART_N, preview,
+               0, CF_PIECE_QUEEN, "INVALID");
         return 1;
     }
 
