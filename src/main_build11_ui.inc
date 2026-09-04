@@ -902,9 +902,14 @@ int ux_title_screen(const char *config_path)
         if (mouse_poll(&mouse) && mouse.present) {
             pressed = mouse.buttons & ~old_buttons;
             old_buttons = mouse.buttons;
-            if ((pressed & 1U) != 0U && mouse.x >= 69 && mouse.x < 251 &&
-                mouse.y >= 104 && mouse.y < 178) {
-                menu = (mouse.y - 110) / 12;
+            if ((pressed & 1U) != 0U &&
+                mouse.x >= CF_UI_TITLE_MENU_X &&
+                mouse.x < CF_UI_TITLE_MENU_X + CF_UI_TITLE_MENU_W &&
+                mouse.y >= CF_UI_TITLE_MENU_ITEM_Y - 2 &&
+                mouse.y < CF_UI_TITLE_MENU_ITEM_Y +
+                          4 * CF_UI_TITLE_MENU_ITEM_STEP + 8) {
+                menu = (mouse.y - (CF_UI_TITLE_MENU_ITEM_Y - 2)) /
+                       CF_UI_TITLE_MENU_ITEM_STEP;
                 if (menu < 0) menu = 0;
                 if (menu > 4) menu = 4;
                 key = CF5_KEY_ENTER;
