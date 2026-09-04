@@ -165,6 +165,7 @@ EMSCRIPTEN_KEEPALIVE int cf_review_render_fixture(int fixture)
         board_set_piece(&g_board, 7, 0, CF_PIECE_KING, CF_COLOR_WHITE);
         board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&g_board, 0, 7, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+        board_set_piece(&g_board, 1, 1, CF_PIECE_PAWN, CF_COLOR_WHITE);
         g_board.side_to_move = CF_COLOR_WHITE;
         gas_set(&g_gas, 0, 7, 2U);
         gas_history_init(&g_history, &g_board, &g_gas);
