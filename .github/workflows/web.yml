@@ -65,6 +65,7 @@ jobs:
           grep -q '^LOCAL_BLACK_FART_PROMOTION=PASS' build/web-playtest/hardening/hardening.txt
           grep -q '^LOCAL_WHITE_CHECKMATE=PASS' build/web-playtest/hardening/hardening.txt
           grep -q '^LOCAL_BLACK_CHECKMATE=PASS' build/web-playtest/hardening/hardening.txt
+          grep -q '^REPLAY_TIMELINE=PASS local-start+2=3 passive-input=no-frame load-reset=1 cpu-start+pair=3$' build/web-playtest/hardening/hardening.txt
           grep -q '^LOCAL_FULL_GAME=PASS opera-game plies=33 rollback=exact-persisted-state replay=2 castling=O-O-O result=CHECKMATE winner=WHITE terminal-lock$' build/web-playtest/hardening/hardening.txt
           cat build/web-playtest/playtest.txt
           cat build/web-playtest/hardening/hardening.txt

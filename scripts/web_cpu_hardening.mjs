@@ -557,6 +557,138 @@ async function verifyMatchModes(browser) {
   return summary;
 }
 
+async function verifyReplayTimeline(browser) {
+  const local = await browser.newPage();
+  const errors = [];
+  local.on('pageerror',e=>errors.push(`PAGE ${String(e)}`));
+  local.on('console',m=>{ if(m.type()==='error') errors.push(`CONSOLE ${m.text()}`); });
+  await local.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await local.goto('http://127.0.0.1:8127/?hardening=replay-local',
+                   {waitUntil:'domcontentloaded',timeout:15000});
+  await local.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await local.waitForFunction(
+    ()=>typeof Module._cf_review_replay_count==='function',
+    {timeout:15000}
+  );
+  await local.keyboard.press('ArrowDown');
+  await local.keyboard.press('Enter');
+  await sleep(450);
+  await waitForMatchState(local,1,1);
+
+  if (await call(local,'cf_review_replay_count') !== 1 ||
+      await call(local,'cf_review_replay_total') !== 1 ||
+      await call(local,'cf_review_replay_truncated') !== 0 ||
+      await call(local,'cf_review_replay_mode',0) !== 1 ||
+      await call(local,'cf_review_replay_side',0) !== 1 ||
+      await call(local,'cf_review_replay_fullmove',0) !== 1 ||
+      await call(local,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('local replay baseline mismatch');
+
+  let p = decodePiece(await call(local,'cf_review_replay_piece',0,4,1));
+  if (p.type !== 1 || p.color !== 1 || p.gas !== 0)
+    throw new Error('local replay baseline lost White e2 pawn');
+
+  await clickSquare(local,4,1);
+  await clickSquare(local,4,3);
+  await waitForMatchState(local,2,1);
+  if (await call(local,'cf_review_replay_count') !== 2 ||
+      await call(local,'cf_review_replay_side',1) !== 2 ||
+      await call(local,'cf_review_replay_fullmove',1) !== 1 ||
+      await call(local,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('local replay did not record White e2-e4');
+  p = decodePiece(await call(local,'cf_review_replay_piece',1,4,3));
+  if (p.type !== 1 || p.color !== 1 || p.gas !== 1)
+    throw new Error('local replay White e4 snapshot piece/Gas mismatch');
+
+  await clickSquare(local,4,6);
+  await clickSquare(local,4,4);
+  await waitForMatchState(local,1,2);
+  if (await call(local,'cf_review_replay_count') !== 3 ||
+      await call(local,'cf_review_replay_side',2) !== 1 ||
+      await call(local,'cf_review_replay_fullmove',2) !== 2 ||
+      await call(local,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('local replay did not record Black e7-e5');
+
+  /* Selection, History and Save are not committed turns. */
+  await clickSquare(local,6,0);
+  if (await call(local,'cf_review_replay_count') !== 3)
+    throw new Error('piece selection created a replay frame');
+  await clickSquare(local,6,0);
+  if (await call(local,'cf_review_replay_count') !== 3)
+    throw new Error('selection cancel created a replay frame');
+  await local.keyboard.press('m');
+  await sleep(140);
+  await local.keyboard.press('Enter');
+  await sleep(120);
+  await local.keyboard.press('s');
+  await sleep(180);
+  if (await call(local,'cf_review_replay_count') !== 3)
+    throw new Error('modal/save activity created a replay frame');
+
+  /* Make one more turn, then Load. Save v2 does not serialize replay
+   * history, so a successful load intentionally becomes a new baseline. */
+  await clickSquare(local,6,0);
+  await clickSquare(local,5,2);
+  await waitForMatchState(local,2,2);
+  if (await call(local,'cf_review_replay_count') !== 4)
+    throw new Error('local replay did not record Nf3');
+  await local.keyboard.press('l');
+  await sleep(220);
+  await waitForMatchState(local,1,2);
+  if (await call(local,'cf_review_replay_count') !== 1 ||
+      await call(local,'cf_review_replay_total') !== 1 ||
+      await call(local,'cf_review_replay_mode',0) !== 1 ||
+      await call(local,'cf_review_replay_side',0) !== 1 ||
+      await call(local,'cf_review_replay_fullmove',0) !== 2 ||
+      await call(local,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('successful local load did not reset replay baseline');
+
+  if (errors.length) throw new Error(`replay-local: ${errors.join(' | ')}`);
+  await local.close();
+
+  const cpu = await browser.newPage();
+  const cpuErrors = [];
+  cpu.on('pageerror',e=>cpuErrors.push(`PAGE ${String(e)}`));
+  cpu.on('console',m=>{ if(m.type()==='error') cpuErrors.push(`CONSOLE ${m.text()}`); });
+  await cpu.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await cpu.goto('http://127.0.0.1:8127/?hardening=replay-cpu',
+                 {waitUntil:'domcontentloaded',timeout:15000});
+  await cpu.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await cpu.waitForFunction(
+    ()=>typeof Module._cf_review_replay_count==='function',
+    {timeout:15000}
+  );
+  await cpu.keyboard.press('Enter');
+  await sleep(450);
+  await waitForMatchState(cpu,1,1);
+  if (await call(cpu,'cf_review_replay_count') !== 1 ||
+      await call(cpu,'cf_review_replay_mode',0) !== 0)
+    throw new Error('CPU replay baseline mismatch');
+
+  await clickSquare(cpu,4,1);
+  await clickSquare(cpu,4,3);
+  await waitForMatchState(cpu,1,2);
+  if (await call(cpu,'cf_review_replay_count') !== 3 ||
+      await call(cpu,'cf_review_replay_total') !== 3 ||
+      await call(cpu,'cf_review_replay_mode',1) !== 0 ||
+      await call(cpu,'cf_review_replay_mode',2) !== 0 ||
+      await call(cpu,'cf_review_replay_side',1) !== 2 ||
+      await call(cpu,'cf_review_replay_side',2) !== 1 ||
+      await call(cpu,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('CPU replay did not record human+CPU turn pair');
+
+  if (cpuErrors.length) throw new Error(`replay-cpu: ${cpuErrors.join(' | ')}`);
+  await cpu.close();
+
+  return 'REPLAY_TIMELINE=PASS local-start+2=3 passive-input=no-frame load-reset=1 cpu-start+pair=3';
+}
+
 function samePersistedState(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -867,6 +999,7 @@ try {
   browser = await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
   const matchSummary = await verifyMatchModes(browser);
   const localEdgeSummary = await verifyLocalEdgeHardening(browser);
+  const replaySummary = await verifyReplayTimeline(browser);
   const localFullSummary = await verifyLocalFullGame(browser);
   const cases = [
     ['easy-a',0,0x00E451A1],
@@ -875,7 +1008,7 @@ try {
   ];
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
-  const summary = [...matchSummary, ...localEdgeSummary, localFullSummary];
+  const summary = [...matchSummary, ...localEdgeSummary, replaySummary, localFullSummary];
   for (const r of results) {
     summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
     for (const line of r.fartLines) summary.push(`  ${line}`);
