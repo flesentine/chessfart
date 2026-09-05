@@ -70,7 +70,7 @@ all: host
 
 host: $(HOST_BINARY)
 
-$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/cpu.h include/ux.h include/match_mode.h include/mouse.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/ui_assets.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h include/persistence.h include/persistence_ui.h include/replay.h src/main_build9.c src/main_build11_hooks.inc src/main_build11_ui.inc
+$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/cpu.h include/ux.h include/match_mode.h include/mouse.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/ui_assets.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h include/persistence.h include/persistence_ui.h include/replay.h include/replay_file.h src/main_build9.c src/main_build11_hooks.inc src/main_build11_ui.inc
 	mkdir -p build/host
 	$(CC) $(CFLAGS) -DCF_BUILD6_DEMO -DCF_HOST_BUILD $(HOST_SOURCES) -o $(HOST_BINARY)
 
