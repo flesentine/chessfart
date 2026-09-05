@@ -1070,6 +1070,11 @@ async function verifyLocalFullGame(browser) {
   await waitForMatchState(page,1,1);
   if (await call(page,'cf_review_match_mode') !== 1)
     throw new Error('full local game did not enter LOCAL mode');
+  if (await call(page,'cf_review_replay_count') !== 1 ||
+      await call(page,'cf_review_replay_total') !== 1 ||
+      await call(page,'cf_review_replay_truncated') !== 0 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Opera opening replay baseline mismatch');
   await canvasShot(page,'local-full-00-opening');
 
   /*
@@ -1112,6 +1117,10 @@ async function verifyLocalFullGame(browser) {
   if (await call(page,'cf_review_side') !== 1 ||
       await call(page,'cf_review_fullmove') !== 9)
     throw new Error('Opera checkpoint is not White move 9');
+  if (await call(page,'cf_review_replay_count') !== 17 ||
+      await call(page,'cf_review_replay_total') !== 17 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Opera checkpoint replay accounting mismatch');
   const checkpointState = await persistedState(page);
   await page.keyboard.press('s');
   await sleep(180);
@@ -1126,6 +1135,10 @@ async function verifyLocalFullGame(browser) {
   }
   if (samePersistedState(checkpointState, await persistedState(page)))
     throw new Error('Opera checkpoint did not change after two plies');
+  if (await call(page,'cf_review_replay_count') !== 19 ||
+      await call(page,'cf_review_replay_total') !== 19 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Opera post-checkpoint replay accounting mismatch');
 
   await page.keyboard.press('l');
   await sleep(220);
@@ -1134,6 +1147,11 @@ async function verifyLocalFullGame(browser) {
     throw new Error('Opera checkpoint load did not restore LOCAL');
   if (!samePersistedState(checkpointState, await persistedState(page)))
     throw new Error('Opera checkpoint load did not restore exact persisted state');
+  if (await call(page,'cf_review_replay_count') !== 1 ||
+      await call(page,'cf_review_replay_total') !== 1 ||
+      await call(page,'cf_review_replay_truncated') !== 0 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Opera load did not reset replay to one baseline');
   await canvasShot(page,'local-full-18-after-load');
 
   /* Replay move 9 after rollback, then continue the game to mate. */
@@ -1176,7 +1194,34 @@ async function verifyLocalFullGame(browser) {
   const finalLine = await newestHistoryLine(page);
   if (!finalLine.startsWith('WHITE D1-D8'))
     throw new Error(`unexpected Opera final history line: ${finalLine}`);
+  if (await call(page,'cf_review_replay_count') !== 18 ||
+      await call(page,'cf_review_replay_total') !== 18 ||
+      await call(page,'cf_review_replay_truncated') !== 0 ||
+      await call(page,'cf_review_replay_status',17) !== 2 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Opera terminal replay accounting/status mismatch');
   await canvasShot(page,'local-full-33-checkmate');
+
+  /* Open terminal replay on the exact mate frame, then return to postgame. */
+  const terminalBeforeReplay = await persistedState(page);
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1 &&
+       Module._cf_review_replay_viewer_index()===17,
+    {timeout:5000}
+  );
+  if (await call(page,'cf_review_replay_status',17) !== 2)
+    throw new Error('Opera terminal replay viewer lost CHECKMATE');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:5000}
+  );
+  await sleep(120);
+  if (!samePersistedState(terminalBeforeReplay, await persistedState(page)) ||
+      await call(page,'cf_review_replay_count') !== 18 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Opera terminal replay did not restore exact postgame state');
 
   /* Terminal lock after the complete match. */
   const finalState = await persistedState(page);
@@ -1260,6 +1305,16 @@ async function playGame(browser, label, difficulty, seed) {
   }
 
   await canvasShot(page,`${label}-99-final`);
+  const replayCount = await call(page,'cf_review_replay_count');
+  const replayTotal = await call(page,'cf_review_replay_total');
+  const replayTruncated = await call(page,'cf_review_replay_truncated');
+  if (replayTotal <= 1 ||
+      replayCount !== Math.min(replayTotal,256) ||
+      replayTruncated !== (replayTotal > 256 ? 1 : 0) ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1 ||
+      await call(page,'cf_review_replay_status',replayCount-1) !== terminal)
+    throw new Error(`${label}: terminal replay ring/status mismatch count=${replayCount} total=${replayTotal} truncated=${replayTruncated}`);
+
   const result = {
     label,
     difficulty:difficultyNames[difficulty],
@@ -1267,6 +1322,9 @@ async function playGame(browser, label, difficulty, seed) {
     result:statusNames[terminal] || String(terminal),
     whiteTurns:turns,
     fullmove:await call(page,'cf_review_fullmove'),
+    replayCount,
+    replayTotal,
+    replayTruncated,
     cpuFarts,
     cpuPushes,
     humanFarts,
@@ -1298,7 +1356,7 @@ try {
   const summary = [...matchSummary, ...localEdgeSummary,
                    replaySummary, replayViewerSummary, localFullSummary];
   for (const r of results) {
-    summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
+    summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} replay=${r.replayCount}/${r.replayTotal} truncated=${r.replayTruncated} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
     for (const line of r.fartLines) summary.push(`  ${line}`);
   }
   const totalCpuFarts = results.reduce((n,r)=>n+r.cpuFarts,0);
