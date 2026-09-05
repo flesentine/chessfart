@@ -317,8 +317,8 @@ async function verifyLocalEdgeHardening(browser) {
     throw new Error('White promotion did not produce rook on B8');
   await requireNewest(page,'WHITE B7-B8=R');
   if (await call(page,'cf_review_replay_count') !== 2 ||
-      await call(page,'cf_review_replay_status',1) !== 0)
-    throw new Error('ordinary promotion replay frame metadata mismatch');
+      await call(page,'cf_review_replay_status',1) !== 1)
+    throw new Error('ordinary promotion replay frame did not preserve CHECK');
   p = decodePiece(await call(page,'cf_review_replay_piece',1,1,7));
   if (p.type !== 4 || p.color !== 1)
     throw new Error('ordinary promotion replay frame lost promoted rook');
@@ -401,8 +401,9 @@ async function verifyLocalEdgeHardening(browser) {
   if (actor.type !== 2 || actor.color !== 1 || actor.gas !== 1)
     throw new Error('White Fart-promotion actor gas incorrect');
   await requireNewest(page,'WHITE FART D6 N =R');
-  if (await call(page,'cf_review_replay_count') !== 2)
-    throw new Error('Fart promotion replay frame count mismatch');
+  if (await call(page,'cf_review_replay_count') !== 2 ||
+      await call(page,'cf_review_replay_status',1) !== 1)
+    throw new Error('Fart promotion replay frame did not preserve CHECK');
   p = decodePiece(await call(page,'cf_review_replay_piece',1,3,7));
   actor = decodePiece(await call(page,'cf_review_replay_piece',1,3,5));
   if (p.type !== 4 || p.color !== 1 || p.gas !== 2 ||
