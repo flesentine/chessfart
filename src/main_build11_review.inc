@@ -39,6 +39,27 @@ EMSCRIPTEN_KEEPALIVE int cf_review_match_mode(void)
     return (int)g_match_mode;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_history_has_local_pair(void)
+{
+    const char *line;
+    int saw_white = 0;
+    int i;
+    for (i = 0; i < g_ux_history.count; ++i) {
+        line = ux_history_get(&g_ux_history, i);
+        if (line == 0) continue;
+        if (!saw_white && strncmp(line, "WHITE ", 6) == 0)
+            saw_white = 1;
+        else if (saw_white && strncmp(line, "BLACK ", 6) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_fart_mode(void)
+{
+    return g_ux_cache.valid && g_ux_cache.fart_mode;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_ui_synced(void)
 {
     if (!g_ux_cache.valid) return 0;

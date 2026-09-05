@@ -54,6 +54,7 @@ async function nativeShot(page, name, source, states) {
     height: capture.height,
     signature: capture.signature
   });
+  return capture.signature;
 }
 
 async function canonicalGeometry(page) {
@@ -193,6 +194,64 @@ try {
   if (await call(page, 'cf_review_render_ui_fixture', 3) !== 1)
     throw new Error('2 PLAYERS title-selection fixture validation failed');
   await nativeShot(page, '20-title-2-players-selected', 'fixture', states);
+
+  /* Build 14.2 real local-play presentation states. */
+  await page.goto('http://127.0.0.1:8128/?visual=local-presentation',
+                  { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForFunction(
+    () => document.getElementById('status')?.textContent.startsWith('Ready'),
+    { timeout: 15000 }
+  );
+  await press(page, 'ArrowDown');
+  await press(page, 'Enter', 400);
+  if (await call(page, 'cf_review_match_mode') !== 1)
+    throw new Error('visual local title selection did not enter local mode');
+
+  await clickSquare(page, 4, 1);
+  await clickSquare(page, 4, 3);
+  await sleep(250);
+  if (await call(page, 'cf_review_side') !== 2)
+    throw new Error('visual local White move did not leave Black to move');
+  await nativeShot(page, '21-local-black-to-move-hud', 'real', states);
+
+  await clickSquare(page, 4, 6);
+  await clickSquare(page, 4, 4);
+  await sleep(250);
+  if (await call(page, 'cf_review_history_has_local_pair') !== 1)
+    throw new Error('visual local history did not record WHITE then BLACK');
+  await press(page, 'm', 220);
+  await nativeShot(page, '22-local-history-white-black', 'real', states);
+  await press(page, 'Enter', 180);
+
+  /* Charge a local White pawn to 2 gas, alternate real Black replies, then
+   * prove the local Fart HUD also presents MODE / LOCAL 2P. */
+  await clickSquare(page, 7, 1);
+  await clickSquare(page, 7, 2);
+  await clickSquare(page, 7, 6);
+  await clickSquare(page, 7, 5);
+  await clickSquare(page, 7, 2);
+  await clickSquare(page, 7, 3);
+  await clickSquare(page, 7, 5);
+  await clickSquare(page, 7, 4);
+  await clickSquare(page, 7, 3, 'right');
+  await sleep(220);
+  if (await call(page, 'cf_review_fart_mode') !== 1)
+    throw new Error('visual local Fart mode did not activate');
+  const localFartSig =
+    await nativeShot(page, '23-local-fart-mode-hud', 'real', states);
+
+  await press(page, 'Escape', 180);
+  if (await call(page, 'cf_review_fart_mode') !== 0)
+    throw new Error('Escape did not cancel local Fart mode');
+  await press(page, 'h', 220);
+  await press(page, 'ArrowRight', 180);
+  const localHelpSig =
+    await nativeShot(page, '24-local-help-page-2', 'real', states);
+  if (localHelpSig === localFartSig)
+    throw new Error('local Help capture did not leave Fart HUD');
+  const cpuHelp = states.find((state) => state.name === '17-help-page-2');
+  if (!cpuHelp || localHelpSig === cpuHelp.signature)
+    throw new Error('local Help page 2 did not differ from CPU Help');
 
   if (errors.length) throw new Error(errors.join(' | '));
 

@@ -4,7 +4,7 @@
 
 Build 14 adds local two-player hot-seat play without creating a second rules engine.
 
-**14.1: title match selection.**
+**14.2: local-player presentation.**
 
 ## Why this build
 
@@ -36,9 +36,22 @@ The original master plan listed local hot-seat two-player as a required product 
 - verify local selection through both real keyboard input and real Chromium mouse input
 - extend the native visual-review suite from 19 to 20 states with `2 PLAYERS` selected
 
-## Frozen 14.1 contracts
+## 14.2 — Local-player presentation
 
-14.1 does not change:
+14.2 makes local play read like a two-human match while leaving CPU mode unchanged:
+
+- local White actions are logged as `WHITE`
+- local Black actions are logged as `BLACK`
+- CPU games retain `YOU` and `CPU` history labels
+- the gameplay and Fart HUD replace the CPU difficulty row with `MODE / LOCAL 2P` during local play
+- `ESC` now cancels Fart mode as the command bar has always advertised instead of exiting the match
+- the command bar continues to show the side to move
+- Chromium asserts the real local history buffer contains White then Black after e2-e4 / e7-e5
+- the native visual suite adds local Black-to-move HUD, local action-log, local Fart-mode HUD and local Help states
+
+## Frozen 14.2 contracts
+
+14.2 does not change:
 
 - chess legality
 - Gas earning/spending or Fart displacement
@@ -49,9 +62,9 @@ The original master plan listed local hot-seat two-player as a required product 
 - board geometry, assets or palette
 - packaged version 1.0.0
 
-Match mode remains session-level infrastructure in 14.1. Persistence of the selected mode is intentionally deferred until a later Build 14 slice can define backward-compatible behavior explicitly.
+Match mode remains session-level infrastructure in 14.2. Persistence of the selected mode is intentionally deferred until 14.3 can define backward-compatible behavior explicitly.
 
-## Chromium 14.1 contract
+## Chromium 14.2 contract
 
 The browser hardening run must prove:
 
@@ -62,8 +75,12 @@ The browser hardening run must prove:
 5. local load of a Black-to-move save does not wake the CPU
 6. CPU-mode load of a Black-to-move save still triggers the automatic Black reply
 7. the existing Easy/Medium/Hard full games still terminate with zero browser errors
-8. the visual-review suite contains 20 native 320x200 states, including the new local-mode title selection
+8. the local action log records `WHITE` then `BLACK` after e2-e4 / e7-e5
+9. local gameplay shows `MODE / LOCAL 2P` instead of CPU difficulty
+10. local Fart mode also shows `MODE / LOCAL 2P`, and `ESC` cancels it without exiting the match
+11. local Help page 2 explains two-player turns instead of CPU Black
+12. the visual-review suite contains 24 native 320x200 states, including local normal, history, Fart HUD and Help states
 
 ## Next
 
-14.2 will make local play read correctly during the match: White/Black player identity in the HUD and action history, with CPU-only labels suppressed in local mode.
+14.3 will define backward-compatible persistence for the selected match mode without breaking existing 1.0 save files.
