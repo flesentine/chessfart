@@ -54,6 +54,7 @@ async function nativeShot(page, name, source, states) {
     height: capture.height,
     signature: capture.signature
   });
+  return capture.signature;
 }
 
 async function canonicalGeometry(page) {
@@ -236,12 +237,21 @@ try {
   await sleep(220);
   if (await call(page, 'cf_review_fart_mode') !== 1)
     throw new Error('visual local Fart mode did not activate');
-  await nativeShot(page, '23-local-fart-mode-hud', 'real', states);
+  const localFartSig =
+    await nativeShot(page, '23-local-fart-mode-hud', 'real', states);
 
   await press(page, 'Escape', 180);
+  if (await call(page, 'cf_review_fart_mode') !== 0)
+    throw new Error('Escape did not cancel local Fart mode');
   await press(page, 'h', 220);
   await press(page, 'ArrowRight', 180);
-  await nativeShot(page, '24-local-help-page-2', 'real', states);
+  const localHelpSig =
+    await nativeShot(page, '24-local-help-page-2', 'real', states);
+  if (localHelpSig === localFartSig)
+    throw new Error('local Help capture did not leave Fart HUD');
+  const cpuHelp = states.find((state) => state.name === '17-help-page-2');
+  if (!cpuHelp || localHelpSig === cpuHelp.signature)
+    throw new Error('local Help page 2 did not differ from CPU Help');
 
   if (errors.length) throw new Error(errors.join(' | '));
 
