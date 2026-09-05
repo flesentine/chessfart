@@ -12,6 +12,7 @@ HOST_SOURCES = \
 	src/game/cpu_format.c \
 	src/game/ux.c \
 	src/game/replay.c \
+	src/game/replay_file.c \
 	src/game/font.c \
 	src/game/board_view_build5.c \
 	src/game/board_view_build6.c \
@@ -60,6 +61,7 @@ TEST10_BINARY = build/host/test_build10
 TEST10_ALPHA_BINARY = build/host/test_build10_alpha_beta
 TEST11_BINARY = build/host/test_build11
 TEST15_BINARY = build/host/test_build15
+TEST15_FILE_BINARY = build/host/test_build15_replay_file
 PROFILE12_BINARY = build/host/profile_build12
 
 .PHONY: all host host-run test test-build11 test-build12 profile-build12 release-audit dos release clean
@@ -108,6 +110,10 @@ $(TEST15_BINARY): tests/test_build15.c src/game/replay.c src/game/board.c src/ga
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build15.c src/game/replay.c src/game/board.c src/game/gas.c -o $(TEST15_BINARY)
 
+$(TEST15_FILE_BINARY): tests/test_build15_replay_file.c src/game/replay_file.c src/game/replay.c src/game/board.c src/game/gas.c include/replay_file.h include/replay.h include/match_mode.h include/gas.h include/board.h include/cf_types.h
+	mkdir -p build/host
+	$(CC) $(CFLAGS) tests/test_build15_replay_file.c src/game/replay_file.c src/game/replay.c src/game/board.c src/game/gas.c -o $(TEST15_FILE_BINARY)
+
 $(PROFILE12_BINARY): tests/profile_build12.c $(CPU_SOURCES) include/version.h include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/profile_build12.c $(CPU_SOURCES) -o $(PROFILE12_BINARY)
@@ -151,8 +157,9 @@ profile-build12: $(PROFILE12_BINARY) $(HOST_BINARY)
 release-audit:
 	sh scripts/release_audit.sh
 
-test-build12: test-build11 profile-build12 release-audit $(TEST15_BINARY)
+test-build12: test-build11 profile-build12 release-audit $(TEST15_BINARY) $(TEST15_FILE_BINARY)
 	./$(TEST15_BINARY)
+	./$(TEST15_FILE_BINARY)
 	@echo "Build 12 + post-v1 host gate passed."
 
 dos:
