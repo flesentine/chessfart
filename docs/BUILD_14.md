@@ -4,7 +4,7 @@
 
 Build 14 adds local two-player hot-seat play without creating a second rules engine.
 
-**14.4: local edge hardening.**
+**14.5: full local-match regression.**
 
 ## Why this build
 
@@ -77,9 +77,25 @@ The original master plan listed local hot-seat two-player as a required product 
 - review-only fixture creation writes normal version-2 LOCAL saves; Chromium still loads and acts through the production game loop
 - the canonical native visual suite expands from 24 to 32 states
 
-## Frozen 14.4 contracts
+## 14.5 — Full local-match regression
 
-14.4 does not change:
+14.5 stops adding isolated edge fixtures and proves that the complete local mode survives a long ordinary game from the real title screen:
+
+- select `2 PLAYERS` with real keyboard title input
+- play Paul Morphy's 33-ply Opera Game from the normal starting position using real Chromium board mouse input for both colors
+- verify the expected `CHECK` states at 11.Bxb5+, 15.Bxd7+ and 16.Qb8+
+- verify White's real queenside castling at 12.O-O-O, including king C1, rook D1, cleared E1/A1 and `WHITE O-O-O` history
+- after 8...c6, save the exact version-2 LOCAL persisted state
+- play 9.Bg5 b5, load the checkpoint, and prove exact rollback of mode, side, castling rights, en-passant state, halfmove/fullmove clocks, all piece+Gas squares and the complete repetition-history keys before replaying those two plies
+- open and close the real action-history UI during the continued match
+- finish with 17.Rd8# and verify the expected Black-to-move checkmate state
+- attempt further select/Fart/confirm input after mate and require board, history and turn counters to remain unchanged
+- keep the 32-state canonical visual suite unchanged; the long-game screenshots are diagnostics rather than new visual baselines
+- pair the Chromium game with the existing Release CI strict host, Open Watcom 16-bit DOS, DOSBox smoke and package regression pass
+
+## Frozen Build 14 contracts
+
+14.5 does not change:
 
 - chess legality
 - Gas earning/spending or Fart displacement
@@ -91,7 +107,7 @@ The original master plan listed local hot-seat two-player as a required product 
 
 The packaged game version remains 1.0.0. Only the internal game-save format advances to version 2; legacy version-1 saves remain loadable with their historical CPU semantics.
 
-## Chromium 14.4 contract
+## Chromium Build 14 contract
 
 The browser hardening run must prove:
 
@@ -116,7 +132,12 @@ The browser hardening run must prove:
 19. White and Black can each deliver checkmate through a real local move
 20. after either local checkmate, board state, side/fullmove counters and action history remain locked against further gameplay input
 21. the visual-review suite contains 32 native 320x200 states, adding Black Fart, ordinary/Fart promotion and both local checkmate results
+22. a complete 33-ply local Opera Game runs from title selection through 17.Rd8# using real board mouse input for both players
+23. the full-game gate reports CHECK on the three known checking plies and proves queenside castling
+24. a move-9 version-2 LOCAL checkpoint rolls back the complete persisted game state after two additional plies—including mode, board metadata, all piece+Gas squares and repetition history—and can be replayed cleanly
+25. the long-game gate opens the real history UI and finishes with a terminal lock that rejects further gameplay input
+26. Release CI simultaneously passes strict host tests, real Open Watcom 16-bit DOS compilation, DOSBox smoke and release packaging
 
 ## Next
 
-14.5 will run a longer end-to-end two-player Chromium scenario plus the full DOS regression pass before Build 14 closeout.
+14.6 will close Build 14 with documentation/package cleanup and one final merged-main certification pass.

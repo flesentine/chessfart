@@ -16,6 +16,50 @@ EMSCRIPTEN_KEEPALIVE int cf_review_fullmove(void)
     return (int)g_board.fullmove_number;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_castling_rights(void)
+{
+    return (int)g_board.castling_rights;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_en_passant_file(void)
+{
+    return g_board.en_passant_file;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_en_passant_rank(void)
+{
+    return g_board.en_passant_rank;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_halfmove(void)
+{
+    return (int)g_board.halfmove_clock;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_gas_history_count(void)
+{
+    return g_history.count;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_gas_history_state(int index)
+{
+    if (index < 0 || index >= g_history.count) return -1;
+    return (int)g_history.keys[index].state;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_gas_history_ep(int index)
+{
+    if (index < 0 || index >= g_history.count) return -1;
+    return (int)g_history.keys[index].en_passant_file;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_gas_history_square(int index, int square)
+{
+    if (index < 0 || index >= g_history.count ||
+        square < 0 || square >= 64) return -1;
+    return (int)g_history.keys[index].squares[square];
+}
+
 EMSCRIPTEN_KEEPALIVE void cf_review_set_cpu_difficulty(int difficulty)
 {
     if (difficulty < (int)CF_CPU_EASY) difficulty = (int)CF_CPU_EASY;
@@ -135,6 +179,11 @@ EMSCRIPTEN_KEEPALIVE int cf_review_piece(int file, int rank)
     return ((int)piece->type & 15) |
            (((int)piece->color & 15) << 4) |
            ((gas & 15) << 8);
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_gas(int file, int rank)
+{
+    return (int)gas_at(&g_gas, file, rank);
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_move_count(int file, int rank)
