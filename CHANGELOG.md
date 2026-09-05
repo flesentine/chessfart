@@ -12,6 +12,7 @@ Build 14 restores the original hot-seat goal on top of the frozen 1.0 rules path
 - The 1.0 save format and all player-facing title/menu pixels remain unchanged in 14.0.
 - 14.1 adds a dedicated `2 PLAYERS` title row, canonical six-row keyboard/mouse hit testing, real Chromium keyboard/mouse mode-selection checks, and a twentieth native visual-review state.
 - 14.2 labels local actions as `WHITE` / `BLACK`, replaces the CPU difficulty HUD row with `MODE / LOCAL 2P` in local play, and expands the native visual suite to 24 states, including real local Fart-mode HUD and mode-aware Help coverage. The same pass also fixes `ESC` in Fart mode so it cancels the action instead of exiting the match, matching the on-screen prompt.
+- 14.3 advances newly written game saves to format version 2 with an explicit CPU/local mode record. Version-1 saves remain accepted and restore CPU mode, preserving the semantics of saves created before local play existed. Version-2 mode restoration occurs before load-time CPU turn handling.
 
 ## Build 13 — Post-v1 presentation refresh
 

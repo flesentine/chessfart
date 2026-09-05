@@ -50,6 +50,20 @@ async function clickSquare(page, file, rank, button='left') {
   await sleep(80);
 }
 
+async function rewriteSaveAsLegacyV1(page) {
+  await page.evaluate(() => {
+    const savePath = '/persist/CHESSFRT.SAV';
+    const current = Module.FS.readFile(savePath, {encoding:'utf8'});
+    const legacy = current
+      .replace(/^CHESSFART_SAVE 2$/m, 'CHESSFART_SAVE 1')
+      .replace(/^MODE [^\n]*\n/m, '');
+    if (legacy === current || /^MODE /m.test(legacy))
+      throw new Error('failed to rewrite save as legacy v1');
+    Module.FS.writeFile(savePath, legacy);
+  });
+  await sleep(100);
+}
+
 async function clickTitleItem(page, item) {
   const canvas = await page.$('#canvas');
   const box = await canvas.boundingBox();
@@ -217,8 +231,13 @@ async function verifyMatchModes(browser) {
   await local.keyboard.press('Enter');
   await sleep(180);
 
+  await call(local,'cf_review_set_match_mode',0);
+  if (await call(local,'cf_review_match_mode') !== 0)
+    throw new Error('pre-load CPU mode switch did not stick');
   await local.keyboard.press('l');
   await waitForMatchState(local,2,1);
+  if (await call(local,'cf_review_match_mode') !== 1)
+    throw new Error('local v2 save did not restore LOCAL mode');
   piece = decodePiece(await call(local,'cf_review_piece',4,6));
   if (piece.type !== 1 || piece.color !== 2) throw new Error('local load did not restore Black pawn on e7');
   piece = decodePiece(await call(local,'cf_review_piece',4,4));
@@ -230,7 +249,7 @@ async function verifyMatchModes(browser) {
   await clickSquare(local,4,4);
   await waitForMatchState(local,1,2);
   if (localErrors.length) throw new Error(`match-local: ${localErrors.join(' | ')}`);
-  summary.push('MATCH_LOCAL=PASS white=e2-e4 black=e7-e5 history=WHITE/BLACK save/load-black-turn');
+  summary.push('MATCH_LOCAL=PASS white=e2-e4 black=e7-e5 history=WHITE/BLACK v2-restored=LOCAL');
   await local.close();
 
   const cpu = await browser.newPage();
@@ -243,8 +262,9 @@ async function verifyMatchModes(browser) {
   await cpu.waitForFunction(()=>typeof Module._cf_review_match_mode==='function',{timeout:15000});
   if (await call(cpu,'cf_review_match_mode') !== 0) throw new Error('fresh CPU match mode changed');
 
-  /* Create a Black-to-move save in local mode, then load it in CPU mode.
-   * The existing load hook must immediately consume Black's CPU turn. */
+  /* Create a Black-to-move board under local control, save it explicitly as
+   * CPU mode, then switch to LOCAL before loading. The v2 save must restore
+   * CPU mode before the load hook decides whether Black should auto-move. */
   await cpu.keyboard.press('Enter');
   await sleep(500);
   await call(cpu,'cf_review_set_match_mode',1);
@@ -253,15 +273,46 @@ async function verifyMatchModes(browser) {
   await clickSquare(cpu,4,1);
   await clickSquare(cpu,4,3);
   await waitForMatchState(cpu,2,1);
+  await call(cpu,'cf_review_set_match_mode',0);
   await cpu.keyboard.press('s');
   await sleep(250);
-  await call(cpu,'cf_review_set_match_mode',0);
+  await call(cpu,'cf_review_set_match_mode',1);
   await cpu.keyboard.press('l');
   await waitForMatchState(cpu,1,2);
+  if (await call(cpu,'cf_review_match_mode') !== 0)
+    throw new Error('CPU v2 save did not restore CPU mode');
   await canvasShot(cpu,'match-cpu-after-loading-black-turn');
   if (cpuErrors.length) throw new Error(`match-cpu: ${cpuErrors.join(' | ')}`);
-  summary.push('MATCH_CPU=PASS black-to-move-load-triggered-reply=1');
+  summary.push('MATCH_CPU=PASS v2-restored=CPU black-to-move-load-triggered-reply=1');
   await cpu.close();
+
+  const legacy = await browser.newPage();
+  const legacyErrors = [];
+  legacy.on('pageerror',e=>legacyErrors.push(`PAGE ${String(e)}`));
+  legacy.on('console',m=>{ if(m.type()==='error') legacyErrors.push(`CONSOLE ${m.text()}`); });
+  await legacy.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await legacy.goto('http://127.0.0.1:8127/?hardening=match-legacy-v1',{waitUntil:'domcontentloaded',timeout:15000});
+  await legacy.waitForFunction(()=>document.getElementById('status')?.textContent.startsWith('Ready'),{timeout:15000});
+  await legacy.waitForFunction(()=>typeof Module._cf_review_match_mode==='function',{timeout:15000});
+  await legacy.keyboard.press('Enter');
+  await sleep(500);
+  await call(legacy,'cf_review_set_match_mode',1);
+  await clickSquare(legacy,4,1);
+  await clickSquare(legacy,4,3);
+  await waitForMatchState(legacy,2,1);
+  await legacy.keyboard.press('s');
+  await sleep(250);
+  await rewriteSaveAsLegacyV1(legacy);
+  if (await call(legacy,'cf_review_match_mode') !== 1)
+    throw new Error('legacy pre-load LOCAL mode changed unexpectedly');
+  await legacy.keyboard.press('l');
+  await waitForMatchState(legacy,1,2);
+  if (await call(legacy,'cf_review_match_mode') !== 0)
+    throw new Error('legacy v1 save did not default to CPU mode');
+  await canvasShot(legacy,'match-legacy-v1-after-load');
+  if (legacyErrors.length) throw new Error(`match-legacy-v1: ${legacyErrors.join(' | ')}`);
+  summary.push('MATCH_LEGACY_V1=PASS defaulted=CPU black-to-move-load-triggered-reply=1');
+  await legacy.close();
 
   return summary;
 }

@@ -90,19 +90,19 @@ Build 13 keeps the frozen 1.0 gameplay/save contract and refreshes presentation 
 The permanent browser review suite covers 19 native 320x200 states, including normal play, Fart states, save/load notices, CHECK/CHECKMATE/STALEMATE, both Help pages, Credits, and a non-default title selection. See `docs/BUILD_13.md`.
 
 ## Build 14 — Local two-player
-**Status: 14.2 in progress**
+**Status: 14.3 in progress**
 
 Build 14 closes the original local hot-seat requirement without forking the trusted chess/Gas rules path:
 
 - 14.0 explicit CPU/local match-mode foundation and browser regression coverage
 - 14.1 title-menu selection for PLAY CPU versus 2 PLAYERS, with keyboard/mouse coverage and a 20-state visual suite
 - 14.2 local-player turn/history/HUD presentation, with WHITE/BLACK action identity and LOCAL 2P HUD mode
-- 14.3 local save/load behavior and mode persistence design
+- 14.3 version-2 save mode persistence with backward-compatible version-1 CPU semantics
 - 14.4 local Fart/promotion/terminal-state hardening
 - 14.5 full two-player Chromium scenario and DOS regression pass
 - 14.6 closeout/documentation cleanup
 
-The existing CPU game remains the default throughout 14.0; the 1.0 save format remains unchanged until a later slice explicitly proves a compatible persistence design.
+The existing CPU game remains the startup default. Build 14.3 advances newly written game saves to format version 2 while keeping legacy version-1 saves loadable as CPU-mode saves.
 
 ## Post-v1 ideas
 
