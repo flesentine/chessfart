@@ -50,6 +50,16 @@ async function clickSquare(page, file, rank, button='left') {
   await sleep(80);
 }
 
+async function clickCanvasPixel(page, vx, vy, button='left') {
+  const canvas = await page.$('#canvas');
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.mouse.click(box.x + vx / 320 * box.width,
+                         box.y + vy / 200 * box.height,
+                         {button, delay:80});
+  await sleep(140);
+}
+
 async function rewriteSaveAsLegacyV1(page) {
   await page.evaluate(() => {
     const savePath = '/persist/CHESSFRT.SAV';
