@@ -799,6 +799,158 @@ static void ux_wait_for_close(int page_mode)
 #endif
 }
 
+static void ux_draw_replay_panel(const CfReplaySnapshot *snapshot,
+                                 CfGameStatus status,
+                                 CfMatchMode mode,
+                                 int index)
+{
+    unsigned long first_frame;
+    unsigned long frame_number;
+    char line[32];
+
+    ux_panel_outline();
+    font_draw_heading(CF_UI_HUD_LABEL_X, CF_UI_HUD_TURN_Y,
+                      "REPLAY", UX_COL_SELECTED, 1);
+
+    first_frame = g_replay_timeline->total -
+                  (unsigned long)g_replay_timeline->count + 1UL;
+    frame_number = first_frame + (unsigned long)index;
+    sprintf(line, "FRAME %lu/%lu", frame_number, g_replay_timeline->total);
+    font_draw_text_clipped(CF_UI_HUD_LABEL_X, CF_UI_HUD_STATE_Y,
+                           line, UX_COL_GOLD, 1, CF_UI_HUD_DIVIDER_W);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER1_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+
+    font_draw_text(CF_UI_HUD_LABEL_X, 60, "TURN", UX_COL_GOLD, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, 60,
+                   board_piece_color_name((CfPieceColor)snapshot->side_to_move),
+                   UX_COL_TEXT, 1);
+    font_draw_text(CF_UI_HUD_LABEL_X, 72, "STATE", UX_COL_MUTED, 1);
+    font_draw_text_clipped(CF_UI_HUD_VALUE_X, 72,
+                           board_game_status_name(status),
+                           status == CF_GAME_CHECK ||
+                           status == CF_GAME_CHECKMATE ?
+                           UX_COL_CHECK : UX_COL_GREEN,
+                           1, CF_UI_PANEL_CONTENT_X + CF_UI_PANEL_CONTENT_W -
+                           CF_UI_HUD_VALUE_X);
+    font_draw_text(CF_UI_HUD_LABEL_X, 84, "MODE", UX_COL_MUTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, 84,
+                   mode == CF_MATCH_LOCAL ? "2 PLAYERS" : "CPU",
+                   mode == CF_MATCH_LOCAL ? UX_COL_GAS : UX_COL_GOLD, 1);
+
+    vga_fill_rect(CF_UI_HUD_LABEL_X, 96,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+    font_draw_text(CF_UI_HUD_LABEL_X, 103,
+                   "ACTION", UX_COL_SELECTED, 1);
+    ux_draw_action_two_lines(CF_UI_HUD_LABEL_X, 115, 126,
+                             snapshot->label, UX_COL_TEXT);
+
+    vga_fill_rect(CF_UI_HUD_LABEL_X, 140,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
+    if (g_replay_timeline->truncated)
+        font_draw_text(CF_UI_HUD_LABEL_X, 148,
+                       "EARLIER FRAMES DROPPED", UX_COL_MUTED, 1);
+    else
+        font_draw_text(CF_UI_HUD_LABEL_X, 148,
+                       "FULL SESSION", UX_COL_MUTED, 1);
+    font_draw_text(CF_UI_HUD_LABEL_X, 160,
+                   "READ ONLY", UX_COL_GAS, 1);
+}
+
+static void ux_draw_replay_command_bar(void)
+{
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, CF_UI_COMMAND_H, UX_COL_BG);
+    vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
+                  CF_UI_COMMAND_W, 1, UX_COL_GOLD);
+    ux_draw_centered(CF_UI_COMMAND_X, CF_UI_PROMPT_TEXT_Y,
+                     CF_UI_COMMAND_W,
+                     "LEFT/RIGHT STEP   R/ENTER/ESC CLOSE",
+                     UX_COL_TEXT);
+}
+
+static int ux_render_replay_frame(int index)
+{
+    static CfBoard replay_board;
+    static CfGasState replay_gas;
+    static CfMoveList empty_moves;
+    const CfReplaySnapshot *snapshot;
+    CfGameStatus status;
+    CfMatchMode mode;
+    int cursor_file;
+    int cursor_rank;
+
+    snapshot = replay_timeline_get(g_replay_timeline, index);
+    if (snapshot == 0) return 0;
+    if (!replay_snapshot_restore(snapshot, &replay_board, &replay_gas,
+                                 &status, &mode)) return 0;
+
+    empty_moves.count = 0;
+    cursor_file = g_ux_cache.valid ? g_ux_cache.cursor_file : 4;
+    cursor_rank = g_ux_cache.valid ? g_ux_cache.cursor_rank : 1;
+
+    /*
+     * Use the presentation layer directly so reviewing an old CHECK,
+     * CHECKMATE, or message cannot retrigger gameplay audio. The replay
+     * board/Gas live in dedicated scratch storage; the live match, history,
+     * mode and render cache are never replaced.
+     */
+    presentation_render_game(&replay_board, &replay_gas,
+                             cursor_file, cursor_rank,
+                             0, 0, 0, &empty_moves, status,
+                             0, CF_PIECE_QUEEN,
+                             0, CF_FART_N, CF_FART_INVALID,
+                             0, CF_PIECE_QUEEN, snapshot->label);
+    ux_draw_replay_panel(snapshot, status, mode, index);
+    ux_draw_replay_command_bar();
+    vga_present();
+    return 1;
+}
+
+void ux_show_replay_modal(void)
+{
+    int index;
+#ifndef CF_HOST_BUILD
+    CfInputKey5 key;
+#endif
+
+    if (g_replay_timeline == 0 || g_replay_timeline->count <= 0 ||
+        !g_ux_cache.valid) return;
+
+    index = g_replay_timeline->count - 1;
+    g_replay_viewer_active = 1;
+    g_replay_viewer_index = index;
+    ux_capture("chessfart_build15_replay");
+    if (!ux_render_replay_frame(index)) {
+        g_replay_viewer_active = 0;
+        g_replay_viewer_index = -1;
+        ux_redraw_cached();
+        return;
+    }
+
+#ifndef CF_HOST_BUILD
+    for (;;) {
+        key = input5_poll_key();
+        if (key == CF5_KEY_LEFT) {
+            if (index > 0) --index;
+            g_replay_viewer_index = index;
+            (void)ux_render_replay_frame(index);
+        } else if (key == CF5_KEY_RIGHT) {
+            if (index + 1 < g_replay_timeline->count) ++index;
+            g_replay_viewer_index = index;
+            (void)ux_render_replay_frame(index);
+        } else if (key == CF5_KEY_ESCAPE || key == CF5_KEY_ENTER ||
+                   key == CF5_KEY_REPLAY) {
+            break;
+        }
+    }
+#endif
+
+    g_replay_viewer_active = 0;
+    g_replay_viewer_index = -1;
+    ux_redraw_cached();
+}
+
 void ux_show_help_modal(void)
 {
     ux_capture("chessfart_build11_help");
