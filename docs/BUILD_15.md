@@ -2,7 +2,7 @@
 
 Build 15 adds replay and postgame review without changing chess legality, Gas/Fart rules, CPU evaluation, or the version-2 game-save contract.
 
-**15.0 complete. Next slice: 15.1 replay viewer modal.**
+**15.0 complete. Current slice: 15.1 replay viewer modal.**
 
 ## Why replay
 
@@ -62,11 +62,14 @@ The browser hardening run must prove:
 
 ### 15.1 — Replay viewer modal
 
-- add a read-only replay screen using the session timeline
-- step backward/forward with keyboard
-- show frame number and action label
-- render snapshots without mutating the live match
-- return to the exact live game when closed
+- open the read-only replay screen with `R`
+- start on the newest retained frame and step with Left/Right
+- show absolute frame number, turn, state, match mode and action label
+- render through replay scratch state without mutating the live board, Gas, repetition history, mode or render cache
+- avoid gameplay-audio side effects while reviewing old CHECK/CHECKMATE frames
+- clamp stepping at the oldest/newest retained frame
+- return to the exact live game when closed with R, Enter or Esc
+- keep HUD/help discoverability and mouse replay controls for 15.2
 
 ### 15.2 — Postgame replay UX
 
