@@ -2,6 +2,7 @@
 #include <time.h>
 
 #include "cpu.h"
+#include "replay.h"
 #include "version.h"
 
 static void run_profile(const char *name, CfCpuDifficulty difficulty)
@@ -74,6 +75,10 @@ int main(void)
     printf("sizeof_board=%lu sizeof_gas=%lu sizeof_history=%lu sizeof_actions=%lu\n",
            (unsigned long)sizeof(CfBoard), (unsigned long)sizeof(CfGasState),
            (unsigned long)sizeof(CfGasHistory), (unsigned long)sizeof(CfCpuActionList));
+    printf("sizeof_replay_snapshot=%lu sizeof_replay_timeline=%lu transient_import_peak=%lu\n",
+           (unsigned long)sizeof(CfReplaySnapshot),
+           (unsigned long)sizeof(CfReplayTimeline),
+           (unsigned long)sizeof(CfReplayTimeline) * 2UL);
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);
     run_profile("HARD_START", CF_CPU_HARD);
