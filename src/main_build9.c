@@ -264,8 +264,16 @@ int main(void)
         play_key_sound(key);
 
         if (key == CF5_KEY_ESCAPE) {
-            running = 0;
-            continue;
+            if (fart_mode) {
+                fart_mode = 0;
+                fart_promotion_pending = 0;
+                fart_preview = CF_FART_INVALID;
+                strcpy(message, "FART CANCELLED");
+                changed = 1;
+            } else {
+                running = 0;
+                continue;
+            }
         }
 
         if (key == CF5_KEY_SAVE) {
