@@ -83,6 +83,85 @@ EMSCRIPTEN_KEEPALIVE int cf_review_match_mode(void)
     return (int)g_match_mode;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_count(void)
+{
+    return g_replay_timeline == 0 ? 0 : g_replay_timeline->count;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_total(void)
+{
+    return g_replay_timeline == 0 ? 0 : (int)g_replay_timeline->total;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_truncated(void)
+{
+    return g_replay_timeline == 0 ? 0 : g_replay_timeline->truncated;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_side(int index)
+{
+    const CfReplaySnapshot *snapshot;
+    snapshot = replay_timeline_get(g_replay_timeline, index);
+    return snapshot == 0 ? -1 : (int)snapshot->side_to_move;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_fullmove(int index)
+{
+    const CfReplaySnapshot *snapshot;
+    CfBoard board;
+    CfGasState gas;
+    snapshot = replay_timeline_get(g_replay_timeline, index);
+    if (snapshot == 0) return -1;
+    if (!replay_snapshot_restore(snapshot, &board, &gas, 0, 0)) return -1;
+    return (int)board.fullmove_number;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_status(int index)
+{
+    const CfReplaySnapshot *snapshot;
+    snapshot = replay_timeline_get(g_replay_timeline, index);
+    return snapshot == 0 ? -1 : (int)snapshot->status;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_mode(int index)
+{
+    const CfReplaySnapshot *snapshot;
+    snapshot = replay_timeline_get(g_replay_timeline, index);
+    return snapshot == 0 ? -1 : (int)snapshot->match_mode;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_piece(int index, int file, int rank)
+{
+    const CfReplaySnapshot *snapshot;
+    CfBoard board;
+    CfGasState gas;
+    const CfPiece *piece;
+    int square_gas;
+
+    snapshot = replay_timeline_get(g_replay_timeline, index);
+    if (snapshot == 0 || file < 0 || file >= 8 || rank < 0 || rank >= 8)
+        return -1;
+    if (!replay_snapshot_restore(snapshot, &board, &gas, 0, 0)) return -1;
+    piece = board_piece_at(&board, file, rank);
+    if (piece == 0 || piece->type == CF_PIECE_NONE) return 0;
+    square_gas = (int)gas_at(&gas, file, rank);
+    return ((int)piece->type & 15) |
+           (((int)piece->color & 15) << 4) |
+           ((square_gas & 15) << 8);
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_last_matches_current(void)
+{
+    const CfReplaySnapshot *snapshot;
+    CfGameStatus status;
+    if (g_replay_timeline == 0 || g_replay_timeline->count <= 0) return 0;
+    snapshot = replay_timeline_get(g_replay_timeline,
+                                   g_replay_timeline->count - 1);
+    status = gas_game_status(&g_board, &g_gas, &g_history);
+    return replay_snapshot_matches(snapshot, &g_board, &g_gas,
+                                   status, g_match_mode);
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_history_has_local_pair(void)
 {
     const char *line;

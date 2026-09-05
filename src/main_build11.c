@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "audio.h"
 #include "audio_game.h"
@@ -10,6 +11,7 @@
 #include "persistence.h"
 #include "persistence_ui.h"
 #include "presentation.h"
+#include "replay.h"
 #include "ux.h"
 #include "vga.h"
 
@@ -21,6 +23,7 @@ static CfGasHistory g_cpu_history_backup;
 static char g_cpu_message[32];
 static int g_cpu_message_pending;
 static CfUxHistory g_ux_history;
+static CfReplayTimeline *g_replay_timeline;
 
 typedef struct CfUxRenderCache {
     int valid;
@@ -104,6 +107,8 @@ int main(void)
     memset(&g_cpu_stats, 0, sizeof(g_cpu_stats));
     memset(&g_ux_cache, 0, sizeof(g_ux_cache));
     ux_history_init(&g_ux_history);
+    g_replay_timeline = (CfReplayTimeline *)malloc(sizeof(CfReplayTimeline));
+    if (g_replay_timeline != 0) replay_timeline_init(g_replay_timeline);
     g_cpu_message[0] = '\0';
     g_cpu_message_pending = 0;
     g_ux_mouse_buttons = 0U;
@@ -113,5 +118,7 @@ int main(void)
     (void)mouse_init();
     result = chessfart_build9_ux_main();
     mouse_shutdown();
+    if (g_replay_timeline != 0) free(g_replay_timeline);
+    g_replay_timeline = 0;
     return result;
 }

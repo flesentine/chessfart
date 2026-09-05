@@ -1015,6 +1015,9 @@ void ux_render_game(const CfBoard *board, const CfGasState *gas,
                     const char *message)
 {
     if (board == 0 || gas == 0 || moves == 0) return;
+    if (g_replay_timeline != 0 && g_replay_timeline->count == 0)
+        replay_timeline_reset(g_replay_timeline, board, gas, status,
+                              g_match_mode, "START");
     g_ux_cache.valid = 1;
     g_ux_cache.board = *board;
     g_ux_cache.gas = *gas;

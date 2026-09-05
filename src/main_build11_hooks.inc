@@ -6,17 +6,43 @@ static int ux_terminal(CfGameStatus status)
            status == CF_GAME_DRAW_INSUFFICIENT;
 }
 
-static void ux_log_move(const char *actor, const CfGasMove *move)
+static CfGameStatus ux_replay_status(const CfBoard *board,
+                                     const CfGasState *gas,
+                                     const CfGasHistory *history)
 {
-    char line[CF_UX_HISTORY_LINE];
-    ux_format_move_line(actor, move, line, sizeof(line));
+    /* Reuse the global search-history scratch here instead of putting the
+     * ~8 KiB repetition history on the 16-bit DOS stack. CPU search either
+     * refills this scratch immediately afterward or has already finished. */
+    g_cpu_search_history = *history;
+    gas_history_record(&g_cpu_search_history, board, gas);
+    return gas_game_status(board, gas, &g_cpu_search_history);
+}
+
+static void ux_replay_record_current(const CfBoard *board,
+                                     const CfGasState *gas,
+                                     const CfGasHistory *history,
+                                     const char *label)
+{
+    replay_timeline_record(g_replay_timeline, board, gas,
+                           ux_replay_status(board, gas, history),
+                           g_match_mode, label);
+}
+
+static void ux_log_move(const char *actor, const CfGasMove *move,
+                        char *out)
+{
+    char local[CF_UX_HISTORY_LINE];
+    char *line = out != 0 ? out : local;
+    ux_format_move_line(actor, move, line, CF_UX_HISTORY_LINE);
     ux_history_add(&g_ux_history, line);
 }
 
-static void ux_log_fart(const char *actor, const CfFartAction *fart)
+static void ux_log_fart(const char *actor, const CfFartAction *fart,
+                        char *out)
 {
-    char line[CF_UX_HISTORY_LINE];
-    ux_format_fart_line(actor, fart, line, sizeof(line));
+    char local[CF_UX_HISTORY_LINE];
+    char *line = out != 0 ? out : local;
+    ux_format_fart_line(actor, fart, line, CF_UX_HISTORY_LINE);
     ux_history_add(&g_ux_history, line);
 }
 
@@ -58,11 +84,14 @@ static int ux_cpu_take_turn(CfBoard *board, CfGasState *gas,
         *history = g_cpu_history_backup;
         return 0;
     }
+    status = ux_replay_status(board, gas, history);
     if (record_final) gas_history_record(history, board, gas);
     cpu_format_action(&action, g_cpu_message, sizeof(g_cpu_message));
     g_cpu_message_pending = 1;
     ux_format_cpu_line("CPU", &action, line, sizeof(line));
     ux_history_add(&g_ux_history, line);
+    replay_timeline_record(g_replay_timeline, board, gas, status,
+                           g_match_mode, line);
     return 1;
 }
 
@@ -70,9 +99,12 @@ int ux_human_make_move(CfBoard *board, CfGasState *gas,
                        int ff, int fr, int tf, int tr, CfGasMove *made)
 {
     CfGasMove local;
+    char line[CF_UX_HISTORY_LINE];
     if (!audio_game_make_move(board, gas, ff, fr, tf, tr, &local)) return 0;
     ux_log_move(ux_match_actor_name(g_match_mode,
-                                    local.chess_move.moved.color), &local);
+                                    local.chess_move.moved.color),
+                &local, line);
+    ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
     return 1;
@@ -83,10 +115,13 @@ int ux_human_make_move_ex(CfBoard *board, CfGasState *gas,
                           CfPieceType promotion, CfGasMove *made)
 {
     CfGasMove local;
+    char line[CF_UX_HISTORY_LINE];
     if (!audio_game_make_move_ex(board, gas, ff, fr, tf, tr,
                                  promotion, &local)) return 0;
     ux_log_move(ux_match_actor_name(g_match_mode,
-                                    local.chess_move.moved.color), &local);
+                                    local.chess_move.moved.color),
+                &local, line);
+    ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
     return 1;
@@ -97,9 +132,12 @@ int ux_human_make_fart(CfBoard *board, CfGasState *gas, int file, int rank,
                        CfFartAction *action)
 {
     CfFartAction local;
+    char line[CF_UX_HISTORY_LINE];
     if (!audio_game_make_fart(board, gas, file, rank,
                               direction, promotion, &local)) return 0;
-    ux_log_fart(ux_match_actor_name(g_match_mode, local.previous_side), &local);
+    ux_log_fart(ux_match_actor_name(g_match_mode, local.previous_side),
+                &local, line);
+    ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (action != 0) *action = local;
     return 1;
@@ -122,9 +160,13 @@ CfPersistenceResult ux_load_game(const char *path, CfBoard *board,
     CfMatchMode loaded_mode = g_match_mode;
     result = persistence_load_game_mode(path, board, gas, history, &loaded_mode);
     if (result == CF_PERSIST_OK) {
+        CfGameStatus loaded_status;
         g_match_mode = loaded_mode;
         ux_history_init(&g_ux_history);
         ux_history_add(&g_ux_history, "SYSTEM LOAD OK");
+        loaded_status = gas_game_status(board, gas, history);
+        replay_timeline_reset(g_replay_timeline, board, gas,
+                              loaded_status, g_match_mode, "LOAD START");
         if (board->side_to_move == CF_COLOR_BLACK)
             (void)ux_cpu_take_turn(board, gas, history, 1);
     }

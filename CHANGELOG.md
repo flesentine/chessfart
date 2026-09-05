@@ -2,6 +2,10 @@
 
 All notable project milestones are recorded here.
 
+## Build 15 — Replay / postgame review
+
+- 15.0 introduces a compact, bounded 256-frame in-memory replay timeline. The initial state and every committed human/CPU move or Fart are captured separately; passive UI activity creates no frames. Successful Load intentionally starts a new replay baseline because save format v2 does not contain prior replay history. The snapshot packing and host tests enforce a sub-32 KiB timeline budget, and Chromium verifies CPU/local frame boundaries without changing the existing 32 visual states.
+
 ## Build 14 — Local two-player
 
 Build 14 restores the original hot-seat goal on top of the frozen 1.0 rules path.

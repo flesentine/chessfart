@@ -11,6 +11,7 @@ HOST_SOURCES = \
 	src/game/cpu_search.c \
 	src/game/cpu_format.c \
 	src/game/ux.c \
+	src/game/replay.c \
 	src/game/font.c \
 	src/game/board_view_build5.c \
 	src/game/board_view_build6.c \
@@ -58,6 +59,7 @@ TEST9_BINARY = build/host/test_build9
 TEST10_BINARY = build/host/test_build10
 TEST10_ALPHA_BINARY = build/host/test_build10_alpha_beta
 TEST11_BINARY = build/host/test_build11
+TEST15_BINARY = build/host/test_build15
 PROFILE12_BINARY = build/host/profile_build12
 
 .PHONY: all host host-run test test-build11 test-build12 profile-build12 release-audit dos release clean
@@ -66,7 +68,7 @@ all: host
 
 host: $(HOST_BINARY)
 
-$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/cpu.h include/ux.h include/match_mode.h include/mouse.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/ui_assets.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h include/persistence.h include/persistence_ui.h src/main_build9.c src/main_build11_hooks.inc src/main_build11_ui.inc
+$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/cpu.h include/ux.h include/match_mode.h include/mouse.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/ui_assets.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h include/persistence.h include/persistence_ui.h include/replay.h src/main_build9.c src/main_build11_hooks.inc src/main_build11_ui.inc
 	mkdir -p build/host
 	$(CC) $(CFLAGS) -DCF_BUILD6_DEMO -DCF_HOST_BUILD $(HOST_SOURCES) -o $(HOST_BINARY)
 
@@ -101,6 +103,10 @@ $(TEST10_ALPHA_BINARY): tests/test_build10_alpha_beta.c $(CPU_SOURCES) include/c
 $(TEST11_BINARY): tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c include/ux.h include/match_mode.h include/cpu.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c -o $(TEST11_BINARY)
+
+$(TEST15_BINARY): tests/test_build15.c src/game/replay.c src/game/board.c src/game/gas.c include/replay.h include/match_mode.h include/gas.h include/board.h include/cf_types.h
+	mkdir -p build/host
+	$(CC) $(CFLAGS) tests/test_build15.c src/game/replay.c src/game/board.c src/game/gas.c -o $(TEST15_BINARY)
 
 $(PROFILE12_BINARY): tests/profile_build12.c $(CPU_SOURCES) include/version.h include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
@@ -145,8 +151,9 @@ profile-build12: $(PROFILE12_BINARY) $(HOST_BINARY)
 release-audit:
 	sh scripts/release_audit.sh
 
-test-build12: test-build11 profile-build12 release-audit
-	@echo "Build 12 host release-candidate gate passed."
+test-build12: test-build11 profile-build12 release-audit $(TEST15_BINARY)
+	./$(TEST15_BINARY)
+	@echo "Build 12 + post-v1 host gate passed."
 
 dos:
 	@echo "Set WATCOM/PATH/INCLUDE, then run: sh scripts/build_dos_ci.sh"
