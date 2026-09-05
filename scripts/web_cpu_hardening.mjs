@@ -521,6 +521,16 @@ async function verifyMatchModes(browser) {
   await waitForMatchState(cpu,1,2);
   if (await call(cpu,'cf_review_match_mode') !== 0)
     throw new Error('CPU v2 save did not restore CPU mode');
+  if (await call(cpu,'cf_review_replay_count') !== 2 ||
+      await call(cpu,'cf_review_replay_total') !== 2 ||
+      await call(cpu,'cf_review_replay_mode',0) !== 0 ||
+      await call(cpu,'cf_review_replay_mode',1) !== 0 ||
+      await call(cpu,'cf_review_replay_side',0) !== 2 ||
+      await call(cpu,'cf_review_replay_side',1) !== 1 ||
+      await call(cpu,'cf_review_replay_fullmove',0) !== 1 ||
+      await call(cpu,'cf_review_replay_fullmove',1) !== 2 ||
+      await call(cpu,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('CPU black-to-move load replay did not reset to baseline+reply');
   await canvasShot(cpu,'match-cpu-after-loading-black-turn');
   if (cpuErrors.length) throw new Error(`match-cpu: ${cpuErrors.join(' | ')}`);
   summary.push('MATCH_CPU=PASS v2-restored=CPU black-to-move-load-triggered-reply=1');
