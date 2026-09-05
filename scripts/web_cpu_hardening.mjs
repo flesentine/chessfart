@@ -761,6 +761,24 @@ async function verifyReplayViewer(browser) {
   if (p.type !== 1 || p.color !== 1 || p.gas !== 1)
     throw new Error('replay viewer step did not land on White e4 frame');
 
+  /* Replay owns input while open. Gameplay keys and board clicks must be
+   * consumed without touching the live game, history, or replay position. */
+  for (const key of ['f','s','l','h']) {
+    await page.keyboard.press(key);
+    await sleep(70);
+  }
+  await clickCanvasPixel(page,63,72);
+  await clickCanvasPixel(page,153,126,'right');
+  if (await call(page,'cf_review_replay_viewer_active') !== 1 ||
+      await call(page,'cf_review_replay_viewer_index') !== 1)
+    throw new Error('gameplay input escaped the replay viewer');
+  const locked = await persistedState(page);
+  if (!samePersistedState(before,locked) ||
+      await call(page,'cf_review_replay_count') !== count ||
+      await call(page,'cf_review_replay_total') !== total)
+    throw new Error('replay viewer gameplay lock mutated live state');
+
+  /* Keyboard bounds remain clamped. */
   await page.keyboard.press('ArrowLeft');
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===0,
@@ -771,20 +789,28 @@ async function verifyReplayViewer(browser) {
   if (await call(page,'cf_review_replay_viewer_index') !== 0)
     throw new Error('replay viewer stepped before oldest available frame');
 
-  await page.keyboard.press('ArrowRight');
+  /* Footer mouse zones own Previous and Next. */
+  await clickCanvasPixel(page,50,190);
+  if (await call(page,'cf_review_replay_viewer_index') !== 0)
+    throw new Error('replay mouse previous stepped before oldest frame');
+  await clickCanvasPixel(page,150,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===1,
     {timeout:3000}
   );
-  await page.keyboard.press('ArrowRight');
+  await clickCanvasPixel(page,150,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===2,
     {timeout:3000}
   );
-  await page.keyboard.press('ArrowRight');
-  await sleep(80);
+  await clickCanvasPixel(page,150,190);
   if (await call(page,'cf_review_replay_viewer_index') !== 2)
-    throw new Error('replay viewer stepped past newest frame');
+    throw new Error('replay mouse next stepped past newest frame');
+  await clickCanvasPixel(page,50,190);
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_index()===1,
+    {timeout:3000}
+  );
 
   const during = await persistedState(page);
   if (!samePersistedState(before,during))
@@ -793,7 +819,8 @@ async function verifyReplayViewer(browser) {
       await call(page,'cf_review_replay_total') !== total)
     throw new Error('replay viewer created or removed replay frames');
 
-  await page.keyboard.press('Enter');
+  /* Close through the footer mouse region and require exact live restore. */
+  await clickCanvasPixel(page,270,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_active()===0,
     {timeout:5000}
@@ -807,7 +834,7 @@ async function verifyReplayViewer(browser) {
 
   if (errors.length) throw new Error(`replay-viewer: ${errors.join(' | ')}`);
   await page.close();
-  return 'REPLAY_VIEWER=PASS open=latest step=bounded live=unchanged close=restored';
+  return 'REPLAY_VIEWER=PASS open=latest step=bounded mouse=prev-next-close live-input=locked close=restored';
 }
 
 function samePersistedState(a, b) {
