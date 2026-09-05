@@ -24,6 +24,8 @@ static char g_cpu_message[32];
 static int g_cpu_message_pending;
 static CfUxHistory g_ux_history;
 static CfReplayTimeline *g_replay_timeline;
+static int g_replay_viewer_active;
+static int g_replay_viewer_index;
 
 typedef struct CfUxRenderCache {
     int valid;
@@ -70,6 +72,7 @@ CfInputKey5 ux_poll_key(void);
 void ux_show_help_modal(void);
 void ux_show_history_modal(void);
 void ux_show_credits_modal(void);
+void ux_show_replay_modal(void);
 
 #define persistence_title_screen ux_title_screen
 #define persistence_render_game ux_render_game
@@ -111,6 +114,8 @@ int main(void)
     if (g_replay_timeline != 0) replay_timeline_init(g_replay_timeline);
     g_cpu_message[0] = '\0';
     g_cpu_message_pending = 0;
+    g_replay_viewer_active = 0;
+    g_replay_viewer_index = -1;
     g_ux_mouse_buttons = 0U;
     g_ux_mouse_target_active = 0;
     g_ux_mouse_confirm_pending = 0;

@@ -33,6 +33,7 @@ void input5_init(void)
             case 'h': case 'H': case '?': code = 15; break;
             case 'Tab': case 'm': case 'M': code = 16; break;
             case 'c': case 'C': code = 17; break;
+            case 'r': case 'R': code = 18; break;
             default: break;
             }
             if (code) {

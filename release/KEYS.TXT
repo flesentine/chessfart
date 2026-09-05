@@ -22,6 +22,8 @@ L                  Load
 H or ?             Help / rules
 Tab or M           Session action log
 C                  Credits
+R                  Replay viewer
+                   Left / Right step; R / Enter / Esc close
 Mouse left         Target/confirm board square
 Mouse right        Enter Fart mode
 Esc                Quit; cancels pending Fart or promotion choice
