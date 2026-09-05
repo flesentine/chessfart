@@ -270,6 +270,10 @@ int main(void)
                 fart_preview = CF_FART_INVALID;
                 strcpy(message, "FART CANCELLED");
                 changed = 1;
+            } else if (promotion_pending) {
+                promotion_pending = 0;
+                strcpy(message, "PROMO CANCELLED");
+                changed = 1;
             } else {
                 running = 0;
                 continue;

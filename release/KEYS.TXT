@@ -24,7 +24,7 @@ Tab or M           Session action log
 C                  Credits
 Mouse left         Target/confirm board square
 Mouse right        Enter Fart mode
-Esc                Quit
+Esc                Quit; cancels pending Fart or promotion choice
 
 GAS QUICK RULE
 Normal move: +1 Gas. Capture: +2 Gas total. Gas caps at 3.

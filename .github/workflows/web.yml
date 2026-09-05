@@ -48,7 +48,19 @@ jobs:
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_playtest.mjs
           test -s build/web-playtest/08-after-fart.png
           test -s build/web-playtest/10-after-load.png
+          test -s build/web-playtest/hardening/local-black-fart-after.png
+          test -s build/web-playtest/hardening/local-white-promotion-pending.png
+          test -s build/web-playtest/hardening/local-white-fart-promotion-pending.png
+          test -s build/web-playtest/hardening/local-black-checkmate.png
+          grep -q '^LOCAL_BLACK_FART=PASS' build/web-playtest/hardening/hardening.txt
+          grep -q '^LOCAL_WHITE_PROMOTION=PASS' build/web-playtest/hardening/hardening.txt
+          grep -q '^LOCAL_BLACK_PROMOTION=PASS' build/web-playtest/hardening/hardening.txt
+          grep -q '^LOCAL_WHITE_FART_PROMOTION=PASS' build/web-playtest/hardening/hardening.txt
+          grep -q '^LOCAL_BLACK_FART_PROMOTION=PASS' build/web-playtest/hardening/hardening.txt
+          grep -q '^LOCAL_WHITE_CHECKMATE=PASS' build/web-playtest/hardening/hardening.txt
+          grep -q '^LOCAL_BLACK_CHECKMATE=PASS' build/web-playtest/hardening/hardening.txt
           cat build/web-playtest/playtest.txt
+          cat build/web-playtest/hardening/hardening.txt
       - name: Build 14 visual review states
         run: |
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_visual_review.mjs
@@ -68,8 +80,16 @@ jobs:
           test -s build/web-visual-review/22-local-history-white-black.png
           test -s build/web-visual-review/23-local-fart-mode-hud.png
           test -s build/web-visual-review/24-local-help-page-2.png
+          test -s build/web-visual-review/25-local-black-fart-after.png
+          test -s build/web-visual-review/26-local-white-promotion-choice.png
+          test -s build/web-visual-review/27-local-white-promotion-rook.png
+          test -s build/web-visual-review/28-local-black-promotion-rook.png
+          test -s build/web-visual-review/29-local-white-fart-promotion-choice.png
+          test -s build/web-visual-review/30-local-black-fart-promotion-rook.png
+          test -s build/web-visual-review/31-local-white-checkmate.png
+          test -s build/web-visual-review/32-local-black-checkmate.png
           grep -q '^PASS$' build/web-visual-review/visual-review.txt
-          grep -q '^states=24$' build/web-visual-review/visual-review.txt
+          grep -q '^states=32$' build/web-visual-review/visual-review.txt
           cat build/web-visual-review/visual-review.txt
       - name: Preserve web diagnostics
         if: always()

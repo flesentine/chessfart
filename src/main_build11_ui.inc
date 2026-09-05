@@ -646,6 +646,7 @@ static void ux_draw_retail_panel(const CfBoard *board,
 }
 
 static void ux_draw_command_bar(const CfBoard *board,
+                                int promotion_pending,
                                 int fart_mode,
                                 int fart_promotion_pending)
 {
@@ -655,6 +656,16 @@ static void ux_draw_command_bar(const CfBoard *board,
                   CF_UI_COMMAND_W, CF_UI_COMMAND_H, UX_COL_BG);
     vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
                   CF_UI_COMMAND_W, 1, UX_COL_GOLD);
+
+    if (promotion_pending) {
+        font_draw_text(CF_UI_FART_PROMPT_ARROWS_X, CF_UI_PROMPT_TEXT_Y,
+                       "ARROWS CHOOSE PIECE", UX_COL_GAS, 1);
+        font_draw_text(CF_UI_FART_PROMPT_ENTER_X, CF_UI_PROMPT_TEXT_Y,
+                       "ENTER CONFIRM", UX_COL_TEXT, 1);
+        font_draw_text(CF_UI_FART_PROMPT_ESC_X, CF_UI_PROMPT_TEXT_Y,
+                       "ESC CANCEL", UX_COL_MUTED, 1);
+        return;
+    }
 
     if (fart_mode) {
         font_draw_text(CF_UI_FART_PROMPT_ARROWS_X, CF_UI_PROMPT_TEXT_Y,
@@ -748,7 +759,8 @@ static void ux_render_cached_base(void)
                          g_ux_cache.fart_direction, g_ux_cache.fart_preview,
                          g_ux_cache.fart_promotion_pending,
                          g_ux_cache.fart_promotion_choice);
-    ux_draw_command_bar(&g_ux_cache.board, g_ux_cache.fart_mode,
+    ux_draw_command_bar(&g_ux_cache.board, g_ux_cache.promotion_pending,
+                        g_ux_cache.fart_mode,
                         g_ux_cache.fart_promotion_pending);
     ux_draw_persistence_notice(shown);
 
@@ -847,7 +859,7 @@ static void ux_run_attract(void)
     ux_draw_retail_panel(&before_board, &before_gas, 2, 2, 1, 2, 2,
                          CF_GAME_ONGOING, "AIM NE TO PUSH", 1,
                          CF_FART_NE, CF_FART_PUSH, 0, CF_PIECE_QUEEN);
-    ux_draw_command_bar(&before_board, 1, 0);
+    ux_draw_command_bar(&before_board, 0, 1, 0);
     vga_present();
 
     if (gas_make_fart(&after_board, &after_gas, 2, 2, CF_FART_NE,
@@ -862,7 +874,7 @@ static void ux_run_attract(void)
                              CF_GAME_ONGOING, "D4 BLASTED TO E5", 0,
                              CF_FART_N, CF_FART_INVALID,
                              0, CF_PIECE_QUEEN);
-        ux_draw_command_bar(&after_board, 0, 0);
+        ux_draw_command_bar(&after_board, 0, 0, 0);
         vga_present();
     }
 }
@@ -885,7 +897,7 @@ static void ux_render_terminal_preview(void)
                          CF_GAME_CHECKMATE, "CHECKMATE", 0,
                          CF_FART_N, CF_FART_INVALID,
                          0, CF_PIECE_QUEEN);
-    ux_draw_command_bar(&board, 0, 0);
+    ux_draw_command_bar(&board, 0, 0, 0);
     ux_draw_terminal_overlay(CF_GAME_CHECKMATE, CF_COLOR_BLACK);
     vga_present();
 }

@@ -177,6 +177,246 @@ async function waitForMatchState(page, side, fullmove, timeoutMs=6000) {
   throw new Error(`match state timeout: side=${side} fullmove=${fullmove}`);
 }
 
+async function waitForStatus(page, status, side, fullmove, timeoutMs=6000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await call(page,'cf_review_status') === status &&
+        await call(page,'cf_review_side') === side &&
+        await call(page,'cf_review_fullmove') === fullmove &&
+        await call(page,'cf_review_ui_synced')) return;
+    await sleep(80);
+  }
+  throw new Error(`status timeout: status=${status} side=${side} fullmove=${fullmove}`);
+}
+
+async function loadLocalFixture(page, fixture, side, fullmove=1) {
+  if (await call(page,'cf_review_write_local_fixture',fixture) !== 1)
+    throw new Error(`failed to write local fixture ${fixture}`);
+  await page.keyboard.press('l');
+  await sleep(220);
+  await waitForMatchState(page,side,fullmove);
+  if (await call(page,'cf_review_match_mode') !== 1)
+    throw new Error(`fixture ${fixture} did not restore LOCAL mode`);
+  if (await call(page,'cf_review_status') !== 0)
+    throw new Error(`fixture ${fixture} did not load as ongoing`);
+}
+
+async function requireNewest(page, prefix) {
+  const line = await newestHistoryLine(page);
+  if (!line.startsWith(prefix))
+    throw new Error(`history mismatch: expected ${prefix}, got ${line}`);
+  return line;
+}
+
+async function verifyLocalEdgeHardening(browser) {
+  const summary = [];
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror',e=>errors.push(`PAGE ${String(e)}`));
+  page.on('console',m=>{ if(m.type()==='error') errors.push(`CONSOLE ${m.text()}`); });
+  await page.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await page.goto('http://127.0.0.1:8127/?hardening=local-edge',
+                  {waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await page.waitForFunction(
+    ()=>typeof Module._cf_review_write_local_fixture==='function',
+    {timeout:15000}
+  );
+  await page.keyboard.press('Enter');
+  await sleep(450);
+
+  /* Real Black Fart: D5 south pushes White D4 -> D3. */
+  await loadLocalFixture(page,0,2,1);
+  await clickSquare(page,3,4,'right');
+  if (await call(page,'cf_review_fart_mode') !== 1)
+    throw new Error('Black local Fart mode did not activate');
+  await page.keyboard.press('ArrowDown');
+  await sleep(100);
+  await page.keyboard.press('Enter');
+  await waitForMatchState(page,1,2);
+  let p = decodePiece(await call(page,'cf_review_piece',3,2));
+  let actor = decodePiece(await call(page,'cf_review_piece',3,4));
+  if (p.type !== 1 || p.color !== 1 || p.gas !== 1)
+    throw new Error('Black local Fart did not push White pawn D4-D3 with gas');
+  if (actor.type !== 2 || actor.color !== 2 || actor.gas !== 1)
+    throw new Error('Black local Fart actor/gas result incorrect');
+  await requireNewest(page,'BLACK FART D5 S PUSH');
+  await canvasShot(page,'local-black-fart-after');
+  summary.push('LOCAL_BLACK_FART=PASS D5-S PUSH D4-D3 actorGas=1');
+
+  /* Ordinary White promotion: prove Escape cancels instead of quitting, then
+   * re-enter the same pending promotion and choose rook. */
+  await loadLocalFixture(page,1,1,1);
+  await clickSquare(page,1,6);
+  await clickSquare(page,1,7);
+  if (await call(page,'cf_review_promotion_pending') !== 1)
+    throw new Error('White ordinary promotion did not enter choice state');
+  if (await call(page,'cf_review_promotion_choice') !== 5)
+    throw new Error('White ordinary promotion did not default to queen');
+  await canvasShot(page,'local-white-promotion-pending');
+  await clickSquare(page,4,3,'left');
+  await clickSquare(page,5,4,'right');
+  await sleep(180);
+  if (await call(page,'cf_review_promotion_pending') !== 1 ||
+      await call(page,'cf_review_promotion_choice') !== 5 ||
+      await call(page,'cf_review_side') !== 1 ||
+      await call(page,'cf_review_fullmove') !== 1)
+    throw new Error('board mouse input changed ordinary promotion choice/state');
+  p = decodePiece(await call(page,'cf_review_piece',1,6));
+  if (p.type !== 1 || p.color !== 1)
+    throw new Error('board mouse input moved White pawn during promotion choice');
+  await page.keyboard.press('Escape');
+  await sleep(180);
+  if (await call(page,'cf_review_promotion_pending') !== 0)
+    throw new Error('Escape did not cancel ordinary promotion');
+  if (await call(page,'cf_review_side') !== 1 ||
+      await call(page,'cf_review_fullmove') !== 1)
+    throw new Error('promotion cancel changed turn state');
+  p = decodePiece(await call(page,'cf_review_piece',1,6));
+  if (p.type !== 1 || p.color !== 1)
+    throw new Error('promotion cancel moved the White pawn');
+  await page.keyboard.press('Enter');
+  await sleep(120);
+  if (await call(page,'cf_review_promotion_pending') !== 1)
+    throw new Error('White promotion could not be re-entered after cancel');
+  await page.keyboard.press('ArrowRight');
+  await sleep(80);
+  await page.keyboard.press('Enter');
+  await waitForMatchState(page,2,1);
+  p = decodePiece(await call(page,'cf_review_piece',1,7));
+  if (p.type !== 4 || p.color !== 1)
+    throw new Error('White promotion did not produce rook on B8');
+  await requireNewest(page,'WHITE B7-B8=R');
+  summary.push('LOCAL_WHITE_PROMOTION=PASS mouse-locked cancel+reenter B7-B8=R');
+
+  /* Ordinary Black promotion through the same local input path. */
+  await loadLocalFixture(page,2,2,1);
+  await clickSquare(page,1,1);
+  await clickSquare(page,1,0);
+  if (await call(page,'cf_review_promotion_pending') !== 1)
+    throw new Error('Black ordinary promotion did not enter choice state');
+  await page.keyboard.press('ArrowRight');
+  await sleep(80);
+  await page.keyboard.press('Enter');
+  await waitForMatchState(page,1,2);
+  p = decodePiece(await call(page,'cf_review_piece',1,0));
+  if (p.type !== 4 || p.color !== 2)
+    throw new Error('Black promotion did not produce rook on B1');
+  await requireNewest(page,'BLACK B2-B1=R');
+  summary.push('LOCAL_BLACK_PROMOTION=PASS B2-B1=R');
+
+  /* White Fart-push promotion D7 -> D8. */
+  await loadLocalFixture(page,3,1,1);
+  await clickSquare(page,3,5,'right');
+  if (await call(page,'cf_review_fart_mode') !== 1)
+    throw new Error('White Fart-promotion mode did not activate');
+  await page.keyboard.press('ArrowUp');
+  await sleep(80);
+  await page.keyboard.press('Enter');
+  await sleep(140);
+  if (await call(page,'cf_review_fart_promotion_pending') !== 1)
+    throw new Error('White Fart-push promotion did not enter choice state');
+  if (await call(page,'cf_review_fart_promotion_choice') !== 5)
+    throw new Error('White Fart-push promotion did not default to queen');
+  await canvasShot(page,'local-white-fart-promotion-pending');
+  await clickSquare(page,0,0,'left');
+  await clickSquare(page,7,7,'right');
+  await sleep(180);
+  if (await call(page,'cf_review_fart_promotion_pending') !== 1 ||
+      await call(page,'cf_review_fart_promotion_choice') !== 5 ||
+      await call(page,'cf_review_side') !== 1 ||
+      await call(page,'cf_review_fullmove') !== 1)
+    throw new Error('board mouse input changed Fart-promotion choice/state');
+  await page.keyboard.press('ArrowRight');
+  await sleep(80);
+  await page.keyboard.press('Enter');
+  await waitForMatchState(page,2,1);
+  p = decodePiece(await call(page,'cf_review_piece',3,7));
+  actor = decodePiece(await call(page,'cf_review_piece',3,5));
+  if (p.type !== 4 || p.color !== 1 || p.gas !== 2)
+    throw new Error('White Fart-push promotion result/gas incorrect');
+  if (actor.type !== 2 || actor.color !== 1 || actor.gas !== 1)
+    throw new Error('White Fart-promotion actor gas incorrect');
+  await requireNewest(page,'WHITE FART D6 N =R');
+  summary.push('LOCAL_WHITE_FART_PROMOTION=PASS mouse-locked D7-D8=R');
+
+  /* Black Fart-push promotion D2 -> D1. */
+  await loadLocalFixture(page,4,2,1);
+  await clickSquare(page,3,2,'right');
+  if (await call(page,'cf_review_fart_mode') !== 1)
+    throw new Error('Black Fart-promotion mode did not activate');
+  await page.keyboard.press('ArrowDown');
+  await sleep(80);
+  await page.keyboard.press('Enter');
+  await sleep(140);
+  if (await call(page,'cf_review_fart_promotion_pending') !== 1)
+    throw new Error('Black Fart-push promotion did not enter choice state');
+  await page.keyboard.press('ArrowRight');
+  await sleep(80);
+  await page.keyboard.press('Enter');
+  await waitForMatchState(page,1,2);
+  p = decodePiece(await call(page,'cf_review_piece',3,0));
+  actor = decodePiece(await call(page,'cf_review_piece',3,2));
+  if (p.type !== 4 || p.color !== 2 || p.gas !== 2)
+    throw new Error('Black Fart-push promotion result/gas incorrect');
+  if (actor.type !== 2 || actor.color !== 2 || actor.gas !== 1)
+    throw new Error('Black Fart-promotion actor gas incorrect');
+  await requireNewest(page,'BLACK FART D3 S =R');
+  await canvasShot(page,'local-black-fart-promotion-after');
+  summary.push('LOCAL_BLACK_FART_PROMOTION=PASS D2-D1=R');
+
+  /* White delivers checkmate, then Black cannot select/Fart/move. */
+  await loadLocalFixture(page,5,1,1);
+  await clickSquare(page,6,5);
+  await clickSquare(page,6,6);
+  await waitForStatus(page,2,2,1);
+  await requireNewest(page,'WHITE G6-G7');
+  const whiteMateHistory = await call(page,'cf_review_history_count');
+  await canvasShot(page,'local-white-checkmate');
+  await clickSquare(page,7,7);
+  await page.keyboard.press('f');
+  await page.keyboard.press('Enter');
+  await sleep(180);
+  if (await call(page,'cf_review_status') !== 2 ||
+      await call(page,'cf_review_side') !== 2 ||
+      await call(page,'cf_review_fullmove') !== 1 ||
+      await call(page,'cf_review_history_count') !== whiteMateHistory)
+    throw new Error('terminal guard allowed action after White checkmate');
+  p = decodePiece(await call(page,'cf_review_piece',6,6));
+  if (p.type !== 5 || p.color !== 1)
+    throw new Error('White checkmate board changed after terminal input');
+  summary.push('LOCAL_WHITE_CHECKMATE=PASS terminal-lock');
+
+  /* Black delivers the mirrored checkmate and White is likewise locked. */
+  await loadLocalFixture(page,6,2,1);
+  await clickSquare(page,6,2);
+  await clickSquare(page,6,1);
+  await waitForStatus(page,2,1,2);
+  await requireNewest(page,'BLACK G3-G2');
+  const blackMateHistory = await call(page,'cf_review_history_count');
+  await canvasShot(page,'local-black-checkmate');
+  await clickSquare(page,7,0);
+  await page.keyboard.press('f');
+  await page.keyboard.press('Enter');
+  await sleep(180);
+  if (await call(page,'cf_review_status') !== 2 ||
+      await call(page,'cf_review_side') !== 1 ||
+      await call(page,'cf_review_fullmove') !== 2 ||
+      await call(page,'cf_review_history_count') !== blackMateHistory)
+    throw new Error('terminal guard allowed action after Black checkmate');
+  p = decodePiece(await call(page,'cf_review_piece',6,1));
+  if (p.type !== 5 || p.color !== 2)
+    throw new Error('Black checkmate board changed after terminal input');
+  summary.push('LOCAL_BLACK_CHECKMATE=PASS terminal-lock');
+
+  if (errors.length) throw new Error(`local-edge: ${errors.join(' | ')}`);
+  await page.close();
+  return summary;
+}
+
 async function verifyMatchModes(browser) {
   const summary = [];
 
@@ -404,6 +644,7 @@ try {
   await sleep(500);
   browser = await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
   const matchSummary = await verifyMatchModes(browser);
+  const localEdgeSummary = await verifyLocalEdgeHardening(browser);
   const cases = [
     ['easy-a',0,0x00E451A1],
     ['medium-a',1,0x00C0FFEE],
@@ -411,7 +652,7 @@ try {
   ];
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
-  const summary = [...matchSummary];
+  const summary = [...matchSummary, ...localEdgeSummary];
   for (const r of results) {
     summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
     for (const line of r.fartLines) summary.push(`  ${line}`);
