@@ -8,7 +8,7 @@ The design goal is **real strategy first, toilet humor second**.
 
 **Chess Fart 1.0.0 — final release.**
 
-The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 starts the replay/postgame-review line: 15.0 adds a bounded session replay timeline underneath the game, with the player-facing viewer planned for the next slice.
+The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 adds replay/postgame review in DOS-safe slices: 15.0 adds a bounded session replay timeline, and 15.1 adds a read-only keyboard replay viewer that steps retained frames without mutating the live match.
 
 The automated release gate covers the entire game from rules through the DOS package:
 
@@ -73,6 +73,7 @@ S / L            Save / Load
 H / ?            Help
 Tab / M          Action log
 C                Credits
+R                Replay viewer; Left/Right step, R/Enter/Esc close
 Esc              Quit; cancel pending Fart/promotion choice
 ```
 
