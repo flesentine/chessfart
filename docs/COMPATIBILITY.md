@@ -16,6 +16,9 @@ This document distinguishes automated evidence from targets that still require p
 | Browser mouse/Fart/save-load flow | VERIFIED | Chromium gameplay playtest covers CPU/local mode selection, Black Fart, both-color promotion/Fart-promotion, terminal locks, and save/load |
 | Browser full games EASY/MED/HARD | VERIFIED | Deterministic Chromium CPU games terminate cleanly with zero browser errors and live Fart actions |
 | Browser local two-player full match | VERIFIED | 33-ply Opera Game from real title selection to 17.Rd8#, including three CHECK states, O-O-O, history UI, exact persisted-state rollback/replay and terminal lock |
+| Replay timeline / terminal integrity | VERIFIED | Opera Game proves 17→19→1→18 frame lifecycle across Save/Load; deterministic EASY/MED/HARD games end with newest replay frame/status matching live terminal state |
+| Replay file v1 | VERIFIED | Transactional CHESSFRT.RPL host corruption tests, 600-frame ring round-trip, and Chromium export/import transient-view restore |
+| Replay memory budget | VERIFIED | Host profile: 118-byte snapshot, 30,232-byte live timeline, 60,464-byte live+temporary-import peak |
 | Native 320x200 visual review | VERIFIED | 32 deterministic states covering CPU/local title/HUD/help/history, Fart, promotion, save/load and terminal presentations |
 | Open Watcom 2.0 16-bit DOS compile | VERIFIED | CI builds `CHESSFRT.EXE` with `-bt=dos -ml -3` |
 | DOSBox VGA Mode 13h smoke | VERIFIED | DOS-resident smoke initializes/draws/presents VGA |
