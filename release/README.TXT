@@ -19,7 +19,10 @@ Choose PLAY CPU for the deterministic computer opponent or 2 PLAYERS for a
 local hot-seat White/Black match. A Microsoft-compatible mouse driver is
 optional; keyboard play is complete. During a match, press R to open the
 read-only session replay and step retained frames with Left/Right. With a
-mouse driver present, the replay footer also provides Previous, Next and Close.
+mouse driver present, the replay footer provides Previous, Next, Export,
+Import and Close. Inside Replay, S exports the live session to CHESSFRT.RPL
+and L imports CHESSFRT.RPL temporarily for viewing; closing Replay restores
+the untouched live-session replay timeline.
 
 SOUND
 -----
