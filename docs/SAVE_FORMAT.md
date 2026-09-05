@@ -1,13 +1,15 @@
 # Chess Fart Save Format
 
-Current format version: **1**
+Current game-save format version: **2**  
+Current config format version: **1**
 
 Files are human-readable text to avoid binary struct-layout dependence.
 
 ## Game save grammar
 
 ```text
-CHESSFART_SAVE 1
+CHESSFART_SAVE 2
+MODE <match_mode>
 STATE <side> <castling> <ep_file> <ep_rank> <halfmove> <fullmove>
 SQUARES
 <type> <color> <gas>
@@ -19,9 +21,24 @@ KEY <state_byte> <effective_ep_file>
 END
 ```
 
+\`match_mode\` is \"0\" for CPU play and \"1\" for local two-player play.
+
 Piece types/colors use the engine enum numeric values. Gas is 0–3.
 
 Each history square byte is the same Gas-aware position encoding used by the engine: piece code in the low nibble and Gas in bits 4–5. `effective_ep_file` is 0–7 or 8 for none.
+
+## Legacy version 1 compatibility
+
+Version-1 game saves do not contain a `MODE` record:
+
+```text
+CHESSFART_SAVE 1
+STATE <side> <castling> <ep_file> <ep_rank> <halfmove> <fullmove>
+...
+END
+```
+
+The version-2 loader continues to accept these files and restores them as CPU mode, matching the only shipped match mode that existed when version 1 was written. A successful load is transactional: board, Gas, repetition history, and match mode are committed only after the entire file validates.
 
 ## Config grammar
 
