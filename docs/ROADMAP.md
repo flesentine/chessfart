@@ -105,7 +105,7 @@ Build 14 closes the original local hot-seat requirement without forking the trus
 The existing CPU game remains the startup default. Build 14.3 advances newly written game saves to format version 2 while keeping legacy version-1 saves loadable as CPU-mode saves. Build 14 closes with 32 native visual states and a full 33-ply local Opera Game Chromium regression with exact persisted-state rollback/replay.
 
 ## Build 15 — Replay / postgame review
-**Status: 15.1 complete; 15.2 in progress**
+**Status: 15.2 complete; 15.3 in progress**
 
 Build 15 takes the master plan's replay-file idea in staged, DOS-safe slices:
 
