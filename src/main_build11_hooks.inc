@@ -10,10 +10,12 @@ static CfGameStatus ux_replay_status(const CfBoard *board,
                                      const CfGasState *gas,
                                      const CfGasHistory *history)
 {
-    CfGasHistory current;
-    current = *history;
-    gas_history_record(&current, board, gas);
-    return gas_game_status(board, gas, &current);
+    /* Reuse the global search-history scratch here instead of putting the
+     * ~8 KiB repetition history on the 16-bit DOS stack. CPU search either
+     * refills this scratch immediately afterward or has already finished. */
+    g_cpu_search_history = *history;
+    gas_history_record(&g_cpu_search_history, board, gas);
+    return gas_game_status(board, gas, &g_cpu_search_history);
 }
 
 static void ux_replay_record_current(const CfBoard *board,
