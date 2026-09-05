@@ -873,7 +873,6 @@ static int ux_render_replay_frame(int index)
 {
     static CfBoard replay_board;
     static CfGasState replay_gas;
-    static CfMoveList empty_moves;
     const CfReplaySnapshot *snapshot;
     CfGameStatus status;
     CfMatchMode mode;
@@ -885,7 +884,6 @@ static int ux_render_replay_frame(int index)
     if (!replay_snapshot_restore(snapshot, &replay_board, &replay_gas,
                                  &status, &mode)) return 0;
 
-    empty_moves.count = 0;
     cursor_file = g_ux_cache.valid ? g_ux_cache.cursor_file : 4;
     cursor_rank = g_ux_cache.valid ? g_ux_cache.cursor_rank : 1;
 
@@ -897,7 +895,7 @@ static int ux_render_replay_frame(int index)
      */
     presentation_render_game(&replay_board, &replay_gas,
                              cursor_file, cursor_rank,
-                             0, 0, 0, &empty_moves, status,
+                             0, 0, 0, 0, status,
                              0, CF_PIECE_QUEEN,
                              0, CF_FART_N, CF_FART_INVALID,
                              0, CF_PIECE_QUEEN, snapshot->label);
