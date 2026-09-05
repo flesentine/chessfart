@@ -557,6 +557,228 @@ async function verifyMatchModes(browser) {
   return summary;
 }
 
+function samePersistedState(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+async function persistedState(page) {
+  return await page.evaluate(() => {
+    const piece = Module._cf_review_piece;
+    const historyCount = Module._cf_review_gas_history_count();
+    const squares = [];
+    const history = [];
+    for (let rank=0; rank<8; ++rank) {
+      const row = [];
+      for (let file=0; file<8; ++file) {
+        row.push({
+          piece:piece(file,rank),
+          gas:Module._cf_review_gas(file,rank)
+        });
+      }
+      squares.push(row);
+    }
+    for (let i=0; i<historyCount; ++i) {
+      const keySquares = [];
+      for (let s=0; s<64; ++s)
+        keySquares.push(Module._cf_review_gas_history_square(i,s));
+      history.push({
+        state:Module._cf_review_gas_history_state(i),
+        ep:Module._cf_review_gas_history_ep(i),
+        squares:keySquares
+      });
+    }
+    return {
+      mode:Module._cf_review_match_mode(),
+      side:Module._cf_review_side(),
+      castling:Module._cf_review_castling_rights(),
+      epFile:Module._cf_review_en_passant_file(),
+      epRank:Module._cf_review_en_passant_rank(),
+      halfmove:Module._cf_review_halfmove(),
+      fullmove:Module._cf_review_fullmove(),
+      squares,
+      history
+    };
+  });
+}
+
+function operaExpectedStatus(ply) {
+  if (ply === 20 || ply === 28 || ply === 30) return 1;
+  if (ply === 32) return 2;
+  return 0;
+}
+
+async function playLocalMove(page, fromFile, fromRank, toFile, toRank,
+                             actor, expectedSide, expectedFullmove,
+                             expectedStatus=0) {
+  await clickSquare(page,fromFile,fromRank);
+  await clickSquare(page,toFile,toRank);
+  if (expectedStatus >= 2)
+    await waitForStatus(page,expectedStatus,expectedSide,expectedFullmove);
+  else
+    await waitForMatchState(page,expectedSide,expectedFullmove);
+
+  if (await call(page,'cf_review_match_mode') !== 1)
+    throw new Error('full local game left LOCAL mode');
+  const status = await call(page,'cf_review_status');
+  if (status !== expectedStatus)
+    throw new Error(`full local status mismatch after ${actor} move: ${status} != ${expectedStatus}`);
+  const line = await newestHistoryLine(page);
+  if (!line.startsWith(`${actor} `))
+    throw new Error(`full local history actor mismatch: expected ${actor}, got ${line}`);
+  return line;
+}
+
+async function verifyLocalFullGame(browser) {
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror',e=>errors.push(`PAGE ${String(e)}`));
+  page.on('console',m=>{ if(m.type()==='error') errors.push(`CONSOLE ${m.text()}`); });
+  await page.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await page.goto('http://127.0.0.1:8127/?hardening=local-full-game',
+                  {waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await page.waitForFunction(
+    ()=>typeof Module._cf_review_match_mode==='function',
+    {timeout:15000}
+  );
+
+  /* Select 2 PLAYERS from the actual title with keyboard input. */
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await sleep(450);
+  await waitForMatchState(page,1,1);
+  if (await call(page,'cf_review_match_mode') !== 1)
+    throw new Error('full local game did not enter LOCAL mode');
+  await canvasShot(page,'local-full-00-opening');
+
+  /*
+   * Paul Morphy's Opera Game, played entirely through real board mouse input.
+   * This is 33 plies from the normal starting position to checkmate and
+   * exercises captures, both colors, queenside castling, check and mate.
+   */
+  const moves = [
+    [4,1,4,3,'WHITE'], [4,6,4,4,'BLACK'],
+    [6,0,5,2,'WHITE'], [3,6,3,5,'BLACK'],
+    [3,1,3,3,'WHITE'], [2,7,6,3,'BLACK'],
+    [3,3,4,4,'WHITE'], [6,3,5,2,'BLACK'],
+    [3,0,5,2,'WHITE'], [3,5,4,4,'BLACK'],
+    [5,0,2,3,'WHITE'], [6,7,5,5,'BLACK'],
+    [5,2,1,2,'WHITE'], [3,7,4,6,'BLACK'],
+    [1,0,2,2,'WHITE'], [2,6,2,5,'BLACK'],
+    [2,0,6,4,'WHITE'], [1,6,1,4,'BLACK'],
+    [2,2,1,4,'WHITE'], [2,5,1,4,'BLACK'],
+    [2,3,1,4,'WHITE'], [1,7,3,6,'BLACK'],
+    [4,0,2,0,'WHITE'], [0,7,3,7,'BLACK'],
+    [3,0,3,6,'WHITE'], [3,7,3,6,'BLACK'],
+    [7,0,3,0,'WHITE'], [4,6,4,5,'BLACK'],
+    [1,4,3,6,'WHITE'], [5,5,3,6,'BLACK'],
+    [1,2,1,7,'WHITE'], [3,6,1,7,'BLACK'],
+    [3,0,3,7,'WHITE']
+  ];
+
+  let ply = 0;
+  for (; ply < 16; ++ply) {
+    const m = moves[ply];
+    const afterSide = m[4] === 'WHITE' ? 2 : 1;
+    const afterFullmove = m[4] === 'WHITE' ? 1 + Math.floor(ply / 2) :
+                                              2 + Math.floor(ply / 2);
+    await playLocalMove(page,m[0],m[1],m[2],m[3],m[4],
+                        afterSide,afterFullmove,operaExpectedStatus(ply));
+  }
+
+  /* After 8...c6 it is White to move on move 9. Save the exact local game,
+   * play two more plies, then load and prove the full persisted state is exact. */
+  if (await call(page,'cf_review_side') !== 1 ||
+      await call(page,'cf_review_fullmove') !== 9)
+    throw new Error('Opera checkpoint is not White move 9');
+  const checkpointState = await persistedState(page);
+  await page.keyboard.press('s');
+  await sleep(180);
+  await canvasShot(page,'local-full-16-checkpoint-save');
+
+  for (; ply < 18; ++ply) {
+    const m = moves[ply];
+    const afterSide = m[4] === 'WHITE' ? 2 : 1;
+    const afterFullmove = m[4] === 'WHITE' ? 9 : 10;
+    await playLocalMove(page,m[0],m[1],m[2],m[3],m[4],
+                        afterSide,afterFullmove,operaExpectedStatus(ply));
+  }
+  if (samePersistedState(checkpointState, await persistedState(page)))
+    throw new Error('Opera checkpoint did not change after two plies');
+
+  await page.keyboard.press('l');
+  await sleep(220);
+  await waitForMatchState(page,1,9);
+  if (await call(page,'cf_review_match_mode') !== 1)
+    throw new Error('Opera checkpoint load did not restore LOCAL');
+  if (!samePersistedState(checkpointState, await persistedState(page)))
+    throw new Error('Opera checkpoint load did not restore exact persisted state');
+  await canvasShot(page,'local-full-18-after-load');
+
+  /* Replay move 9 after rollback, then continue the game to mate. */
+  ply = 16;
+  for (; ply < moves.length; ++ply) {
+    const m = moves[ply];
+    const moveNo = 1 + Math.floor(ply / 2);
+    const afterSide = m[4] === 'WHITE' ? 2 : 1;
+    const afterFullmove = m[4] === 'WHITE' ? moveNo : moveNo + 1;
+    await playLocalMove(page,m[0],m[1],m[2],m[3],m[4],
+                        afterSide,afterFullmove,operaExpectedStatus(ply));
+
+    if (ply === 22) {
+      const king = decodePiece(await call(page,'cf_review_piece',2,0));
+      const rook = decodePiece(await call(page,'cf_review_piece',3,0));
+      const e1 = decodePiece(await call(page,'cf_review_piece',4,0));
+      const a1 = decodePiece(await call(page,'cf_review_piece',0,0));
+      const castleLine = await newestHistoryLine(page);
+      if (king.type !== 6 || king.color !== 1 ||
+          rook.type !== 4 || rook.color !== 1 ||
+          e1.type !== 0 || a1.type !== 0 ||
+          !castleLine.startsWith('WHITE O-O-O'))
+        throw new Error('Opera queenside castling state/history mismatch');
+      await canvasShot(page,'local-full-23-after-queenside-castle');
+    }
+
+    if (ply === 23) {
+      await page.keyboard.press('m');
+      await sleep(180);
+      await canvasShot(page,'local-full-24-history');
+      await page.keyboard.press('Enter');
+      await sleep(160);
+    }
+  }
+
+  if (await call(page,'cf_review_status') !== 2 ||
+      await call(page,'cf_review_side') !== 2 ||
+      await call(page,'cf_review_fullmove') !== 17)
+    throw new Error('Opera Game did not end at expected White mate on move 17');
+  const finalLine = await newestHistoryLine(page);
+  if (!finalLine.startsWith('WHITE D1-D8'))
+    throw new Error(`unexpected Opera final history line: ${finalLine}`);
+  await canvasShot(page,'local-full-33-checkmate');
+
+  /* Terminal lock after the complete match. */
+  const finalState = await persistedState(page);
+  const finalHistoryCount = await call(page,'cf_review_history_count');
+  await clickSquare(page,7,7);
+  await page.keyboard.press('f');
+  await page.keyboard.press('Enter');
+  await sleep(180);
+  if (await call(page,'cf_review_status') !== 2 ||
+      await call(page,'cf_review_side') !== 2 ||
+      await call(page,'cf_review_fullmove') !== 17 ||
+      await call(page,'cf_review_history_count') !== finalHistoryCount ||
+      !samePersistedState(finalState, await persistedState(page)))
+    throw new Error('Opera terminal persisted state changed after gameplay input');
+
+  if (errors.length) throw new Error(`local-full-game: ${errors.join(' | ')}`);
+  await page.close();
+  return 'LOCAL_FULL_GAME=PASS opera-game plies=33 rollback=exact-persisted-state replay=2 castling=O-O-O result=CHECKMATE winner=WHITE terminal-lock';
+}
+
 async function executeAction(page, a) {
   if (a.kind==='move') {
     await clickSquare(page,a.f,a.r);
@@ -645,6 +867,7 @@ try {
   browser = await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
   const matchSummary = await verifyMatchModes(browser);
   const localEdgeSummary = await verifyLocalEdgeHardening(browser);
+  const localFullSummary = await verifyLocalFullGame(browser);
   const cases = [
     ['easy-a',0,0x00E451A1],
     ['medium-a',1,0x00C0FFEE],
@@ -652,7 +875,7 @@ try {
   ];
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
-  const summary = [...matchSummary, ...localEdgeSummary];
+  const summary = [...matchSummary, ...localEdgeSummary, localFullSummary];
   for (const r of results) {
     summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
     for (const line of r.fartLines) summary.push(`  ${line}`);
