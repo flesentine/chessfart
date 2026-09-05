@@ -8,7 +8,7 @@ The design goal is **real strategy first, toilet humor second**.
 
 **Chess Fart 1.0.0 — final release.**
 
-The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 adds replay/postgame review in DOS-safe slices: 15.0 adds the bounded session timeline, 15.1/15.2 add the read-only keyboard/mouse viewer and postgame UX, and 15.3 adds separate versioned CHESSFRT.RPL export/import without changing game-save v2.
+The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 completes replay/postgame review in DOS-safe slices: a bounded session timeline, read-only keyboard/mouse viewer, postgame UX, separate versioned CHESSFRT.RPL export/import, and 15.4 certification across long sessions, CPU/local terminal games, DOS memory, packaging, and browser invariants—without changing game-save v2.
 
 The automated release gate covers the entire game from rules through the DOS package:
 
@@ -20,6 +20,8 @@ The automated release gate covers the entire game from rules through the DOS pac
 - deterministic full Chromium CPU games at Easy, Medium and Hard, each exercising live Fart mechanics
 - a 33-ply local two-player Opera Game Chromium regression from title selection through checkmate
 - exact version-2 LOCAL save/load rollback of board metadata, all piece/Gas squares and repetition history
+- bounded replay timeline plus transactional version-1 CHESSFRT.RPL export/import
+- 600-frame replay-file ring round-trip and full CPU/local terminal replay certification
 - 32 native 320x200 visual-review states covering CPU/local HUDs, Fart, promotion and terminal states
 - 320x200 256-color VGA presentation
 - Sound Blaster / PC-speaker audio architecture
