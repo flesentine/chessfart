@@ -840,6 +840,15 @@ async function verifyReplayViewer(browser) {
     throw new Error('replay viewer did not open on latest frame');
   await canvasShot(page,'replay-viewer-latest');
 
+  /* Export the live three-frame session through the real replay viewer. */
+  await page.keyboard.press('s');
+  await sleep(160);
+  const replayFile = await page.evaluate(() =>
+    Module.FS.readFile('/persist/CHESSFRT.RPL', {encoding:'utf8'})
+  );
+  if (!replayFile.startsWith('CHESSFART_REPLAY 1\nMETA 3 3 0\n'))
+    throw new Error('replay export did not write the expected v1 three-frame file');
+
   await page.keyboard.press('ArrowLeft');
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===1,
@@ -851,7 +860,7 @@ async function verifyReplayViewer(browser) {
 
   /* Replay owns input while open. Gameplay keys and board clicks must be
    * consumed without touching the live game, history, or replay position. */
-  for (const key of ['f','s','l','h']) {
+  for (const key of ['f','h','c']) {
     await page.keyboard.press(key);
     await sleep(70);
   }
@@ -881,17 +890,17 @@ async function verifyReplayViewer(browser) {
   await clickCanvasPixel(page,50,190);
   if (await call(page,'cf_review_replay_viewer_index') !== 0)
     throw new Error('replay mouse previous stepped before oldest frame');
-  await clickCanvasPixel(page,150,190);
+  await clickCanvasPixel(page,90,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===1,
     {timeout:3000}
   );
-  await clickCanvasPixel(page,150,190);
+  await clickCanvasPixel(page,90,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===2,
     {timeout:3000}
   );
-  await clickCanvasPixel(page,150,190);
+  await clickCanvasPixel(page,90,190);
   if (await call(page,'cf_review_replay_viewer_index') !== 2)
     throw new Error('replay mouse next stepped past newest frame');
   await clickCanvasPixel(page,50,190);
@@ -908,7 +917,7 @@ async function verifyReplayViewer(browser) {
     throw new Error('replay viewer created or removed replay frames');
 
   /* Close through the footer mouse region and require exact live restore. */
-  await clickCanvasPixel(page,270,190);
+  await clickCanvasPixel(page,280,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_active()===0,
     {timeout:5000}
@@ -920,9 +929,50 @@ async function verifyReplayViewer(browser) {
       await call(page,'cf_review_ui_synced') !== 1)
     throw new Error('replay viewer did not restore exact live game on close');
 
+  /* Advance the live session after export, then import the older file for
+   * viewing only. Closing imported replay must recover all four live frames. */
+  await clickSquare(page,6,0);
+  await clickSquare(page,5,2);
+  await waitForMatchState(page,2,2);
+  const liveAfterExport = await persistedState(page);
+  if (await call(page,'cf_review_replay_count') !== 4 ||
+      await call(page,'cf_review_replay_total') !== 4)
+    throw new Error('live timeline did not advance after replay export');
+
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1 &&
+       Module._cf_review_replay_viewer_index()===3,
+    {timeout:5000}
+  );
+  await clickCanvasPixel(page,220,190);
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_count()===3 &&
+       Module._cf_review_replay_viewer_index()===2,
+    {timeout:5000}
+  );
+  if (await call(page,'cf_review_replay_total') !== 3 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 0)
+    throw new Error('replay import did not switch viewer to exported old session');
+
+  await canvasShot(page,'replay-file-imported');
+  await clickCanvasPixel(page,280,190);
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:5000}
+  );
+  await sleep(120);
+  const afterImportClose = await persistedState(page);
+  if (!samePersistedState(liveAfterExport,afterImportClose) ||
+      await call(page,'cf_review_replay_count') !== 4 ||
+      await call(page,'cf_review_replay_total') !== 4 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1 ||
+      await call(page,'cf_review_ui_synced') !== 1)
+    throw new Error('imported replay did not restore untouched live timeline');
+
   if (errors.length) throw new Error(`replay-viewer: ${errors.join(' | ')}`);
   await page.close();
-  return 'REPLAY_VIEWER=PASS open=latest step=bounded mouse=prev-next-close live-input=locked close=restored';
+  return 'REPLAY_VIEWER=PASS open=latest step=bounded mouse=prev-next-close live-input=locked file=export-import-transient close=restored';
 }
 
 function samePersistedState(a, b) {

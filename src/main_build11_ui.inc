@@ -859,7 +859,10 @@ static void ux_draw_replay_panel(const CfReplaySnapshot *snapshot,
         font_draw_text(CF_UI_HUD_LABEL_X, 148,
                        "FULL SESSION", UX_COL_MUTED, 1);
     font_draw_text(CF_UI_HUD_LABEL_X, 160,
-                   "READ ONLY", UX_COL_GAS, 1);
+                   g_replay_file_notice[0] != '\0' ?
+                   g_replay_file_notice : "READ ONLY",
+                   g_replay_file_notice[0] != '\0' ?
+                   UX_COL_GOLD : UX_COL_GAS, 1);
 }
 
 static void ux_draw_replay_command_bar(void)
@@ -868,12 +871,16 @@ static void ux_draw_replay_command_bar(void)
                   CF_UI_COMMAND_W, CF_UI_COMMAND_H, UX_COL_BG);
     vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
                   CF_UI_COMMAND_W, 1, UX_COL_GOLD);
-    font_draw_text(12, CF_UI_PROMPT_TEXT_Y,
+    font_draw_text(8, CF_UI_PROMPT_TEXT_Y,
                    "< PREV", UX_COL_TEXT, 1);
-    font_draw_text(122, CF_UI_PROMPT_TEXT_Y,
+    font_draw_text(72, CF_UI_PROMPT_TEXT_Y,
                    "NEXT >", UX_COL_TEXT, 1);
-    font_draw_text(216, CF_UI_PROMPT_TEXT_Y,
-                   "R/ENTER/ESC CLOSE", UX_COL_MUTED, 1);
+    font_draw_text(142, CF_UI_PROMPT_TEXT_Y,
+                   "S EXP", UX_COL_GAS, 1);
+    font_draw_text(202, CF_UI_PROMPT_TEXT_Y,
+                   "L IMP", UX_COL_GOLD, 1);
+    font_draw_text(264, CF_UI_PROMPT_TEXT_Y,
+                   "R CLOSE", UX_COL_MUTED, 1);
 }
 
 static int ux_render_replay_frame(int index)
@@ -912,6 +919,57 @@ static int ux_render_replay_frame(int index)
     return 1;
 }
 
+#ifndef CF_HOST_BUILD
+static void ux_replay_file_notice(CfReplayFileResult result,
+                                  const char *verb)
+{
+    if (result == CF_REPLAY_FILE_OK)
+        sprintf(g_replay_file_notice, "%s OK", verb);
+    else
+        sprintf(g_replay_file_notice, "%s %s",
+                verb, replay_file_result_name(result));
+}
+
+static void ux_replay_export_file(const CfReplayTimeline *session_timeline,
+                                  int index)
+{
+    CfReplayFileResult result;
+    result = replay_file_save(CF_DEFAULT_REPLAY_PATH, session_timeline);
+    ux_replay_file_notice(result, "EXPORT");
+    (void)ux_render_replay_frame(index);
+}
+
+static void ux_replay_import_file(CfReplayTimeline **file_timeline,
+                                  int *index)
+{
+    CfReplayTimeline *candidate;
+    CfReplayFileResult result;
+
+    candidate = (CfReplayTimeline *)malloc(sizeof(*candidate));
+    if (candidate == 0) {
+        strcpy(g_replay_file_notice, "IMPORT NO MEMORY");
+        (void)ux_render_replay_frame(*index);
+        return;
+    }
+
+    result = replay_file_load(CF_DEFAULT_REPLAY_PATH, candidate);
+    if (result != CF_REPLAY_FILE_OK) {
+        free(candidate);
+        ux_replay_file_notice(result, "IMPORT");
+        (void)ux_render_replay_frame(*index);
+        return;
+    }
+
+    if (*file_timeline != 0) free(*file_timeline);
+    *file_timeline = candidate;
+    g_replay_timeline = candidate;
+    *index = candidate->count - 1;
+    g_replay_viewer_index = *index;
+    strcpy(g_replay_file_notice, "IMPORT OK");
+    (void)ux_render_replay_frame(*index);
+}
+#endif
+
 void ux_show_replay_modal(void)
 {
     int index;
@@ -921,11 +979,14 @@ void ux_show_replay_modal(void)
     unsigned replay_mouse_buttons;
     unsigned pressed;
     int close_viewer;
+    CfReplayTimeline *session_timeline;
+    CfReplayTimeline *file_timeline;
 #endif
 
     if (g_replay_timeline == 0 || g_replay_timeline->count <= 0 ||
         !g_ux_cache.valid) return;
 
+    g_replay_file_notice[0] = '\0';
     index = g_replay_timeline->count - 1;
     g_replay_viewer_active = 1;
     g_replay_viewer_index = index;
@@ -938,18 +999,26 @@ void ux_show_replay_modal(void)
     }
 
 #ifndef CF_HOST_BUILD
+    session_timeline = g_replay_timeline;
+    file_timeline = 0;
     replay_mouse_buttons = g_ux_mouse_buttons;
     close_viewer = 0;
     while (!close_viewer) {
         key = input5_poll_key();
         if (key == CF5_KEY_LEFT) {
+            g_replay_file_notice[0] = '\0';
             if (index > 0) --index;
             g_replay_viewer_index = index;
             (void)ux_render_replay_frame(index);
         } else if (key == CF5_KEY_RIGHT) {
+            g_replay_file_notice[0] = '\0';
             if (index + 1 < g_replay_timeline->count) ++index;
             g_replay_viewer_index = index;
             (void)ux_render_replay_frame(index);
+        } else if (key == CF5_KEY_SAVE) {
+            ux_replay_export_file(session_timeline, index);
+        } else if (key == CF5_KEY_LOAD) {
+            ux_replay_import_file(&file_timeline, &index);
         } else if (key == CF5_KEY_ESCAPE || key == CF5_KEY_ENTER ||
                    key == CF5_KEY_REPLAY) {
             close_viewer = 1;
@@ -961,14 +1030,20 @@ void ux_show_replay_modal(void)
             if ((pressed & 1U) != 0U &&
                 mouse.y >= CF_UI_COMMAND_Y &&
                 mouse.y < CF_UI_COMMAND_Y + CF_UI_COMMAND_H) {
-                if (mouse.x < 106) {
+                if (mouse.x < 64) {
+                    g_replay_file_notice[0] = '\0';
                     if (index > 0) --index;
                     g_replay_viewer_index = index;
                     (void)ux_render_replay_frame(index);
-                } else if (mouse.x < 212) {
+                } else if (mouse.x < 128) {
+                    g_replay_file_notice[0] = '\0';
                     if (index + 1 < g_replay_timeline->count) ++index;
                     g_replay_viewer_index = index;
                     (void)ux_render_replay_frame(index);
+                } else if (mouse.x < 192) {
+                    ux_replay_export_file(session_timeline, index);
+                } else if (mouse.x < 256) {
+                    ux_replay_import_file(&file_timeline, &index);
                 } else {
                     close_viewer = 1;
                 }
@@ -976,8 +1051,11 @@ void ux_show_replay_modal(void)
         }
     }
     g_ux_mouse_buttons = replay_mouse_buttons;
+    g_replay_timeline = session_timeline;
+    if (file_timeline != 0) free(file_timeline);
 #endif
 
+    g_replay_file_notice[0] = '\0';
     g_replay_viewer_active = 0;
     g_replay_viewer_index = -1;
     ux_redraw_cached();

@@ -24,7 +24,8 @@ Tab or M           Session action log
 C                  Credits
 R                  Replay viewer
                    Left / Right step; R / Enter / Esc close
-Replay mouse       Previous / Next / Close footer controls
+S / L in Replay    Export / import CHESSFRT.RPL
+Replay mouse       Previous / Next / Export / Import / Close footer controls
 Mouse left         Target/confirm board square
 Mouse right        Enter Fart mode
 Esc                Quit; cancels pending Fart or promotion choice
