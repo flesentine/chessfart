@@ -209,6 +209,15 @@ static void test_invalid_snapshot_rejected(void)
     CHECK(!replay_snapshot_restore(&bad, &restored, &restored_gas, 0, 0));
 
     bad = *replay_timeline_get(&timeline, 0);
+    bad.squares[0] = 0x20U;
+    CHECK(!replay_snapshot_restore(&bad, &restored, &restored_gas, 0, 0));
+
+    bad = *replay_timeline_get(&timeline, 0);
+    bad.fullmove_low = 0U;
+    bad.fullmove_high = 0U;
+    CHECK(!replay_snapshot_restore(&bad, &restored, &restored_gas, 0, 0));
+
+    bad = *replay_timeline_get(&timeline, 0);
     bad.en_passant_file = 5U;
     bad.en_passant_rank = 0U;
     CHECK(!replay_snapshot_restore(&bad, &restored, &restored_gas, 0, 0));

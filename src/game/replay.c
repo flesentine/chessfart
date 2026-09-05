@@ -167,6 +167,8 @@ int replay_snapshot_restore(const CfReplaySnapshot *snapshot,
             square_gas = (packed & CF_REPLAY_GAS_MASK) >>
                          CF_REPLAY_GAS_SHIFT;
             if (!replay_valid_piece(type, color)) return 0;
+            if (type == (unsigned)CF_PIECE_NONE && square_gas != 0U)
+                return 0;
             board_set_piece(&decoded_board, file, rank,
                             (CfPieceType)type, (CfPieceColor)color);
             gas_set(&decoded_gas, file, rank, (cf_u8)square_gas);
@@ -186,6 +188,7 @@ int replay_snapshot_restore(const CfReplaySnapshot *snapshot,
         unsigned long fullmove =
             ((unsigned long)snapshot->fullmove_high << 16) |
             (unsigned long)snapshot->fullmove_low;
+        if (fullmove == 0UL) return 0;
         if (sizeof(unsigned) < 4U &&
             (snapshot->halfmove_high != 0U ||
              snapshot->fullmove_high != 0U)) return 0;

@@ -12,6 +12,7 @@ test -f release/README.TXT
 test -f release/KEYS.TXT
 test -f release/KNOWNISS.TXT
 test -f release/DOSBOX.CONF
+test -f docs/REPLAY_FORMAT.md
 
 grep -q '^CHESS FART 1.0.0 CONTROLS$' release/KEYS.TXT
 if grep -q '1.0.0-rc1' release/KEYS.TXT release/README.TXT release/KNOWNISS.TXT; then
@@ -21,6 +22,9 @@ fi
 grep -q '2 PLAYERS' release/README.TXT
 grep -q 'format version 2' release/README.TXT
 grep -q 'Legacy version-1 game saves remain loadable and restore CPU mode' release/README.TXT
+grep -q 'CHESSFRT.RPL' release/README.TXT
+grep -q 'CHESSFRT.RPL' release/KEYS.TXT
+grep -q 'CHESSFART_REPLAY 1' docs/REPLAY_FORMAT.md
 
 # A bare ======= line is valid DOS text decoration, so only the unambiguous
 # opening/closing merge markers are release blockers here.

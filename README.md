@@ -8,7 +8,7 @@ The design goal is **real strategy first, toilet humor second**.
 
 **Chess Fart 1.0.0 — final release.**
 
-The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 adds replay/postgame review in DOS-safe slices: 15.0 adds a bounded session replay timeline, and 15.1 adds a read-only keyboard replay viewer that steps retained frames without mutating the live match.
+The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 adds replay/postgame review in DOS-safe slices: 15.0 adds the bounded session timeline, 15.1/15.2 add the read-only keyboard/mouse viewer and postgame UX, and 15.3 adds separate versioned CHESSFRT.RPL export/import without changing game-save v2.
 
 The automated release gate covers the entire game from rules through the DOS package:
 
@@ -74,7 +74,8 @@ H / ?            Help
 Tab / M          Action log
 C                Credits
 R                Replay viewer; Left/Right step, R/Enter/Esc close
-Mouse in Replay  Previous / Next / Close footer controls
+S / L in Replay  Export / import CHESSFRT.RPL
+Mouse in Replay  Previous / Next / Export / Import / Close footer controls
 Esc              Quit; cancel pending Fart/promotion choice
 ```
 
@@ -124,5 +125,6 @@ Automated verification is intentionally not described as exhaustive hardware com
 - [`docs/BUILD_13.md`](docs/BUILD_13.md)
 - [`docs/BUILD_14.md`](docs/BUILD_14.md)
 - [`docs/BUILD_15.md`](docs/BUILD_15.md)
+- [`docs/REPLAY_FORMAT.md`](docs/REPLAY_FORMAT.md)
 
 **CHESS FART** — *Check. Mate. Ventilate.*

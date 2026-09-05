@@ -2,7 +2,7 @@
 
 Build 15 adds replay and postgame review without changing chess legality, Gas/Fart rules, CPU evaluation, or the version-2 game-save contract.
 
-**15.1 complete. Current slice: 15.2 postgame replay UX.**
+**15.3 complete. Next slice: 15.4 replay hardening / closeout.**
 
 ## Why replay
 
@@ -84,10 +84,14 @@ The browser hardening run must prove:
 
 ### 15.3 — Replay files
 
-- define a separate versioned replay format, likely `CHESSFRT.RPL`
-- export/import replay data without changing `CHESSFRT.SAV` v2
-- validate malformed/truncated replay files transactionally
-- document compatibility separately from save files
+- define separate version-1 `CHESSFRT.RPL` format without changing `CHESSFRT.SAV` v2
+- serialize the retained logical replay order, absolute frame total, and truncation state
+- hex-encode action labels so whitespace/punctuation cannot alter parsing
+- reject bad magic/version, invalid metadata, malformed squares/labels, and trailing junk transactionally
+- export the live session from Replay with `S`
+- import `CHESSFRT.RPL` with `L` into a temporary heap timeline for viewing only
+- restore the untouched live replay timeline when the imported viewer closes
+- document the format in `docs/REPLAY_FORMAT.md`
 
 ### 15.4 — Replay hardening / closeout
 

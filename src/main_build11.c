@@ -12,6 +12,7 @@
 #include "persistence_ui.h"
 #include "presentation.h"
 #include "replay.h"
+#include "replay_file.h"
 #include "ux.h"
 #include "vga.h"
 
@@ -26,6 +27,7 @@ static CfUxHistory g_ux_history;
 static CfReplayTimeline *g_replay_timeline;
 static int g_replay_viewer_active;
 static int g_replay_viewer_index;
+static char g_replay_file_notice[24];
 
 typedef struct CfUxRenderCache {
     int valid;
