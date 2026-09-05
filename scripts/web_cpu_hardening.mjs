@@ -699,6 +699,107 @@ async function verifyReplayTimeline(browser) {
   return 'REPLAY_TIMELINE=PASS local-start+2=3 passive-input=no-frame load-reset=1 cpu-start+pair=3';
 }
 
+async function verifyReplayViewer(browser) {
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror',e=>errors.push(`PAGE ${String(e)}`));
+  page.on('console',m=>{ if(m.type()==='error') errors.push(`CONSOLE ${m.text()}`); });
+  await page.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await page.goto('http://127.0.0.1:8127/?hardening=replay-viewer',
+                  {waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await page.waitForFunction(
+    ()=>typeof Module._cf_review_replay_viewer_active==='function',
+    {timeout:15000}
+  );
+
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await sleep(450);
+  await waitForMatchState(page,1,1);
+  await clickSquare(page,4,1);
+  await clickSquare(page,4,3);
+  await waitForMatchState(page,2,1);
+  await clickSquare(page,4,6);
+  await clickSquare(page,4,4);
+  await waitForMatchState(page,1,2);
+
+  const before = await persistedState(page);
+  const count = await call(page,'cf_review_replay_count');
+  const total = await call(page,'cf_review_replay_total');
+  if (count !== 3 || total !== 3)
+    throw new Error('replay viewer setup expected three frames');
+
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1,
+    {timeout:5000}
+  );
+  if (await call(page,'cf_review_replay_viewer_index') !== 2)
+    throw new Error('replay viewer did not open on latest frame');
+  await canvasShot(page,'replay-viewer-latest');
+
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_index()===1,
+    {timeout:3000}
+  );
+  let p = decodePiece(await call(page,'cf_review_replay_piece',1,4,3));
+  if (p.type !== 1 || p.color !== 1 || p.gas !== 1)
+    throw new Error('replay viewer step did not land on White e4 frame');
+
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_index()===0,
+    {timeout:3000}
+  );
+  await page.keyboard.press('ArrowLeft');
+  await sleep(80);
+  if (await call(page,'cf_review_replay_viewer_index') !== 0)
+    throw new Error('replay viewer stepped before oldest available frame');
+
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_index()===1,
+    {timeout:3000}
+  );
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_index()===2,
+    {timeout:3000}
+  );
+  await page.keyboard.press('ArrowRight');
+  await sleep(80);
+  if (await call(page,'cf_review_replay_viewer_index') !== 2)
+    throw new Error('replay viewer stepped past newest frame');
+
+  const during = await persistedState(page);
+  if (!samePersistedState(before,during))
+    throw new Error('replay viewer mutated live persisted state while open');
+  if (await call(page,'cf_review_replay_count') !== count ||
+      await call(page,'cf_review_replay_total') !== total)
+    throw new Error('replay viewer created or removed replay frames');
+
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:5000}
+  );
+  await sleep(120);
+  const after = await persistedState(page);
+  if (!samePersistedState(before,after) ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1 ||
+      await call(page,'cf_review_ui_synced') !== 1)
+    throw new Error('replay viewer did not restore exact live game on close');
+
+  if (errors.length) throw new Error(`replay-viewer: ${errors.join(' | ')}`);
+  await page.close();
+  return 'REPLAY_VIEWER=PASS open=latest step=bounded live=unchanged close=restored';
+}
+
 function samePersistedState(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -1010,6 +1111,7 @@ try {
   const matchSummary = await verifyMatchModes(browser);
   const localEdgeSummary = await verifyLocalEdgeHardening(browser);
   const replaySummary = await verifyReplayTimeline(browser);
+  const replayViewerSummary = await verifyReplayViewer(browser);
   const localFullSummary = await verifyLocalFullGame(browser);
   const cases = [
     ['easy-a',0,0x00E451A1],
@@ -1018,7 +1120,8 @@ try {
   ];
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
-  const summary = [...matchSummary, ...localEdgeSummary, replaySummary, localFullSummary];
+  const summary = [...matchSummary, ...localEdgeSummary,
+                   replaySummary, replayViewerSummary, localFullSummary];
   for (const r of results) {
     summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
     for (const line of r.fartLines) summary.push(`  ${line}`);
