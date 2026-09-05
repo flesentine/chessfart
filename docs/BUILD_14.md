@@ -44,6 +44,7 @@ The original master plan listed local hot-seat two-player as a required product 
 - local Black actions are logged as `BLACK`
 - CPU games retain `YOU` and `CPU` history labels
 - the gameplay and Fart HUD replace the CPU difficulty row with `MODE / LOCAL 2P` during local play
+- `ESC` now cancels Fart mode as the command bar has always advertised instead of exiting the match
 - the command bar continues to show the side to move
 - Chromium asserts the real local history buffer contains White then Black after e2-e4 / e7-e5
 - the native visual suite adds local Black-to-move HUD, local action-log, local Fart-mode HUD and local Help states
@@ -76,7 +77,7 @@ The browser hardening run must prove:
 7. the existing Easy/Medium/Hard full games still terminate with zero browser errors
 8. the local action log records `WHITE` then `BLACK` after e2-e4 / e7-e5
 9. local gameplay shows `MODE / LOCAL 2P` instead of CPU difficulty
-10. local Fart mode also shows `MODE / LOCAL 2P`
+10. local Fart mode also shows `MODE / LOCAL 2P`, and `ESC` cancels it without exiting the match
 11. local Help page 2 explains two-player turns instead of CPU Black
 12. the visual-review suite contains 24 native 320x200 states, including local normal, history, Fart HUD and Help states
 
