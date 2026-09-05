@@ -21,7 +21,7 @@ KEY <state_byte> <effective_ep_file>
 END
 ```
 
-\`match_mode\` is \"0\" for CPU play and \"1\" for local two-player play.
+`match_mode` is `0` for CPU play and `1` for local two-player play.
 
 Piece types/colors use the engine enum numeric values. Gas is 0–3.
 
