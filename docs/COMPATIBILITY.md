@@ -8,7 +8,7 @@ This document distinguishes automated evidence from targets that still require p
 | Standard chess / perft regressions | VERIFIED | Permanent Build 4 suite |
 | Gas and Fart rules | VERIFIED | Permanent Build 5/6 suites |
 | Audio generation / host hooks | VERIFIED | Permanent Build 8 suite |
-| Save/config round-trip and validation | VERIFIED | Permanent Build 9 suite |
+| Save/config round-trip and validation | VERIFIED | Permanent Build 9 suite plus Build 14.3 v2 mode round-trip, transactional rejection, and legacy-v1 CPU fallback coverage |
 | CPU legal move/Fart search | VERIFIED | Permanent Build 10 suite plus v7 tactical Fart regressions |
 | Fart-aware alpha-beta pruning | VERIFIED | RC hardening corrected move-dependent edge-bonus child windows; full regression gate passes |
 | UX/history/hit testing | VERIFIED | Permanent Build 11 suite |
