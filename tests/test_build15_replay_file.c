@@ -179,6 +179,9 @@ static void test_transactional_rejection(void)
     write_bad_snapshot_file(128U, "LABEL 0 -");
     expect_failed_load(CF_REPLAY_FILE_BAD_DATA);
 
+    write_bad_snapshot_file(32U, "LABEL 0 -");
+    expect_failed_load(CF_REPLAY_FILE_BAD_DATA);
+
     write_bad_snapshot_file(0U, "LABEL 1 GG");
     expect_failed_load(CF_REPLAY_FILE_BAD_DATA);
 
