@@ -844,7 +844,7 @@ async function verifyReplayViewer(browser) {
   await page.keyboard.press('s');
   await sleep(160);
   const replayFile = await page.evaluate(() =>
-    Module.UTF8ToString(Module.FS.readFile('/persist/CHESSFRT.RPL'))
+    Module.FS.readFile('/persist/CHESSFRT.RPL', {encoding:'utf8'})
   );
   if (!replayFile.startsWith('CHESSFART_REPLAY 1\nMETA 3 3 0\n'))
     throw new Error('replay export did not write the expected v1 three-frame file');
