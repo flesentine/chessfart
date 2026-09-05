@@ -2,7 +2,7 @@
 
 Build 15 adds replay and postgame review without changing chess legality, Gas/Fart rules, CPU evaluation, or the version-2 game-save contract.
 
-**15.2 complete. Current slice: 15.3 replay files.**
+**15.3 complete. Next slice: 15.4 replay hardening / closeout.**
 
 ## Why replay
 
