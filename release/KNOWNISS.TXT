@@ -23,5 +23,6 @@ PLATFORM NOTES
 - No music is included in 1.0.0; all audio is SFX plus PC-speaker fallback.
 
 SAVE COMPATIBILITY
-The versioned CHESSFRT.SAV and CHESSFRT.CFG formats remain those introduced in
-Build 9. The 1.0 release does not change game-state serialization from RC1.
+New CHESSFRT.SAV files use game-save format version 2 and store CPU/local match
+mode explicitly. Legacy version-1 saves from the original 1.0 line remain
+loadable and restore CPU mode. CHESSFRT.CFG remains config format version 1.
