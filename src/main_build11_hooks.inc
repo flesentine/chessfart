@@ -274,5 +274,9 @@ CfInputKey5 ux_poll_key(void)
         ux_show_credits_modal();
         return CF5_KEY_NONE;
     }
+    if (key == CF5_KEY_REPLAY) {
+        ux_show_replay_modal();
+        return CF5_KEY_NONE;
+    }
     return key;
 }
