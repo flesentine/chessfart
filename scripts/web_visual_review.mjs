@@ -93,6 +93,34 @@ async function press(page, key, pause = 150) {
   await sleep(pause);
 }
 
+async function loadLocalFixture(page, fixture, side, fullmove=1) {
+  if (await call(page, 'cf_review_write_local_fixture', fixture) !== 1)
+    throw new Error(`failed to write local fixture ${fixture}`);
+  await press(page, 'l', 220);
+  const deadline = Date.now() + 6000;
+  while (Date.now() < deadline) {
+    if (await call(page, 'cf_review_match_mode') === 1 &&
+        await call(page, 'cf_review_side') === side &&
+        await call(page, 'cf_review_fullmove') === fullmove &&
+        await call(page, 'cf_review_status') === 0 &&
+        await call(page, 'cf_review_ui_synced')) return;
+    await sleep(80);
+  }
+  throw new Error(`fixture load timeout ${fixture}`);
+}
+
+async function waitForStatus(page, status, side, fullmove) {
+  const deadline = Date.now() + 6000;
+  while (Date.now() < deadline) {
+    if (await call(page, 'cf_review_status') === status &&
+        await call(page, 'cf_review_side') === side &&
+        await call(page, 'cf_review_fullmove') === fullmove &&
+        await call(page, 'cf_review_ui_synced')) return;
+    await sleep(80);
+  }
+  throw new Error(`status timeout ${status}/${side}/${fullmove}`);
+}
+
 let browser;
 let page;
 const states = [];
@@ -252,6 +280,70 @@ try {
   const cpuHelp = states.find((state) => state.name === '17-help-page-2');
   if (!cpuHelp || localHelpSig === cpuHelp.signature)
     throw new Error('local Help page 2 did not differ from CPU Help');
+
+  await press(page, 'Enter', 180);
+
+  /* Build 14.4 real local edge states. */
+  await loadLocalFixture(page, 0, 2, 1);
+  await clickSquare(page, 3, 4, 'right');
+  await press(page, 'ArrowDown', 90);
+  await press(page, 'Enter', 220);
+  if (await call(page, 'cf_review_side') !== 1)
+    throw new Error('visual Black Fart did not pass turn to White');
+  await nativeShot(page, '25-local-black-fart-after', 'real', states);
+
+  await loadLocalFixture(page, 1, 1, 1);
+  await clickSquare(page, 1, 6);
+  await clickSquare(page, 1, 7);
+  if (await call(page, 'cf_review_promotion_pending') !== 1)
+    throw new Error('visual White promotion did not enter choice state');
+  await nativeShot(page, '26-local-white-promotion-choice', 'real', states);
+  await press(page, 'ArrowRight', 80);
+  await press(page, 'Enter', 220);
+  if (await call(page, 'cf_review_side') !== 2)
+    throw new Error('visual White promotion did not complete');
+  await nativeShot(page, '27-local-white-promotion-rook', 'real', states);
+
+  await loadLocalFixture(page, 2, 2, 1);
+  await clickSquare(page, 1, 1);
+  await clickSquare(page, 1, 0);
+  await press(page, 'ArrowRight', 80);
+  await press(page, 'Enter', 220);
+  if (await call(page, 'cf_review_side') !== 1)
+    throw new Error('visual Black promotion did not complete');
+  await nativeShot(page, '28-local-black-promotion-rook', 'real', states);
+
+  await loadLocalFixture(page, 3, 1, 1);
+  await clickSquare(page, 3, 5, 'right');
+  await press(page, 'ArrowUp', 80);
+  await press(page, 'Enter', 120);
+  if (await call(page, 'cf_review_fart_promotion_pending') !== 1)
+    throw new Error('visual White Fart promotion did not enter choice state');
+  await nativeShot(page, '29-local-white-fart-promotion-choice', 'real', states);
+
+  await loadLocalFixture(page, 4, 2, 1);
+  await clickSquare(page, 3, 2, 'right');
+  await press(page, 'ArrowDown', 80);
+  await press(page, 'Enter', 120);
+  if (await call(page, 'cf_review_fart_promotion_pending') !== 1)
+    throw new Error('visual Black Fart promotion did not enter choice state');
+  await press(page, 'ArrowRight', 80);
+  await press(page, 'Enter', 220);
+  if (await call(page, 'cf_review_side') !== 1)
+    throw new Error('visual Black Fart promotion did not complete');
+  await nativeShot(page, '30-local-black-fart-promotion-rook', 'real', states);
+
+  await loadLocalFixture(page, 5, 1, 1);
+  await clickSquare(page, 6, 5);
+  await clickSquare(page, 6, 6);
+  await waitForStatus(page, 2, 2, 1);
+  await nativeShot(page, '31-local-white-checkmate', 'real', states);
+
+  await loadLocalFixture(page, 6, 2, 1);
+  await clickSquare(page, 6, 2);
+  await clickSquare(page, 6, 1);
+  await waitForStatus(page, 2, 1, 2);
+  await nativeShot(page, '32-local-black-checkmate', 'real', states);
 
   if (errors.length) throw new Error(errors.join(' | '));
 

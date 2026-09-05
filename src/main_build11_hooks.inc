@@ -193,12 +193,16 @@ CfInputKey5 ux_poll_key(void)
         g_ux_mouse_buttons = mouse.buttons;
         if ((pressed & 2U) != 0U &&
             ux_board_hit_test(mouse.x, mouse.y, &file, &rank) &&
-            g_ux_cache.valid && !g_ux_cache.fart_mode) {
+            g_ux_cache.valid && !g_ux_cache.fart_mode &&
+            !g_ux_cache.promotion_pending &&
+            !g_ux_cache.fart_promotion_pending) {
             return ux_begin_mouse_target(file, rank, 1);
         }
         if ((pressed & 1U) != 0U &&
             ux_board_hit_test(mouse.x, mouse.y, &file, &rank) &&
-            g_ux_cache.valid) {
+            g_ux_cache.valid &&
+            !g_ux_cache.promotion_pending &&
+            !g_ux_cache.fart_promotion_pending) {
             if (g_ux_cache.fart_mode) {
                 dx = file - g_ux_cache.selected_file;
                 dy = rank - g_ux_cache.selected_rank;

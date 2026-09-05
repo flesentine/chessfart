@@ -4,7 +4,7 @@
 
 Build 14 adds local two-player hot-seat play without creating a second rules engine.
 
-**14.3: match-mode persistence.**
+**14.4: local edge hardening.**
 
 ## Why this build
 
@@ -62,9 +62,24 @@ The original master plan listed local hot-seat two-player as a required product 
 - keep load transactional: malformed/unsupported files do not change board, Gas, history or match mode
 - keep config format/version unchanged
 
-## Frozen 14.3 contracts
+## 14.4 — Local Fart, promotion and terminal hardening
 
-14.3 does not change:
+14.4 exercises the rare local-only edge paths through real production input after deterministic review-only save setup:
+
+- Black can enter Fart mode, execute a push, spend Gas and hand the turn back to White without waking the CPU
+- White and Black ordinary pawn promotions both enter the real promotion chooser and commit the selected Q/R/B/N piece
+- ordinary promotion now has a dedicated command-bar prompt matching the Fart-promotion chooser
+- `ESC` during ordinary promotion cancels the pending choice and keeps the match running instead of quitting
+- board mouse clicks are ignored while either ordinary-promotion or Fart-promotion choice is pending, preventing mouse auto-target arrows from cycling or auto-confirming the chooser
+- White and Black Fart-push promotions both preserve the pushed pawn's Gas and use the selected promotion piece
+- White and Black can each deliver checkmate in local mode
+- after checkmate, further select/Fart/confirm input cannot mutate the board, turn counters or action history
+- review-only fixture creation writes normal version-2 LOCAL saves; Chromium still loads and acts through the production game loop
+- the canonical native visual suite expands from 24 to 32 states
+
+## Frozen 14.4 contracts
+
+14.4 does not change:
 
 - chess legality
 - Gas earning/spending or Fart displacement
@@ -76,7 +91,7 @@ The original master plan listed local hot-seat two-player as a required product 
 
 The packaged game version remains 1.0.0. Only the internal game-save format advances to version 2; legacy version-1 saves remain loadable with their historical CPU semantics.
 
-## Chromium 14.3 contract
+## Chromium 14.4 contract
 
 The browser hardening run must prove:
 
@@ -95,7 +110,13 @@ The browser hardening run must prove:
 13. a version-2 LOCAL save restores LOCAL even when CPU mode is active immediately before Load
 14. a version-2 CPU save restores CPU even when LOCAL mode is active immediately before Load
 15. a rewritten legacy version-1 Black-to-move save defaults to CPU and triggers the historical automatic Black reply
+16. a real local Black Fart pushes a White piece, spends exactly 2 Gas, logs `BLACK FART`, advances the fullmove counter and leaves White to move
+17. ordinary promotion works for White and Black; White promotion can be cancelled with `ESC`, re-entered and completed without exiting the match; board mouse clicks cannot alter either promotion chooser
+18. Fart-push promotion works for White and Black and preserves the pushed pawn's Gas on the promoted destination
+19. White and Black can each deliver checkmate through a real local move
+20. after either local checkmate, board state, side/fullmove counters and action history remain locked against further gameplay input
+21. the visual-review suite contains 32 native 320x200 states, adding Black Fart, ordinary/Fart promotion and both local checkmate results
 
 ## Next
 
-14.4 will harden local Fart execution, promotion and terminal-state behavior across both colors.
+14.5 will run a longer end-to-end two-player Chromium scenario plus the full DOS regression pass before Build 14 closeout.

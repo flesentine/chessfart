@@ -60,6 +60,26 @@ EMSCRIPTEN_KEEPALIVE int cf_review_fart_mode(void)
     return g_ux_cache.valid && g_ux_cache.fart_mode;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_promotion_pending(void)
+{
+    return g_ux_cache.valid && g_ux_cache.promotion_pending;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_promotion_choice(void)
+{
+    return g_ux_cache.valid ? (int)g_ux_cache.promotion_choice : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_fart_promotion_pending(void)
+{
+    return g_ux_cache.valid && g_ux_cache.fart_promotion_pending;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_fart_promotion_choice(void)
+{
+    return g_ux_cache.valid ? (int)g_ux_cache.fart_promotion_choice : 0;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_ui_synced(void)
 {
     if (!g_ux_cache.valid) return 0;
@@ -154,6 +174,89 @@ EMSCRIPTEN_KEEPALIVE const char *cf_review_history_line(int index)
     const char *line;
     line = ux_history_get(&g_ux_history, index);
     return line != 0 ? line : "";
+}
+
+/*
+ * Build 14.4 interactive local fixtures.
+ *
+ * These write a normal version-2 LOCAL save through the production
+ * persistence layer. Chromium then presses L and performs every move/Fart
+ * through the real input loop. The fixture writer itself never executes an
+ * action.
+ *
+ * 0: Black Fart push from D5 south, pushing White pawn D4 -> D3
+ * 1: White pawn B7 ready for ordinary promotion on B8
+ * 2: Black pawn B2 ready for ordinary promotion on B1
+ * 3: White Fart-push promotion: charged D6 actor, White pawn D7 -> D8
+ * 4: Black Fart-push promotion: charged D3 actor, Black pawn D2 -> D1
+ * 5: White mate in one: QG6-G7#
+ * 6: Black mate in one: QG3-G2#
+ */
+EMSCRIPTEN_KEEPALIVE int cf_review_write_local_fixture(int fixture)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfGameStatus status;
+
+    board_clear(&board);
+    gas_init(&gas);
+
+    if (fixture == 0) {
+        board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&board, 3, 4, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+        board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_WHITE);
+        board.side_to_move = CF_COLOR_BLACK;
+        gas_set(&gas, 3, 4, 3U);
+        gas_set(&gas, 3, 3, 1U);
+    } else if (fixture == 1) {
+        board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&board, 1, 6, CF_PIECE_PAWN, CF_COLOR_WHITE);
+        board.side_to_move = CF_COLOR_WHITE;
+    } else if (fixture == 2) {
+        board_set_piece(&board, 7, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 0, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&board, 1, 1, CF_PIECE_PAWN, CF_COLOR_BLACK);
+        board.side_to_move = CF_COLOR_BLACK;
+    } else if (fixture == 3) {
+        board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&board, 3, 5, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+        board_set_piece(&board, 3, 6, CF_PIECE_PAWN, CF_COLOR_WHITE);
+        board.side_to_move = CF_COLOR_WHITE;
+        gas_set(&gas, 3, 5, 3U);
+        gas_set(&gas, 3, 6, 2U);
+    } else if (fixture == 4) {
+        board_set_piece(&board, 7, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 0, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&board, 3, 2, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+        board_set_piece(&board, 3, 1, CF_PIECE_PAWN, CF_COLOR_BLACK);
+        board.side_to_move = CF_COLOR_BLACK;
+        gas_set(&gas, 3, 2, 3U);
+        gas_set(&gas, 3, 1, 2U);
+    } else if (fixture == 5) {
+        board_set_piece(&board, 5, 5, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 6, 5, CF_PIECE_QUEEN, CF_COLOR_WHITE);
+        board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board.side_to_move = CF_COLOR_WHITE;
+    } else if (fixture == 6) {
+        board_set_piece(&board, 7, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 5, 2, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&board, 6, 2, CF_PIECE_QUEEN, CF_COLOR_BLACK);
+        board.side_to_move = CF_COLOR_BLACK;
+    } else {
+        return 0;
+    }
+
+    gas_history_init(&history, &board, &gas);
+    status = gas_game_status(&board, &gas, &history);
+    if (status != CF_GAME_ONGOING) return 0;
+
+    return persistence_save_game_mode(BUILD9_SAVE_PATH, &board, &gas,
+                                      &history, CF_MATCH_LOCAL) ==
+           CF_PERSIST_OK;
 }
 
 /*
