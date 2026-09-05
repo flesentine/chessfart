@@ -2,7 +2,7 @@
 
 Build 15 adds replay and postgame review without changing chess legality, Gas/Fart rules, CPU evaluation, or the version-2 game-save contract.
 
-**15.3 complete. Next slice: 15.4 replay hardening / closeout.**
+**Build 15 complete — 15.4 replay hardening / closeout certified.**
 
 ## Why replay
 
@@ -95,10 +95,24 @@ The browser hardening run must prove:
 
 ### 15.4 — Replay hardening / closeout
 
-- full CPU/local replay regression
-- long-game replay coverage
-- DOS memory/package review
-- final documentation and certification
+15.4 adds no gameplay feature. It turns the completed replay line into a permanent certification target.
+
+Closeout evidence:
+
+- replay-file ring round-trip is exercised through 600 recorded frames; the bounded 256-frame import preserves logical frames 345 through 600, absolute total 600, and truncated state
+- host layout is 118 bytes per replay snapshot and 30,232 bytes per 256-frame timeline
+- the worst normal import-viewer state holds the live timeline plus one transient imported timeline: 60,464 bytes total, below the frozen 64 KiB replay-memory ceiling
+- the 33-ply local Opera Game proves replay accounting across its production Save/Load path: 17 frames at the checkpoint, 19 after two more plies, one honest baseline after Load, and 18 frames at final checkmate after replaying the continuation
+- the Opera terminal viewer opens on the CHECKMATE snapshot and returns to the exact unchanged postgame state
+- deterministic CPU full games finish with their newest replay snapshot matching the live terminal state:
+  - EASY: draw by insufficient material after 36 White turns, 73/73 replay frames
+  - MEDIUM: checkmate after 25 White turns, 51/51 replay frames
+  - HARD: checkmate after 7 White turns, 15/15 replay frames
+- all three CPU replay rings report the correct non-truncated state and zero browser errors
+- the existing replay export/import transient-swap browser regression remains green
+- strict C89 host tests, Open Watcom 16-bit DOS compilation, DOSBox platform smoke, 1.0.0 packaging, Web/WASM runtime, and the existing 32 native visual-review states all remain green
+
+Build 15 therefore closes with replay as a bounded read-only snapshot system and a separate versioned file format. Playback never re-simulates chess or Gas rules.
 
 ## Frozen contracts
 
