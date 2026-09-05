@@ -110,7 +110,7 @@ CfPersistenceResult ux_save_game(const char *path, const CfBoard *board,
                                  const CfGasHistory *history)
 {
     CfPersistenceResult result;
-    result = persistence_save_game(path, board, gas, history);
+    result = persistence_save_game_mode(path, board, gas, history, g_match_mode);
     if (result == CF_PERSIST_OK) ux_history_add(&g_ux_history, "SYSTEM SAVE OK");
     return result;
 }
@@ -119,8 +119,10 @@ CfPersistenceResult ux_load_game(const char *path, CfBoard *board,
                                  CfGasState *gas, CfGasHistory *history)
 {
     CfPersistenceResult result;
-    result = persistence_load_game(path, board, gas, history);
+    CfMatchMode loaded_mode = g_match_mode;
+    result = persistence_load_game_mode(path, board, gas, history, &loaded_mode);
     if (result == CF_PERSIST_OK) {
+        g_match_mode = loaded_mode;
         ux_history_init(&g_ux_history);
         ux_history_add(&g_ux_history, "SYSTEM LOAD OK");
         if (board->side_to_move == CF_COLOR_BLACK)

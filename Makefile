@@ -66,7 +66,7 @@ all: host
 
 host: $(HOST_BINARY)
 
-$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/cpu.h include/ux.h include/mouse.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/ui_assets.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h include/persistence.h include/persistence_ui.h src/main_build9.c src/main_build11_hooks.inc src/main_build11_ui.inc
+$(HOST_BINARY): $(HOST_SOURCES) include/cf_types.h include/vga.h include/input_build5.h include/font.h include/board.h include/gas.h include/cpu.h include/ux.h include/match_mode.h include/mouse.h include/board_view_build5.h include/board_view_build6.h include/board_view_build7.h include/ui_assets.h include/presentation.h include/audio.h include/audio_platform.h include/audio_game.h include/persistence.h include/persistence_ui.h src/main_build9.c src/main_build11_hooks.inc src/main_build11_ui.inc
 	mkdir -p build/host
 	$(CC) $(CFLAGS) -DCF_BUILD6_DEMO -DCF_HOST_BUILD $(HOST_SOURCES) -o $(HOST_BINARY)
 
@@ -86,7 +86,7 @@ $(TEST8_BINARY): tests/test_build8.c src/game/audio.c src/game/audio_samples.c s
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build8.c src/game/audio.c src/game/audio_samples.c src/platform/host/audio_build11_host.c -o $(TEST8_BINARY)
 
-$(TEST9_BINARY): tests/test_build9.c src/game/board.c src/game/gas.c src/game/persistence.c include/persistence.h include/audio.h include/gas.h include/board.h include/cf_types.h
+$(TEST9_BINARY): tests/test_build9.c src/game/board.c src/game/gas.c src/game/persistence.c include/persistence.h include/match_mode.h include/audio.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build9.c src/game/board.c src/game/gas.c src/game/persistence.c -o $(TEST9_BINARY)
 
@@ -98,7 +98,7 @@ $(TEST10_ALPHA_BINARY): tests/test_build10_alpha_beta.c $(CPU_SOURCES) include/c
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build10_alpha_beta.c $(CPU_SOURCES) -o $(TEST10_ALPHA_BINARY)
 
-$(TEST11_BINARY): tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c include/ux.h include/cpu.h include/gas.h include/board.h include/cf_types.h
+$(TEST11_BINARY): tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c include/ux.h include/match_mode.h include/cpu.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build11.c src/game/board.c src/game/gas.c src/game/cpu_format.c src/game/ux.c -o $(TEST11_BINARY)
 

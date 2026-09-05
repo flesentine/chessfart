@@ -37,6 +37,40 @@ static void make_saved_position(CfBoard *board, CfGasState *gas,
     gas_history_record(history, board, gas);
 }
 
+static void convert_save_to_legacy_v1(const char *path)
+{
+    FILE *in;
+    FILE *out;
+    char line[512];
+    char temp[160];
+    int first = 1;
+
+    strcpy(temp, path);
+    strcat(temp, ".legacy");
+    in = fopen(path, "rt");
+    CHECK(in != 0);
+    if (in == 0) return;
+    out = fopen(temp, "wt");
+    CHECK(out != 0);
+    if (out == 0) {
+        fclose(in);
+        return;
+    }
+
+    while (fgets(line, sizeof(line), in) != 0) {
+        if (first) {
+            fprintf(out, "CHESSFART_SAVE %d\n", CF_SAVE_VERSION_LEGACY);
+            first = 0;
+        } else if (strncmp(line, "MODE ", 5) != 0) {
+            fputs(line, out);
+        }
+    }
+    fclose(in);
+    fclose(out);
+    (void)remove(path);
+    CHECK(rename(temp, path) == 0);
+}
+
 static void test_game_round_trip(void)
 {
     CfBoard board;
@@ -46,18 +80,72 @@ static void test_game_round_trip(void)
     CfGasHistory history;
     CfGasHistory loaded_history;
     CfPersistenceResult result;
+    CfMatchMode loaded_mode = CF_MATCH_CPU;
     const char *path = "build/host/build9_roundtrip.sav";
 
     make_saved_position(&board, &gas, &history);
-    result = persistence_save_game(path, &board, &gas, &history);
+    result = persistence_save_game_mode(path, &board, &gas, &history,
+                                   CF_MATCH_LOCAL);
     CHECK(result == CF_PERSIST_OK);
 
     memset(&loaded, 0x55, sizeof(loaded));
     memset(&loaded_gas, 0x44, sizeof(loaded_gas));
     memset(&loaded_history, 0x33, sizeof(loaded_history));
-    result = persistence_load_game(path, &loaded, &loaded_gas,
-                                   &loaded_history);
+    result = persistence_load_game_mode(path, &loaded, &loaded_gas,
+                                   &loaded_history, &loaded_mode);
     CHECK(result == CF_PERSIST_OK);
+    CHECK(loaded_mode == CF_MATCH_LOCAL);
+    CHECK(game_equal(&board, &loaded, &gas, &loaded_gas,
+                     &history, &loaded_history));
+    (void)remove(path);
+}
+
+static void test_legacy_v1_defaults_to_cpu(void)
+{
+    CfBoard board;
+    CfBoard loaded;
+    CfGasState gas;
+    CfGasState loaded_gas;
+    CfGasHistory history;
+    CfGasHistory loaded_history;
+    CfMatchMode loaded_mode = CF_MATCH_LOCAL;
+    const char *path = "build/host/build9_legacy_v1.sav";
+
+    make_saved_position(&board, &gas, &history);
+    CHECK(persistence_save_game_mode(path, &board, &gas, &history,
+                                CF_MATCH_LOCAL) == CF_PERSIST_OK);
+    convert_save_to_legacy_v1(path);
+
+    memset(&loaded, 0, sizeof(loaded));
+    memset(&loaded_gas, 0, sizeof(loaded_gas));
+    memset(&loaded_history, 0, sizeof(loaded_history));
+    CHECK(persistence_load_game_mode(path, &loaded, &loaded_gas,
+                                &loaded_history, &loaded_mode) ==
+          CF_PERSIST_OK);
+    CHECK(loaded_mode == CF_MATCH_CPU);
+    CHECK(game_equal(&board, &loaded, &gas, &loaded_gas,
+                     &history, &loaded_history));
+    (void)remove(path);
+}
+
+static void test_legacy_api_remains_source_compatible(void)
+{
+    CfBoard board;
+    CfBoard loaded;
+    CfGasState gas;
+    CfGasState loaded_gas;
+    CfGasHistory history;
+    CfGasHistory loaded_history;
+    const char *path = "build/host/build9_legacy_api.sav";
+
+    make_saved_position(&board, &gas, &history);
+    CHECK(persistence_save_game(path, &board, &gas, &history) ==
+          CF_PERSIST_OK);
+    memset(&loaded, 0, sizeof(loaded));
+    memset(&loaded_gas, 0, sizeof(loaded_gas));
+    memset(&loaded_history, 0, sizeof(loaded_history));
+    CHECK(persistence_load_game(path, &loaded, &loaded_gas,
+                                &loaded_history) == CF_PERSIST_OK);
     CHECK(game_equal(&board, &loaded, &gas, &loaded_gas,
                      &history, &loaded_history));
     (void)remove(path);
@@ -73,6 +161,7 @@ static void test_failed_load_is_transactional(void)
     CfGasHistory before_history;
     FILE *fp;
     CfPersistenceResult result;
+    CfMatchMode mode = CF_MATCH_LOCAL;
     const char *path = "build/host/build9_bad.sav";
 
     make_saved_position(&board, &gas, &history);
@@ -86,8 +175,22 @@ static void test_failed_load_is_transactional(void)
         fprintf(fp, "CHESSFART_SAVE 99\n");
         fclose(fp);
     }
-    result = persistence_load_game(path, &board, &gas, &history);
+    result = persistence_load_game_mode(path, &board, &gas, &history, &mode);
     CHECK(result == CF_PERSIST_BAD_VERSION);
+    CHECK(mode == CF_MATCH_LOCAL);
+    CHECK(game_equal(&before, &board, &before_gas, &gas,
+                     &before_history, &history));
+
+    fp = fopen(path, "wt");
+    CHECK(fp != 0);
+    if (fp != 0) {
+        fprintf(fp, "CHESSFART_SAVE 2\n");
+        fprintf(fp, "MODE 99\n");
+        fclose(fp);
+    }
+    result = persistence_load_game_mode(path, &board, &gas, &history, &mode);
+    CHECK(result == CF_PERSIST_BAD_DATA);
+    CHECK(mode == CF_MATCH_LOCAL);
     CHECK(game_equal(&before, &board, &before_gas, &gas,
                      &before_history, &history));
 
@@ -98,8 +201,9 @@ static void test_failed_load_is_transactional(void)
         fprintf(fp, "STATE 1 15 -1 -1 0 1\nSQUARES\n");
         fclose(fp);
     }
-    result = persistence_load_game(path, &board, &gas, &history);
+    result = persistence_load_game_mode(path, &board, &gas, &history, &mode);
     CHECK(result == CF_PERSIST_BAD_DATA);
+    CHECK(mode == CF_MATCH_LOCAL);
     CHECK(game_equal(&before, &board, &before_gas, &gas,
                      &before_history, &history));
     (void)remove(path);
@@ -110,15 +214,21 @@ static void test_missing_and_bad_source_state(void)
     CfBoard board;
     CfGasState gas;
     CfGasHistory history;
+    CfMatchMode mode = CF_MATCH_CPU;
 
     make_saved_position(&board, &gas, &history);
-    CHECK(persistence_load_game("build/host/no_such_build9.sav",
-                                &board, &gas, &history) ==
+    CHECK(persistence_load_game_mode("build/host/no_such_build9.sav",
+                                &board, &gas, &history, &mode) ==
           CF_PERSIST_NOT_FOUND);
 
     gas.squares[0][0] = 4U;
-    CHECK(persistence_save_game("build/host/build9_invalid.sav",
-                                &board, &gas, &history) ==
+    CHECK(persistence_save_game_mode("build/host/build9_invalid.sav",
+                                &board, &gas, &history, CF_MATCH_CPU) ==
+          CF_PERSIST_BAD_DATA);
+    gas.squares[0][0] = 0U;
+    CHECK(persistence_save_game_mode("build/host/build9_invalid.sav",
+                                &board, &gas, &history,
+                                (CfMatchMode)99) ==
           CF_PERSIST_BAD_DATA);
     (void)remove("build/host/build9_invalid.sav");
 }
@@ -157,6 +267,8 @@ static void test_config_round_trip(void)
 int main(void)
 {
     test_game_round_trip();
+    test_legacy_v1_defaults_to_cpu();
+    test_legacy_api_remains_source_compatible();
     test_failed_load_is_transactional();
     test_missing_and_bad_source_state();
     test_config_round_trip();

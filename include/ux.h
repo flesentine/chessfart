@@ -4,14 +4,10 @@
 #include "board.h"
 #include "cpu.h"
 #include "gas.h"
+#include "match_mode.h"
 
 #define CF_UX_HISTORY_CAPACITY 32
 #define CF_UX_HISTORY_LINE 40
-
-typedef enum CfMatchMode {
-    CF_MATCH_CPU = 0,
-    CF_MATCH_LOCAL = 1
-} CfMatchMode;
 
 typedef struct CfUxHistory {
     char lines[CF_UX_HISTORY_CAPACITY][CF_UX_HISTORY_LINE];

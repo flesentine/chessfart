@@ -4,8 +4,10 @@
 #include "audio.h"
 #include "board.h"
 #include "gas.h"
+#include "match_mode.h"
 
-#define CF_SAVE_VERSION 1
+#define CF_SAVE_VERSION 2
+#define CF_SAVE_VERSION_LEGACY 1
 #define CF_CONFIG_VERSION 1
 #ifndef CF_DEFAULT_SAVE_PATH
 #define CF_DEFAULT_SAVE_PATH "CHESSFRT.SAV"
@@ -31,6 +33,16 @@ CfPersistenceResult persistence_load_game(const char *path,
                                           CfBoard *board,
                                           CfGasState *gas,
                                           CfGasHistory *history);
+CfPersistenceResult persistence_save_game_mode(const char *path,
+                                               const CfBoard *board,
+                                               const CfGasState *gas,
+                                               const CfGasHistory *history,
+                                               CfMatchMode match_mode);
+CfPersistenceResult persistence_load_game_mode(const char *path,
+                                               CfBoard *board,
+                                               CfGasState *gas,
+                                               CfGasHistory *history,
+                                               CfMatchMode *match_mode);
 CfPersistenceResult persistence_save_config(const char *path,
                                             const CfAudioConfig *config);
 CfPersistenceResult persistence_load_config(const char *path,

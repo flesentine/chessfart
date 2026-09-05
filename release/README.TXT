@@ -38,7 +38,9 @@ BUILDINFO.TXT  Exact source/toolchain build information
 SAVE FILES
 ----------
 The game writes CHESSFRT.SAV and CHESSFRT.CFG in the current directory.
-The versioned save/config formats are unchanged from the release candidate.
+New game saves use format version 2 so CPU/local match mode is preserved.
+Legacy version-1 game saves remain loadable and restore CPU mode. The config
+format remains version 1.
 
 This is Chess Fart 1.0.0. The automated release gate covers host rules and
 CPU regressions, a real Open Watcom 16-bit DOS build, DOSBox smoke, browser

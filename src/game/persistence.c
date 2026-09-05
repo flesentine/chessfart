@@ -52,6 +52,11 @@ static int valid_history_byte(unsigned value)
     return 1;
 }
 
+static int valid_match_mode(int mode)
+{
+    return mode == (int)CF_MATCH_CPU || mode == (int)CF_MATCH_LOCAL;
+}
+
 static int valid_board_state(int side, unsigned rights,
                              int ep_file, int ep_rank)
 {
@@ -75,10 +80,11 @@ const char *persistence_result_name(CfPersistenceResult result)
     }
 }
 
-CfPersistenceResult persistence_save_game(const char *path,
+CfPersistenceResult persistence_save_game_mode(const char *path,
                                           const CfBoard *board,
                                           const CfGasState *gas,
-                                          const CfGasHistory *history)
+                                          const CfGasHistory *history,
+                                          CfMatchMode match_mode)
 {
     FILE *fp;
     char temp[CF_PATH_BUFFER];
@@ -88,7 +94,8 @@ CfPersistenceResult persistence_save_game(const char *path,
     int square;
 
     if (board == 0 || gas == 0 || history == 0 ||
-        !make_temp_path(path, temp)) return CF_PERSIST_BAD_DATA;
+        !make_temp_path(path, temp) ||
+        !valid_match_mode((int)match_mode)) return CF_PERSIST_BAD_DATA;
     if (history->count < 1 || history->count > CF_GAS_HISTORY)
         return CF_PERSIST_BAD_DATA;
 
@@ -96,6 +103,7 @@ CfPersistenceResult persistence_save_game(const char *path,
     if (fp == 0) return CF_PERSIST_IO_ERROR;
 
     if (fprintf(fp, "CHESSFART_SAVE %d\n", CF_SAVE_VERSION) < 0 ||
+        fprintf(fp, "MODE %d\n", (int)match_mode) < 0 ||
         fprintf(fp, "STATE %d %u %d %d %u %u\n",
                 (int)board->side_to_move, board->castling_rights,
                 board->en_passant_file, board->en_passant_rank,
@@ -153,15 +161,17 @@ CfPersistenceResult persistence_save_game(const char *path,
     return replace_with_temp(path, temp);
 }
 
-CfPersistenceResult persistence_load_game(const char *path,
+CfPersistenceResult persistence_load_game_mode(const char *path,
                                           CfBoard *board,
                                           CfGasState *gas,
-                                          CfGasHistory *history)
+                                          CfGasHistory *history,
+                                          CfMatchMode *match_mode)
 {
     FILE *fp;
     char magic[32];
     char word[32];
     int version;
+    int loaded_mode_value;
     int side;
     unsigned rights;
     int ep_file;
@@ -182,8 +192,10 @@ CfPersistenceResult persistence_load_game(const char *path,
     CfBoard loaded_board;
     CfGasState loaded_gas;
     CfGasHistory loaded_history;
+    CfMatchMode loaded_mode;
 
-    if (path == 0 || board == 0 || gas == 0 || history == 0)
+    if (path == 0 || board == 0 || gas == 0 || history == 0 ||
+        match_mode == 0)
         return CF_PERSIST_BAD_DATA;
 
     fp = fopen(path, "rt");
@@ -201,9 +213,21 @@ CfPersistenceResult persistence_load_game(const char *path,
         fclose(fp);
         return CF_PERSIST_BAD_MAGIC;
     }
-    if (version != CF_SAVE_VERSION) {
+    if (version != CF_SAVE_VERSION &&
+        version != CF_SAVE_VERSION_LEGACY) {
         fclose(fp);
         return CF_PERSIST_BAD_VERSION;
+    }
+
+    loaded_mode = CF_MATCH_CPU;
+    if (version == CF_SAVE_VERSION) {
+        if (fscanf(fp, "%31s %d", word, &loaded_mode_value) != 2 ||
+            strcmp(word, "MODE") != 0 ||
+            !valid_match_mode(loaded_mode_value)) {
+            fclose(fp);
+            return CF_PERSIST_BAD_DATA;
+        }
+        loaded_mode = (CfMatchMode)loaded_mode_value;
     }
 
     if (fscanf(fp, "%31s %d %u %d %d %u %u",
@@ -277,7 +301,26 @@ CfPersistenceResult persistence_load_game(const char *path,
     *board = loaded_board;
     *gas = loaded_gas;
     *history = loaded_history;
+    *match_mode = loaded_mode;
     return CF_PERSIST_OK;
+}
+
+CfPersistenceResult persistence_save_game(const char *path,
+                                          const CfBoard *board,
+                                          const CfGasState *gas,
+                                          const CfGasHistory *history)
+{
+    return persistence_save_game_mode(path, board, gas, history, CF_MATCH_CPU);
+}
+
+CfPersistenceResult persistence_load_game(const char *path,
+                                          CfBoard *board,
+                                          CfGasState *gas,
+                                          CfGasHistory *history)
+{
+    CfMatchMode ignored_mode = CF_MATCH_CPU;
+    return persistence_load_game_mode(path, board, gas, history,
+                                      &ignored_mode);
 }
 
 CfPersistenceResult persistence_save_config(const char *path,
