@@ -252,25 +252,27 @@ CfReplayFileResult replay_file_load(const char *path,
     char magic[CF_REPLAY_WORD_BUFFER];
     char word[CF_REPLAY_WORD_BUFFER];
     char hex[CF_REPLAY_HEX_BUFFER];
-    int version;
-    int count;
+    long version_value;
+    long count_value;
     unsigned long total;
+    long truncated_value;
+    long frame_index;
+    int count;
     int truncated;
-    int frame_index;
     int i;
     int square;
-    unsigned value;
-    unsigned side;
-    unsigned rights;
-    unsigned ep_file;
-    unsigned ep_rank;
-    unsigned half_low;
-    unsigned half_high;
-    unsigned full_low;
-    unsigned full_high;
-    unsigned status;
-    unsigned mode;
-    int label_length;
+    unsigned long value;
+    unsigned long side;
+    unsigned long rights;
+    unsigned long ep_file;
+    unsigned long ep_rank;
+    unsigned long half_low;
+    unsigned long half_high;
+    unsigned long full_low;
+    unsigned long full_high;
+    unsigned long status;
+    unsigned long mode;
+    long label_length_value;
     CfReplayTimeline loaded;
     CfReplaySnapshot *snapshot;
 
@@ -281,7 +283,7 @@ CfReplayFileResult replay_file_load(const char *path,
 
     replay_timeline_init(&loaded);
 
-    if (fscanf(fp, "%31s %d", magic, &version) != 2) {
+    if (fscanf(fp, "%31s %ld", magic, &version_value) != 2) {
         fclose(fp);
         return CF_REPLAY_FILE_BAD_MAGIC;
     }
@@ -289,24 +291,29 @@ CfReplayFileResult replay_file_load(const char *path,
         fclose(fp);
         return CF_REPLAY_FILE_BAD_MAGIC;
     }
-    if (version != CF_REPLAY_FILE_VERSION) {
+    if (version_value != (long)CF_REPLAY_FILE_VERSION) {
         fclose(fp);
         return CF_REPLAY_FILE_BAD_VERSION;
     }
 
-    if (fscanf(fp, "%31s %d %lu %d",
-               word, &count, &total, &truncated) != 4 ||
+    if (fscanf(fp, "%31s %ld %lu %ld",
+               word, &count_value, &total, &truncated_value) != 4 ||
         strcmp(word, "META") != 0 ||
-        count < 1 || count > CF_REPLAY_CAPACITY ||
-        total < (unsigned long)count ||
-        (truncated != 0 && truncated != 1) ||
-        (truncated && (count != CF_REPLAY_CAPACITY ||
-                       total <= (unsigned long)count)) ||
-        (!truncated && total != (unsigned long)count)) {
+        count_value < 1L ||
+        count_value > (long)CF_REPLAY_CAPACITY ||
+        total < (unsigned long)count_value ||
+        (truncated_value != 0L && truncated_value != 1L) ||
+        (truncated_value &&
+         (count_value != (long)CF_REPLAY_CAPACITY ||
+          total <= (unsigned long)count_value)) ||
+        (!truncated_value &&
+         total != (unsigned long)count_value)) {
         fclose(fp);
         return CF_REPLAY_FILE_BAD_DATA;
     }
 
+    count = (int)count_value;
+    truncated = (int)truncated_value;
     loaded.start = 0;
     loaded.count = count;
     loaded.total = total;
@@ -316,14 +323,14 @@ CfReplayFileResult replay_file_load(const char *path,
         snapshot = &loaded.snapshots[i];
         memset(snapshot, 0, sizeof(*snapshot));
 
-        if (fscanf(fp, "%31s %d", word, &frame_index) != 2 ||
+        if (fscanf(fp, "%31s %ld", word, &frame_index) != 2 ||
             strcmp(word, "FRAME") != 0 ||
-            frame_index != i) {
+            frame_index != (long)i) {
             fclose(fp);
             return CF_REPLAY_FILE_BAD_DATA;
         }
 
-        if (fscanf(fp, "%31s %u %u %u %u %u %u %u %u %u %u",
+        if (fscanf(fp, "%31s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
                    word, &side, &rights, &ep_file, &ep_rank,
                    &half_low, &half_high, &full_low, &full_high,
                    &status, &mode) != 11 ||
@@ -354,17 +361,20 @@ CfReplayFileResult replay_file_load(const char *path,
             return CF_REPLAY_FILE_BAD_DATA;
         }
         for (square = 0; square < 64; ++square) {
-            if (fscanf(fp, "%u", &value) != 1 || value > 255U) {
+            if (fscanf(fp, "%lu", &value) != 1 || value > 255UL) {
                 fclose(fp);
                 return CF_REPLAY_FILE_BAD_DATA;
             }
             snapshot->squares[square] = (cf_u8)value;
         }
 
-        if (fscanf(fp, "%31s %d %80s",
-                   word, &label_length, hex) != 3 ||
+        if (fscanf(fp, "%31s %ld %80s",
+                   word, &label_length_value, hex) != 3 ||
             strcmp(word, "LABEL") != 0 ||
-            !replay_file_decode_label(snapshot, label_length, hex)) {
+            label_length_value < 0L ||
+            label_length_value >= (long)CF_REPLAY_LABEL ||
+            !replay_file_decode_label(snapshot,
+                                      (int)label_length_value, hex)) {
             fclose(fp);
             return CF_REPLAY_FILE_BAD_DATA;
         }
