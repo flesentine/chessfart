@@ -872,8 +872,8 @@ static void ux_draw_replay_command_bar(void)
                    "< PREV", UX_COL_TEXT, 1);
     font_draw_text(122, CF_UI_PROMPT_TEXT_Y,
                    "NEXT >", UX_COL_TEXT, 1);
-    font_draw_text(208, CF_UI_PROMPT_TEXT_Y,
-                   "ENTER/R/ESC CLOSE", UX_COL_MUTED, 1);
+    font_draw_text(216, CF_UI_PROMPT_TEXT_Y,
+                   "R/ENTER/ESC CLOSE", UX_COL_MUTED, 1);
 }
 
 static int ux_render_replay_frame(int index)
