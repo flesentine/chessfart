@@ -95,29 +95,29 @@ static void test_ring_file_round_trip(void)
     replay_timeline_reset(&source, &board, &gas, CF_GAME_ONGOING,
                           CF_MATCH_CPU, "FRAME 0");
 
-    for (i = 1; i < 260; ++i) {
+    for (i = 1; i < 600; ++i) {
         board.fullmove_number = (unsigned)(i + 1);
         replay_timeline_record(&source, &board, &gas, CF_GAME_ONGOING,
                                CF_MATCH_CPU, "RING FRAME");
     }
 
     CHECK(source.count == CF_REPLAY_CAPACITY);
-    CHECK(source.total == 260UL);
+    CHECK(source.total == 600UL);
     CHECK(source.truncated == 1);
     CHECK(replay_file_save(TEST_REPLAY_PATH, &source) == CF_REPLAY_FILE_OK);
     CHECK(replay_file_load(TEST_REPLAY_PATH, &loaded) == CF_REPLAY_FILE_OK);
     CHECK(loaded.start == 0);
     CHECK(loaded.count == CF_REPLAY_CAPACITY);
-    CHECK(loaded.total == 260UL);
+    CHECK(loaded.total == 600UL);
     CHECK(loaded.truncated == 1);
 
     CHECK(replay_snapshot_restore(replay_timeline_get(&loaded, 0),
                                   &restored, &restored_gas, 0, 0));
-    CHECK(restored.fullmove_number == 5U);
+    CHECK(restored.fullmove_number == 345U);
     CHECK(replay_snapshot_restore(
               replay_timeline_get(&loaded, CF_REPLAY_CAPACITY - 1),
               &restored, &restored_gas, 0, 0));
-    CHECK(restored.fullmove_number == 260U);
+    CHECK(restored.fullmove_number == 600U);
 }
 
 static void expect_failed_load(CfReplayFileResult expected)
