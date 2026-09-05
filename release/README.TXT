@@ -15,7 +15,9 @@ DOSBox:
   3. Run CHESSFRT.EXE.
 
 A sample DOSBOX.CONF is included. On real DOS, run CHESSFRT.EXE directly.
-A Microsoft-compatible mouse driver is optional; keyboard play is complete.
+Choose PLAY CPU for the deterministic computer opponent or 2 PLAYERS for a
+local hot-seat White/Black match. A Microsoft-compatible mouse driver is
+optional; keyboard play is complete.
 
 SOUND
 -----
@@ -44,6 +46,7 @@ format remains version 1.
 
 This is Chess Fart 1.0.0. The automated release gate covers host rules and
 CPU regressions, a real Open Watcom 16-bit DOS build, DOSBox smoke, browser
-runtime/playtest coverage, and deterministic full Chromium games. Physical
-DOS hardware and specific third-party drivers remain explicitly unverified
-where listed in KNOWNISS.TXT.
+runtime/playtest coverage, deterministic full Chromium CPU games, and a
+33-ply local two-player Chromium game with exact version-2 LOCAL save/load
+rollback. Physical DOS hardware and specific third-party drivers remain
+explicitly unverified where listed in KNOWNISS.TXT.

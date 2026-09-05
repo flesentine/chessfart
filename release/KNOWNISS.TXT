@@ -2,8 +2,9 @@ CHESS FART 1.0.0 - KNOWN ISSUES / PLATFORM NOTES
 ================================================
 
 RELEASE BLOCKERS
-No known host-test, rules-engine, save/load, CPU, packaging, browser, or
-DOSBox-smoke P0/P1 blockers at the time 1.0.0 is cut. See
+No known host-test, rules-engine, save/load, CPU/local-match, packaging,
+browser, or DOSBox-smoke P0/P1 blockers in the current 1.0.0 source/package
+gate. See
 `docs/RELEASE_CHECKLIST.md` in the source repository for the verification
 matrix.
 

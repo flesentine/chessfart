@@ -13,6 +13,15 @@ test -f release/KEYS.TXT
 test -f release/KNOWNISS.TXT
 test -f release/DOSBOX.CONF
 
+grep -q '^CHESS FART 1.0.0 CONTROLS$' release/KEYS.TXT
+if grep -q '1.0.0-rc1' release/KEYS.TXT release/README.TXT release/KNOWNISS.TXT; then
+    echo "Current release documentation still contains stale rc1 metadata." >&2
+    exit 1
+fi
+grep -q '2 PLAYERS' release/README.TXT
+grep -q 'format version 2' release/README.TXT
+grep -q 'Legacy version-1 game saves remain loadable and restore CPU mode' release/README.TXT
+
 # A bare ======= line is valid DOS text decoration, so only the unambiguous
 # opening/closing merge markers are release blockers here.
 if grep -R -n -E '^(<<<<<<<|>>>>>>>)' src include tests release docs >/tmp/chessfart-conflicts.txt; then

@@ -8,15 +8,19 @@ The design goal is **real strategy first, toilet humor second**.
 
 **Chess Fart 1.0.0 — final release.**
 
-The source on `main` also includes the post-v1 **Build 13 presentation refresh**. It keeps the 1.0 gameplay/save contract while modernizing the authored VGA assets, bitmap font, board/piece art, gameplay HUD, Fart mode, title, and modal presentation.
+The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds a `2 PLAYERS` hot-seat mode on the same trusted chess/Gas rules path, with backward-compatible version-1 saves and mode-aware version-2 saves.
 
 The automated release gate covers the entire game from rules through the DOS package:
 
 - complete legal chess plus Gas/Fart displacement rules
-- human White versus deterministic CPU Black
+- `PLAY CPU`: human White versus deterministic CPU Black
+- `2 PLAYERS`: local hot-seat White versus Black on the same rules path
 - Fart-aware CPU tactical regressions, including check escape, forcing check, castling-right damage and pushed promotion
 - corrected Fart edge-bonus alpha-beta pruning
-- deterministic full Chromium games at Easy, Medium and Hard, each exercising live Fart mechanics
+- deterministic full Chromium CPU games at Easy, Medium and Hard, each exercising live Fart mechanics
+- a 33-ply local two-player Opera Game Chromium regression from title selection through checkmate
+- exact version-2 LOCAL save/load rollback of board metadata, all piece/Gas squares and repetition history
+- 32 native 320x200 visual-review states covering CPU/local HUDs, Fart, promotion and terminal states
 - 320x200 256-color VGA presentation
 - Sound Blaster / PC-speaker audio architecture
 - versioned save/load and audio config
@@ -69,7 +73,7 @@ S / L            Save / Load
 H / ?            Help
 Tab / M          Action log
 C                Credits
-Esc              Quit
+Esc              Quit; cancel pending Fart/promotion choice
 ```
 
 With a compatible DOS mouse driver, left-click targets board/menu items and right-click enters Fart mode.

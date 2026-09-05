@@ -14,6 +14,12 @@
 - [x] Build 11 scripted host game and VGA/audio/save artifacts
 - [x] browser/WASM build and runtime smoke
 - [x] Chromium mouse/Fart/history/save-load playtest
+- [x] CPU/local title-mode selection through real keyboard and mouse input
+- [x] Build 14 local Black Fart plus White/Black ordinary and Fart-push promotion regressions
+- [x] Build 14 local White/Black checkmate delivery and terminal-state input locks
+- [x] 33-ply local two-player Opera Game from the normal title/start position through 17.Rd8#
+- [x] exact version-2 LOCAL checkpoint rollback/replay of mode, board metadata, all piece/Gas squares and repetition-history keys
+- [x] 32 deterministic native 320x200 visual-review states
 - [x] deterministic full Chromium games at EASY/MED/HARD, each reaching a terminal result with zero browser errors and exercising live Fart mechanics
 - [x] Build 12 release audit
 - [x] Build 12 host CPU/memory profile report
