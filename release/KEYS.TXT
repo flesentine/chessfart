@@ -1,9 +1,9 @@
-CHESS FART 1.0.0-rc1 CONTROLS
+CHESS FART 1.0.0 CONTROLS
 ==============================
 
 TITLE SCREEN
 Up / Down          Move menu selection
-Enter / Space      Choose
+Enter / Space      Choose (PLAY CPU or 2 PLAYERS)
 Left / Right       Cycle audio device
 F                  Cycle SFX level
 D                  Cycle CPU difficulty

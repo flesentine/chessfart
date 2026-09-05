@@ -4,7 +4,7 @@
 
 Build 14 adds local two-player hot-seat play without creating a second rules engine.
 
-**14.5: full local-match regression.**
+**Complete: 14.6 closeout.**
 
 ## Why this build
 
@@ -93,9 +93,23 @@ The original master plan listed local hot-seat two-player as a required product 
 - keep the 32-state canonical visual suite unchanged; the long-game screenshots are diagnostics rather than new visual baselines
 - pair the Chromium game with the existing Release CI strict host, Open Watcom 16-bit DOS, DOSBox smoke and package regression pass
 
+## 14.6 — Closeout and certification
+
+14.6 makes no gameplay changes. It closes the Build 14 line by aligning the repository and packaged documentation with the shipped source and by turning the most important documentation assumptions into release-audit checks:
+
+- root README documents both `PLAY CPU` and `2 PLAYERS`, the 33-ply local full-game gate, exact v2 LOCAL rollback and the 32-state visual suite
+- packaged README documents local hot-seat play and the final browser certification scope
+- packaged `KEYS.TXT` no longer carries the stale `1.0.0-rc1` heading and explicitly notes title-mode selection
+- packaged known-issues scope includes CPU/local-match browser coverage
+- compatibility matrix and release checklist record the completed Build 14 evidence
+- roadmap marks Build 14 complete
+- release audit now fails if packaged controls regress to an RC heading or if the release README loses the local-mode/v2-save contract
+- the final Build 14 branch must pass the unchanged strict host, Open Watcom 16-bit DOS, DOSBox, package, Web/Chromium and 32-state visual gates before merge
+- after merge, the exact `main` merge commit receives one final Release/Web/Deploy certification
+
 ## Frozen Build 14 contracts
 
-14.5 does not change:
+Build 14 closeout does not change:
 
 - chess legality
 - Gas earning/spending or Fart displacement
@@ -138,6 +152,6 @@ The browser hardening run must prove:
 25. the long-game gate opens the real history UI and finishes with a terminal lock that rejects further gameplay input
 26. Release CI simultaneously passes strict host tests, real Open Watcom 16-bit DOS compilation, DOSBox smoke and release packaging
 
-## Next
+## Closeout
 
-14.6 will close Build 14 with documentation/package cleanup and one final merged-main certification pass.
+Build 14 is complete after 14.6. Future work belongs to a new post-v1 build line rather than extending the local-two-player milestone.
