@@ -917,6 +917,10 @@ void ux_show_replay_modal(void)
     int index;
 #ifndef CF_HOST_BUILD
     CfInputKey5 key;
+    CfMouseState mouse;
+    unsigned replay_mouse_buttons;
+    unsigned pressed;
+    int close_viewer;
 #endif
 
     if (g_replay_timeline == 0 || g_replay_timeline->count <= 0 ||
@@ -934,7 +938,9 @@ void ux_show_replay_modal(void)
     }
 
 #ifndef CF_HOST_BUILD
-    for (;;) {
+    replay_mouse_buttons = g_ux_mouse_buttons;
+    close_viewer = 0;
+    while (!close_viewer) {
         key = input5_poll_key();
         if (key == CF5_KEY_LEFT) {
             if (index > 0) --index;
@@ -946,9 +952,30 @@ void ux_show_replay_modal(void)
             (void)ux_render_replay_frame(index);
         } else if (key == CF5_KEY_ESCAPE || key == CF5_KEY_ENTER ||
                    key == CF5_KEY_REPLAY) {
-            break;
+            close_viewer = 1;
+        }
+
+        if (!close_viewer && mouse_poll(&mouse) && mouse.present) {
+            pressed = mouse.buttons & ~replay_mouse_buttons;
+            replay_mouse_buttons = mouse.buttons;
+            if ((pressed & 1U) != 0U &&
+                mouse.y >= CF_UI_COMMAND_Y &&
+                mouse.y < CF_UI_COMMAND_Y + CF_UI_COMMAND_H) {
+                if (mouse.x < 106) {
+                    if (index > 0) --index;
+                    g_replay_viewer_index = index;
+                    (void)ux_render_replay_frame(index);
+                } else if (mouse.x < 212) {
+                    if (index + 1 < g_replay_timeline->count) ++index;
+                    g_replay_viewer_index = index;
+                    (void)ux_render_replay_frame(index);
+                } else {
+                    close_viewer = 1;
+                }
+            }
         }
     }
+    g_ux_mouse_buttons = replay_mouse_buttons;
 #endif
 
     g_replay_viewer_active = 0;
