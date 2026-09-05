@@ -74,7 +74,8 @@ H / ?            Help
 Tab / M          Action log
 C                Credits
 R                Replay viewer; Left/Right step, R/Enter/Esc close
-Mouse in Replay  Previous / Next / Close footer controls
+S / L in Replay  Export / import CHESSFRT.RPL
+Mouse in Replay  Previous / Next / Export / Import / Close footer controls
 Esc              Quit; cancel pending Fart/promotion choice
 ```
 
@@ -124,5 +125,6 @@ Automated verification is intentionally not described as exhaustive hardware com
 - [`docs/BUILD_13.md`](docs/BUILD_13.md)
 - [`docs/BUILD_14.md`](docs/BUILD_14.md)
 - [`docs/BUILD_15.md`](docs/BUILD_15.md)
+- [`docs/REPLAY_FORMAT.md`](docs/REPLAY_FORMAT.md)
 
 **CHESS FART** — *Check. Mate. Ventilate.*
