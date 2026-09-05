@@ -849,7 +849,7 @@ static void ux_draw_replay_panel(const CfReplaySnapshot *snapshot,
                   CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
     if (g_replay_timeline->truncated)
         font_draw_text(CF_UI_HUD_LABEL_X, 148,
-                       "EARLIER FRAMES DROPPED", UX_COL_MUTED, 1);
+                       "EARLIER DROPPED", UX_COL_MUTED, 1);
     else
         font_draw_text(CF_UI_HUD_LABEL_X, 148,
                        "FULL SESSION", UX_COL_MUTED, 1);
