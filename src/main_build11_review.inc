@@ -98,6 +98,16 @@ EMSCRIPTEN_KEEPALIVE int cf_review_replay_truncated(void)
     return g_replay_timeline == 0 ? 0 : g_replay_timeline->truncated;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_viewer_active(void)
+{
+    return g_replay_viewer_active;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_viewer_index(void)
+{
+    return g_replay_viewer_index;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_replay_side(int index)
 {
     const CfReplaySnapshot *snapshot;
