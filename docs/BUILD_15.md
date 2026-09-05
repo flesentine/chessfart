@@ -2,7 +2,7 @@
 
 Build 15 adds replay and postgame review without changing chess legality, Gas/Fart rules, CPU evaluation, or the version-2 game-save contract.
 
-**15.1 complete. Next slice: 15.2 postgame replay UX.**
+**15.1 complete. Current slice: 15.2 postgame replay UX.**
 
 ## Why replay
 
@@ -73,10 +73,14 @@ The browser hardening run must prove:
 
 ### 15.2 — Postgame replay UX
 
-- expose replay from terminal state and normal in-game controls
-- add optional mouse stepping on the same input abstraction
-- harden promotion/Fart/checkmate frames in the viewer
-- keep live-game input locked while reviewing old frames
+- expose `R RPLY` in the normal command bar, full `R REPLAY` in Help, and Replay in GAME OVER
+- add footer mouse zones for Previous / Next / Close inside the replay viewer
+- keep keyboard Left/Right stepping and R/Enter/Esc close behavior
+- consume gameplay keys and board clicks while replay is open so old-frame review cannot mutate the live match
+- harden pending and committed ordinary-promotion replay behavior
+- harden pending and committed Fart-push-promotion replay behavior
+- harden terminal CHECKMATE replay and exact return to the postgame overlay
+- preserve the existing board geometry, rules, CPU, save format and package version
 
 ### 15.3 — Replay files
 
