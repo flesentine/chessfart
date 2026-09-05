@@ -114,7 +114,7 @@ $(TEST15_FILE_BINARY): tests/test_build15_replay_file.c src/game/replay_file.c s
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build15_replay_file.c src/game/replay_file.c src/game/replay.c src/game/board.c src/game/gas.c -o $(TEST15_FILE_BINARY)
 
-$(PROFILE12_BINARY): tests/profile_build12.c $(CPU_SOURCES) include/version.h include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
+$(PROFILE12_BINARY): tests/profile_build12.c $(CPU_SOURCES) include/version.h include/replay.h include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/profile_build12.c $(CPU_SOURCES) -o $(PROFILE12_BINARY)
 
