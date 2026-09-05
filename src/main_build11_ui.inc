@@ -80,8 +80,10 @@ static void ux_draw_help_page(int page)
         font_draw_heading(x + 15, y + 34, "CONTROLS", UX_COL_GOLD, 1);
         font_draw_text(x + 15, y + 46, "ARROWS MOVE CURSOR", UX_COL_GAS, 1);
         font_draw_text(x + 15, y + 56, "ENTER/SPACE SELECT / CONFIRM", UX_COL_TEXT, 1);
-        font_draw_text(x + 15, y + 66, "F FART   S SAVE   L LOAD", UX_COL_TEXT, 1);
-        font_draw_text(x + 15, y + 76, "H/? HELP   TAB/M LOG   C CREDITS", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 66,
+                       "F FART  S SAVE  L LOAD  R REPLAY", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 76,
+                       "H/? HELP   TAB/M LOG   C CREDITS", UX_COL_TEXT, 1);
 
         font_draw_heading(x + 15, y + 90, "GAS + FARTS", UX_COL_GOLD, 1);
         font_draw_text(x + 15, y + 102, "MOVE +1 GAS   CAPTURE +2 GAS", UX_COL_GAS, 1);
@@ -196,7 +198,8 @@ static void ux_draw_terminal_overlay(CfGameStatus status,
     ux_draw_centered(x, y + 30, w, result,
                      status == CF_GAME_CHECKMATE ? UX_COL_GAS : UX_COL_GOLD);
     ux_draw_centered(x, y + 43, w, detail, UX_COL_TEXT);
-    ux_draw_modal_footer(x, y, w, h, "H HELP   M LOG   ESC QUIT");
+    ux_draw_modal_footer(x, y, w, h,
+                         "H HELP   M LOG   R REPLAY   ESC QUIT");
 }
 
 static void ux_draw_title(int menu, int frame)
@@ -690,8 +693,10 @@ static void ux_draw_command_bar(const CfBoard *board,
                    "L LOAD", UX_COL_TEXT, 1);
     font_draw_text(CF_UI_PROMPT_HELP_X, CF_UI_PROMPT_TEXT_Y,
                    "H HELP", UX_COL_TEXT, 1);
+    font_draw_text(CF_UI_PROMPT_REPLAY_X, CF_UI_PROMPT_TEXT_Y,
+                   "R RPLY", UX_COL_SELECTED, 1);
     font_draw_text(CF_UI_PROMPT_ESC_X, CF_UI_PROMPT_TEXT_Y,
-                   "ESC MENU", UX_COL_MUTED, 1);
+                   "ESC", UX_COL_MUTED, 1);
 }
 
 static void ux_draw_persistence_notice(const char *message)
@@ -863,10 +868,12 @@ static void ux_draw_replay_command_bar(void)
                   CF_UI_COMMAND_W, CF_UI_COMMAND_H, UX_COL_BG);
     vga_fill_rect(CF_UI_COMMAND_X, CF_UI_COMMAND_Y,
                   CF_UI_COMMAND_W, 1, UX_COL_GOLD);
-    ux_draw_centered(CF_UI_COMMAND_X, CF_UI_PROMPT_TEXT_Y,
-                     CF_UI_COMMAND_W,
-                     "LEFT/RIGHT STEP   R/ENTER/ESC CLOSE",
-                     UX_COL_TEXT);
+    font_draw_text(12, CF_UI_PROMPT_TEXT_Y,
+                   "< PREV", UX_COL_TEXT, 1);
+    font_draw_text(122, CF_UI_PROMPT_TEXT_Y,
+                   "NEXT >", UX_COL_TEXT, 1);
+    font_draw_text(216, CF_UI_PROMPT_TEXT_Y,
+                   "R/ENTER/ESC CLOSE", UX_COL_MUTED, 1);
 }
 
 static int ux_render_replay_frame(int index)
@@ -910,6 +917,10 @@ void ux_show_replay_modal(void)
     int index;
 #ifndef CF_HOST_BUILD
     CfInputKey5 key;
+    CfMouseState mouse;
+    unsigned replay_mouse_buttons;
+    unsigned pressed;
+    int close_viewer;
 #endif
 
     if (g_replay_timeline == 0 || g_replay_timeline->count <= 0 ||
@@ -927,7 +938,9 @@ void ux_show_replay_modal(void)
     }
 
 #ifndef CF_HOST_BUILD
-    for (;;) {
+    replay_mouse_buttons = g_ux_mouse_buttons;
+    close_viewer = 0;
+    while (!close_viewer) {
         key = input5_poll_key();
         if (key == CF5_KEY_LEFT) {
             if (index > 0) --index;
@@ -939,9 +952,30 @@ void ux_show_replay_modal(void)
             (void)ux_render_replay_frame(index);
         } else if (key == CF5_KEY_ESCAPE || key == CF5_KEY_ENTER ||
                    key == CF5_KEY_REPLAY) {
-            break;
+            close_viewer = 1;
+        }
+
+        if (!close_viewer && mouse_poll(&mouse) && mouse.present) {
+            pressed = mouse.buttons & ~replay_mouse_buttons;
+            replay_mouse_buttons = mouse.buttons;
+            if ((pressed & 1U) != 0U &&
+                mouse.y >= CF_UI_COMMAND_Y &&
+                mouse.y < CF_UI_COMMAND_Y + CF_UI_COMMAND_H) {
+                if (mouse.x < 106) {
+                    if (index > 0) --index;
+                    g_replay_viewer_index = index;
+                    (void)ux_render_replay_frame(index);
+                } else if (mouse.x < 212) {
+                    if (index + 1 < g_replay_timeline->count) ++index;
+                    g_replay_viewer_index = index;
+                    (void)ux_render_replay_frame(index);
+                } else {
+                    close_viewer = 1;
+                }
+            }
         }
     }
+    g_ux_mouse_buttons = replay_mouse_buttons;
 #endif
 
     g_replay_viewer_active = 0;

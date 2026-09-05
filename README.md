@@ -74,6 +74,7 @@ H / ?            Help
 Tab / M          Action log
 C                Credits
 R                Replay viewer; Left/Right step, R/Enter/Esc close
+Mouse in Replay  Previous / Next / Close footer controls
 Esc              Quit; cancel pending Fart/promotion choice
 ```
 

@@ -30,7 +30,8 @@ static void test_layout_contract(void)
     int turn_width = 13 * 6 - 1;
     int state_width = 11 * 6 - 1;
     int short_prompt_width = 6 * 6 - 1;
-    int esc_width = 8 * 6 - 1;
+    int replay_prompt_width = 6 * 6 - 1;
+    int esc_width = 3 * 6 - 1;
     int fart_badge_text_width = 9 * 6 - 1;
     int fart_arrows_width = 23 * 6 - 1;
     int fart_enter_width = 13 * 6 - 1;
@@ -57,7 +58,8 @@ static void test_layout_contract(void)
     CHECK(CF_UI_PROMPT_FART_X + short_prompt_width < CF_UI_PROMPT_SAVE_X);
     CHECK(CF_UI_PROMPT_SAVE_X + short_prompt_width < CF_UI_PROMPT_LOAD_X);
     CHECK(CF_UI_PROMPT_LOAD_X + short_prompt_width < CF_UI_PROMPT_HELP_X);
-    CHECK(CF_UI_PROMPT_HELP_X + short_prompt_width < CF_UI_PROMPT_ESC_X);
+    CHECK(CF_UI_PROMPT_HELP_X + short_prompt_width < CF_UI_PROMPT_REPLAY_X);
+    CHECK(CF_UI_PROMPT_REPLAY_X + replay_prompt_width < CF_UI_PROMPT_ESC_X);
     CHECK(CF_UI_PROMPT_ESC_X + esc_width < CF_UI_SCREEN_W);
     CHECK(CF_UI_PROMPT_TEXT_Y + 7 <= CF_UI_SCREEN_H);
     CHECK(CF_UI_FART_BADGE_X >= 0);

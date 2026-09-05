@@ -50,6 +50,16 @@ async function clickSquare(page, file, rank, button='left') {
   await sleep(80);
 }
 
+async function clickCanvasPixel(page, vx, vy, button='left') {
+  const canvas = await page.$('#canvas');
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.mouse.click(box.x + vx / 320 * box.width,
+                         box.y + vy / 200 * box.height,
+                         {button, delay:80});
+  await sleep(140);
+}
+
 async function rewriteSaveAsLegacyV1(page) {
   await page.evaluate(() => {
     const savePath = '/persist/CHESSFRT.SAV';
@@ -257,6 +267,22 @@ async function verifyLocalEdgeHardening(browser) {
   if (await call(page,'cf_review_promotion_choice') !== 5)
     throw new Error('White ordinary promotion did not default to queen');
   await canvasShot(page,'local-white-promotion-pending');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1,
+    {timeout:3000}
+  );
+  if (await call(page,'cf_review_replay_count') !== 1 ||
+      await call(page,'cf_review_replay_viewer_index') !== 0)
+    throw new Error('pending ordinary promotion replay baseline mismatch');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:3000}
+  );
+  if (await call(page,'cf_review_promotion_pending') !== 1 ||
+      await call(page,'cf_review_promotion_choice') !== 5)
+    throw new Error('replay did not restore pending ordinary promotion');
   await clickSquare(page,4,3,'left');
   await clickSquare(page,5,4,'right');
   await sleep(180);
@@ -290,7 +316,25 @@ async function verifyLocalEdgeHardening(browser) {
   if (p.type !== 4 || p.color !== 1)
     throw new Error('White promotion did not produce rook on B8');
   await requireNewest(page,'WHITE B7-B8=R');
-  summary.push('LOCAL_WHITE_PROMOTION=PASS mouse-locked cancel+reenter B7-B8=R');
+  if (await call(page,'cf_review_replay_count') !== 2 ||
+      await call(page,'cf_review_replay_status',1) !== 1)
+    throw new Error('ordinary promotion replay frame did not preserve CHECK');
+  p = decodePiece(await call(page,'cf_review_replay_piece',1,1,7));
+  if (p.type !== 4 || p.color !== 1)
+    throw new Error('ordinary promotion replay frame lost promoted rook');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1 &&
+       Module._cf_review_replay_viewer_index()===1,
+    {timeout:3000}
+  );
+  await canvasShot(page,'replay-white-promotion');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:3000}
+  );
+  summary.push('LOCAL_WHITE_PROMOTION=PASS mouse-locked replay-pending+committed B7-B8=R');
 
   /* Ordinary Black promotion through the same local input path. */
   await loadLocalFixture(page,2,2,1);
@@ -322,6 +366,22 @@ async function verifyLocalEdgeHardening(browser) {
   if (await call(page,'cf_review_fart_promotion_choice') !== 5)
     throw new Error('White Fart-push promotion did not default to queen');
   await canvasShot(page,'local-white-fart-promotion-pending');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1,
+    {timeout:3000}
+  );
+  if (await call(page,'cf_review_replay_count') !== 1 ||
+      await call(page,'cf_review_replay_viewer_index') !== 0)
+    throw new Error('pending Fart-promotion replay baseline mismatch');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:3000}
+  );
+  if (await call(page,'cf_review_fart_promotion_pending') !== 1 ||
+      await call(page,'cf_review_fart_promotion_choice') !== 5)
+    throw new Error('replay did not restore pending Fart promotion');
   await clickSquare(page,0,0,'left');
   await clickSquare(page,7,7,'right');
   await sleep(180);
@@ -341,7 +401,27 @@ async function verifyLocalEdgeHardening(browser) {
   if (actor.type !== 2 || actor.color !== 1 || actor.gas !== 1)
     throw new Error('White Fart-promotion actor gas incorrect');
   await requireNewest(page,'WHITE FART D6 N =R');
-  summary.push('LOCAL_WHITE_FART_PROMOTION=PASS mouse-locked D7-D8=R');
+  if (await call(page,'cf_review_replay_count') !== 2 ||
+      await call(page,'cf_review_replay_status',1) !== 1)
+    throw new Error('Fart promotion replay frame did not preserve CHECK');
+  p = decodePiece(await call(page,'cf_review_replay_piece',1,3,7));
+  actor = decodePiece(await call(page,'cf_review_replay_piece',1,3,5));
+  if (p.type !== 4 || p.color !== 1 || p.gas !== 2 ||
+      actor.type !== 2 || actor.color !== 1 || actor.gas !== 1)
+    throw new Error('Fart promotion replay frame piece/Gas mismatch');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1 &&
+       Module._cf_review_replay_viewer_index()===1,
+    {timeout:3000}
+  );
+  await canvasShot(page,'replay-white-fart-promotion');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:3000}
+  );
+  summary.push('LOCAL_WHITE_FART_PROMOTION=PASS mouse-locked replay-pending+committed D7-D8=R');
 
   /* Black Fart-push promotion D2 -> D1. */
   await loadLocalFixture(page,4,2,1);
@@ -376,6 +456,24 @@ async function verifyLocalEdgeHardening(browser) {
   await requireNewest(page,'WHITE G6-G7');
   const whiteMateHistory = await call(page,'cf_review_history_count');
   await canvasShot(page,'local-white-checkmate');
+  if (await call(page,'cf_review_replay_count') !== 2 ||
+      await call(page,'cf_review_replay_status',1) !== 2)
+    throw new Error('checkmate replay frame status mismatch');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1 &&
+       Module._cf_review_replay_viewer_index()===1,
+    {timeout:3000}
+  );
+  await canvasShot(page,'replay-white-checkmate');
+  await page.keyboard.press('r');
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:3000}
+  );
+  if (await call(page,'cf_review_status') !== 2 ||
+      await call(page,'cf_review_history_count') !== whiteMateHistory)
+    throw new Error('postgame replay did not restore terminal game');
   await clickSquare(page,7,7);
   await page.keyboard.press('f');
   await page.keyboard.press('Enter');
@@ -751,6 +849,24 @@ async function verifyReplayViewer(browser) {
   if (p.type !== 1 || p.color !== 1 || p.gas !== 1)
     throw new Error('replay viewer step did not land on White e4 frame');
 
+  /* Replay owns input while open. Gameplay keys and board clicks must be
+   * consumed without touching the live game, history, or replay position. */
+  for (const key of ['f','s','l','h']) {
+    await page.keyboard.press(key);
+    await sleep(70);
+  }
+  await clickCanvasPixel(page,63,72);
+  await clickCanvasPixel(page,153,126,'right');
+  if (await call(page,'cf_review_replay_viewer_active') !== 1 ||
+      await call(page,'cf_review_replay_viewer_index') !== 1)
+    throw new Error('gameplay input escaped the replay viewer');
+  const locked = await persistedState(page);
+  if (!samePersistedState(before,locked) ||
+      await call(page,'cf_review_replay_count') !== count ||
+      await call(page,'cf_review_replay_total') !== total)
+    throw new Error('replay viewer gameplay lock mutated live state');
+
+  /* Keyboard bounds remain clamped. */
   await page.keyboard.press('ArrowLeft');
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===0,
@@ -761,20 +877,28 @@ async function verifyReplayViewer(browser) {
   if (await call(page,'cf_review_replay_viewer_index') !== 0)
     throw new Error('replay viewer stepped before oldest available frame');
 
-  await page.keyboard.press('ArrowRight');
+  /* Footer mouse zones own Previous and Next. */
+  await clickCanvasPixel(page,50,190);
+  if (await call(page,'cf_review_replay_viewer_index') !== 0)
+    throw new Error('replay mouse previous stepped before oldest frame');
+  await clickCanvasPixel(page,150,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===1,
     {timeout:3000}
   );
-  await page.keyboard.press('ArrowRight');
+  await clickCanvasPixel(page,150,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_index()===2,
     {timeout:3000}
   );
-  await page.keyboard.press('ArrowRight');
-  await sleep(80);
+  await clickCanvasPixel(page,150,190);
   if (await call(page,'cf_review_replay_viewer_index') !== 2)
-    throw new Error('replay viewer stepped past newest frame');
+    throw new Error('replay mouse next stepped past newest frame');
+  await clickCanvasPixel(page,50,190);
+  await page.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_index()===1,
+    {timeout:3000}
+  );
 
   const during = await persistedState(page);
   if (!samePersistedState(before,during))
@@ -783,7 +907,8 @@ async function verifyReplayViewer(browser) {
       await call(page,'cf_review_replay_total') !== total)
     throw new Error('replay viewer created or removed replay frames');
 
-  await page.keyboard.press('Enter');
+  /* Close through the footer mouse region and require exact live restore. */
+  await clickCanvasPixel(page,270,190);
   await page.waitForFunction(
     ()=>Module._cf_review_replay_viewer_active()===0,
     {timeout:5000}
@@ -797,7 +922,7 @@ async function verifyReplayViewer(browser) {
 
   if (errors.length) throw new Error(`replay-viewer: ${errors.join(' | ')}`);
   await page.close();
-  return 'REPLAY_VIEWER=PASS open=latest step=bounded live=unchanged close=restored';
+  return 'REPLAY_VIEWER=PASS open=latest step=bounded mouse=prev-next-close live-input=locked close=restored';
 }
 
 function samePersistedState(a, b) {

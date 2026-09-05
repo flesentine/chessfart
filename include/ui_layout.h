@@ -67,10 +67,11 @@
 #define CF_UI_PROMPT_TEXT_Y 187
 #define CF_UI_PROMPT_TURN_X 8
 #define CF_UI_PROMPT_FART_X 96
-#define CF_UI_PROMPT_SAVE_X 137
-#define CF_UI_PROMPT_LOAD_X 178
-#define CF_UI_PROMPT_HELP_X 219
-#define CF_UI_PROMPT_ESC_X 260
+#define CF_UI_PROMPT_SAVE_X 134
+#define CF_UI_PROMPT_LOAD_X 172
+#define CF_UI_PROMPT_HELP_X 210
+#define CF_UI_PROMPT_REPLAY_X 248
+#define CF_UI_PROMPT_ESC_X 289
 
 /* Build 13.6 Fart-mode presentation positions. */
 #define CF_UI_FART_HEADER_TAGLINE_X 112
