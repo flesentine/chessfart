@@ -14,8 +14,8 @@ typedef enum CfPracticeUndoType {
 typedef struct CfPracticeUndoEntry {
     CfPracticeUndoType type;
     int history_count_before;
-    int history_dropped_oldest;
-    CfGasPositionKey dropped_history_key;
+    int history_was_full;
+    CfGasPositionKey history_key_before;
     union {
         CfGasMove move;
         CfFartAction fart;
