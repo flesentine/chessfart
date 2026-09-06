@@ -118,7 +118,7 @@ Build 15 takes the master plan's replay-file idea in staged, DOS-safe slices:
 Build 15 closes with 118-byte snapshots, a 30,232-byte 256-frame live timeline, a 60,464-byte live+transient-import peak, separate version-1 `CHESSFRT.RPL` files, and unchanged game-save v2 semantics. See `docs/BUILD_15.md`.
 
 ## Build 16 — Practice / undo
-**Status: 16.0–16.2 complete; 16.3 in progress**
+**Status: complete — 16.3 closeout**
 
 Build 16 closes the remaining master-plan required item: Undo in practice/debug mode.
 
