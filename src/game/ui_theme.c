@@ -1,4 +1,5 @@
 #include "ui_theme.h"
+#include "vga.h"
 
 static CfUiTheme g_ui_theme = CF_UI_THEME_ROYAL_BASEMENT;
 
