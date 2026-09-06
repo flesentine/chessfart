@@ -337,6 +337,17 @@ CfInputKey5 ux_poll_key(void)
     if (mouse_poll(&mouse) && mouse.present) {
         pressed = mouse.buttons & ~g_ux_mouse_buttons;
         g_ux_mouse_buttons = mouse.buttons;
+        if ((pressed & 1U) != 0U && g_practice_mode &&
+            g_ux_cache.valid && !g_ux_cache.promotion_pending &&
+            !g_ux_cache.fart_mode &&
+            !g_ux_cache.fart_promotion_pending &&
+            mouse.y >= CF_UI_COMMAND_Y &&
+            mouse.y < CF_UI_COMMAND_Y + CF_UI_COMMAND_H &&
+            mouse.x >= CF_UI_PRACTICE_UNDO_HIT_X &&
+            mouse.x < CF_UI_PRACTICE_UNDO_HIT_X +
+                      CF_UI_PRACTICE_UNDO_HIT_W) {
+            return CF5_KEY_UNDO;
+        }
         if ((pressed & 2U) != 0U &&
             ux_board_hit_test(mouse.x, mouse.y, &file, &rank) &&
             g_ux_cache.valid && !g_ux_cache.fart_mode &&
