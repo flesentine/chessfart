@@ -194,11 +194,13 @@ int ux_human_make_move_ex(CfBoard *board, CfGasState *gas,
     char line[CF_UX_HISTORY_LINE];
     if (!audio_game_make_move_ex(board, gas, ff, fr, tf, tr,
                                  promotion, &local)) return 0;
+    if (g_practice_mode) {
+        practice_undo_record_move(&g_practice_undo, &local, &g_history);
+        (void)ux_practice_presentation_record_before_action();
+    }
     ux_log_move(ux_match_actor_name(g_match_mode,
                                     local.chess_move.moved.color),
                 &local, line);
-    if (g_practice_mode)
-        practice_undo_record_move(&g_practice_undo, &local, &g_history);
     ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
