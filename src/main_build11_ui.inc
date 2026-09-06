@@ -274,6 +274,10 @@ static void ux_draw_title(int menu, int frame)
                        i == menu ? UX_COL_GAS : UX_COL_TEXT, 1);
     }
 
+    vga_fill_rect(0, CF_UI_TITLE_FOOTER_Y - 1,
+                  CF_UI_SCREEN_W,
+                  CF_UI_SCREEN_H - (CF_UI_TITLE_FOOTER_Y - 1),
+                  UX_COL_BG);
     ux_draw_centered(0, CF_UI_TITLE_FOOTER_Y, CF_UI_SCREEN_W,
                      "UP/DOWN SELECT   ENTER CONFIRM", UX_COL_TEXT);
     ux_draw_centered(0, CF_UI_TITLE_FOOTER2_Y, CF_UI_SCREEN_W,
