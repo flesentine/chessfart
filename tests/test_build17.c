@@ -30,6 +30,12 @@ static void test_theme_identity(void)
                  "ROYAL BASEMENT") == 0);
     CHECK(strcmp(ui_theme_name(CF_UI_THEME_CRIMSON_CELLAR),
                  "CRIMSON CELLAR") == 0);
+    CHECK(ui_theme_next(CF_UI_THEME_ROYAL_BASEMENT) ==
+          CF_UI_THEME_CRIMSON_CELLAR);
+    CHECK(ui_theme_next(CF_UI_THEME_CRIMSON_CELLAR) ==
+          CF_UI_THEME_ROYAL_BASEMENT);
+    CHECK(ui_theme_next((CfUiTheme)99) ==
+          CF_UI_THEME_ROYAL_BASEMENT);
 }
 
 static void test_palette_switch(void)

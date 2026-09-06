@@ -66,3 +66,7 @@ export/import, 600-frame ring-file coverage, terminal replay integrity, real-inp
 repetition-history and replay rings before exact 32-action rollback.
 Physical DOS hardware and specific third-party drivers remain explicitly
 unverified where listed in KNOWNISS.TXT.
+
+THEMES
+Press T on the title screen to switch Royal Basement / Crimson Cellar.
+Theme choice is session-only and does not change save/replay formats.
