@@ -662,6 +662,84 @@ async function verifyPracticeUndo(browser) {
       await call(page,'cf_review_fullmove') !== 1)
     throw new Error('Practice repeated undo did not restore opening history/replay');
 
+  /* Castle through a real Practice opening, then undo only O-O.
+   * Exact state comparison covers king/rook squares, castling rights,
+   * clocks, repetition history, action log and replay. */
+  await clickSquare(page,4,1); await clickSquare(page,4,3);
+  await clickSquare(page,4,6); await clickSquare(page,4,4);
+  await clickSquare(page,6,0); await clickSquare(page,5,2);
+  await clickSquare(page,1,7); await clickSquare(page,2,5);
+  await clickSquare(page,5,0); await clickSquare(page,4,1);
+  await clickSquare(page,6,7); await clickSquare(page,5,5);
+  const beforeCastle = await persistedState(page);
+  const castleHistory = await call(page,'cf_review_history_count');
+  const castleReplay = await call(page,'cf_review_replay_count');
+  const castleReplayTotal = await call(page,'cf_review_replay_total');
+  const castleLast = await newestHistoryLine(page);
+  await clickSquare(page,4,0); await clickSquare(page,6,0);
+  await waitForMatchState(page,2,4);
+  let king = decodePiece(await call(page,'cf_review_piece',6,0));
+  let rook = decodePiece(await call(page,'cf_review_piece',5,0));
+  if (king.type !== 6 || king.color !== 1 ||
+      rook.type !== 4 || rook.color !== 1)
+    throw new Error('Practice castling did not place king/rook correctly');
+  await page.keyboard.press('u');
+  await sleep(160);
+  if (!samePersistedState(beforeCastle,await persistedState(page)) ||
+      await call(page,'cf_review_history_count') !== castleHistory ||
+      await newestHistoryLine(page) !== castleLast ||
+      await call(page,'cf_review_replay_count') !== castleReplay ||
+      await call(page,'cf_review_replay_total') !== castleReplayTotal ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Practice castling undo was not exact');
+  king = decodePiece(await call(page,'cf_review_piece',4,0));
+  rook = decodePiece(await call(page,'cf_review_piece',7,0));
+  if (king.type !== 6 || king.color !== 1 ||
+      rook.type !== 4 || rook.color !== 1)
+    throw new Error('Practice castling undo did not restore E1/H1');
+  for (let i = 0; i < 6; ++i) {
+    await page.keyboard.press('u');
+    await sleep(70);
+  }
+  if (!samePersistedState(opening,await persistedState(page)) ||
+      await call(page,'cf_review_practice_undo_count') !== 0 ||
+      await call(page,'cf_review_replay_count') !== 1)
+    throw new Error('Practice castling setup did not unwind to opening');
+
+  /* En passant through the production Practice path, then exact undo. */
+  await clickSquare(page,4,1); await clickSquare(page,4,3);
+  await clickSquare(page,0,6); await clickSquare(page,0,5);
+  await clickSquare(page,4,3); await clickSquare(page,4,4);
+  await clickSquare(page,3,6); await clickSquare(page,3,4);
+  const beforeEp = await persistedState(page);
+  const epHistory = await call(page,'cf_review_history_count');
+  const epReplay = await call(page,'cf_review_replay_count');
+  const epReplayTotal = await call(page,'cf_review_replay_total');
+  const epLast = await newestHistoryLine(page);
+  await clickSquare(page,4,4); await clickSquare(page,3,5);
+  await waitForMatchState(page,2,3);
+  p = decodePiece(await call(page,'cf_review_piece',3,5));
+  const d5 = decodePiece(await call(page,'cf_review_piece',3,4));
+  if (p.type !== 1 || p.color !== 1 || d5.type !== 0)
+    throw new Error('Practice en passant did not produce E5xD6 EP');
+  await page.keyboard.press('u');
+  await sleep(160);
+  if (!samePersistedState(beforeEp,await persistedState(page)) ||
+      await call(page,'cf_review_history_count') !== epHistory ||
+      await newestHistoryLine(page) !== epLast ||
+      await call(page,'cf_review_replay_count') !== epReplay ||
+      await call(page,'cf_review_replay_total') !== epReplayTotal ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Practice en passant undo was not exact');
+  for (let i = 0; i < 4; ++i) {
+    await page.keyboard.press('u');
+    await sleep(70);
+  }
+  if (!samePersistedState(opening,await persistedState(page)) ||
+      await call(page,'cf_review_practice_undo_count') !== 0 ||
+      await call(page,'cf_review_replay_count') !== 1)
+    throw new Error('Practice en passant setup did not unwind to opening');
+
   /* Fool's Mate through the real local Practice path: f3 e5 g4 Qh4#. */
   await clickSquare(page,5,1); await clickSquare(page,5,2);
   await clickSquare(page,4,6); await clickSquare(page,4,4);
@@ -700,7 +778,7 @@ async function verifyPracticeUndo(browser) {
 
   if (errors.length) throw new Error(`practice-undo: ${errors.join(' | ')}`);
   await page.close();
-  return 'PRACTICE_UNDO=PASS title=practice mouse=undo local=no-cpu save-load=disabled move=exact fart=exact history=exact replay=exact repeated=opening terminal=live';
+  return 'PRACTICE_UNDO=PASS title=practice mouse=undo local=no-cpu save-load=disabled move=exact fart=exact castle=exact ep=exact history=exact replay=exact repeated=opening terminal=live';
 }
 
 async function enablePracticeFromLocalFixture(page, fixture, side, fullmove=1) {
@@ -773,9 +851,8 @@ async function verifyPracticeEdgeUndo(browser) {
   await canvasShot(page,'practice-edge-01-promotion-undo');
 
   /* Fart-push promotion D7-D8=R, then exact Practice undo. */
-  await page.evaluate(()=>{ Module._cf_review_practice_mode && 0; });
   /* Temporarily disable Practice so production Load can install fixture 3. */
-  await page.evaluate(()=>{ Module._cf_review_set_practice_mode_for_fixture?.(0); });
+  await page.evaluate(()=>Module._cf_review_set_practice_mode_for_fixture(0));
   await enablePracticeFromLocalFixture(page,3,1,1);
   before = await persistedState(page);
   await clickSquare(page,3,5,'right');
