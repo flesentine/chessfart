@@ -35,6 +35,7 @@ void input5_init(void)
             case 'c': case 'C': code = 17; break;
             case 'r': case 'R': code = 18; break;
             case 'u': case 'U': code = 19; break;
+            case 't': case 'T': code = 20; break;
             default: break;
             }
             if (code) {
