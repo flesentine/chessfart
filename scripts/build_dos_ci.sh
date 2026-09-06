@@ -10,7 +10,7 @@ rm -f ./*.o ./*.obj build/dos/CHESSFRT.EXE build/dos/DOSSMOKE.EXE build/dos/DOSS
 
 wcl -zq -bt=dos -ml -3 -ox -w4 -Iinclude -fe=build/dos/CHESSFRT.EXE \
   src/main_build11.c \
-  src/game/board.c src/game/gas.c \
+  src/game/board.c src/game/gas.c src/game/practice_undo.c \
   src/game/cpu_config.c src/game/cpu_actions.c src/game/cpu_eval.c \
   src/game/cpu_search.c src/game/cpu_format.c src/game/ux.c src/game/replay.c \
   src/game/replay_file.c src/game/font.c src/game/board_view_build5.c src/game/board_view_build6.c \
