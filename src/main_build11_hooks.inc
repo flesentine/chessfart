@@ -6,9 +6,14 @@ static void ux_practice_presentation_init(void)
 
 static int ux_practice_presentation_record_before_action(void)
 {
+    CfPracticePresentationUndoEntry captured;
     CfPracticePresentationUndoEntry *entry;
     int index;
     if (!g_practice_mode || g_replay_timeline == 0) return 0;
+    if (!ux_history_capture_add_delta(&g_ux_history, &captured.history) ||
+        !replay_timeline_capture_record_delta(g_replay_timeline,
+                                              &captured.replay))
+        return 0;
 
     if (g_practice_presentation_undo.count <
         CF_PRACTICE_UNDO_CAPACITY) {
@@ -24,15 +29,7 @@ static int ux_practice_presentation_record_before_action(void)
     }
 
     entry = &g_practice_presentation_undo.entries[index];
-    if (!ux_history_capture_add_delta(&g_ux_history, &entry->history) ||
-        !replay_timeline_capture_record_delta(g_replay_timeline,
-                                              &entry->replay)) {
-        if (g_practice_presentation_undo.count <
-            CF_PRACTICE_UNDO_CAPACITY) {
-            --g_practice_presentation_undo.count;
-        }
-        return 0;
-    }
+    *entry = captured;
     return 1;
 }
 
