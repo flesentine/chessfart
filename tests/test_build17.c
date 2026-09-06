@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "ui_theme.h"
+#include "vga.h"
 
 static int failures;
 #define CHECK(expr) do { if (!(expr)) { \
