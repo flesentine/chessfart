@@ -22,7 +22,8 @@ typedef enum CfPersistenceResult {
     CF_PERSIST_IO_ERROR,
     CF_PERSIST_BAD_MAGIC,
     CF_PERSIST_BAD_VERSION,
-    CF_PERSIST_BAD_DATA
+    CF_PERSIST_BAD_DATA,
+    CF_PERSIST_DISABLED
 } CfPersistenceResult;
 
 CfPersistenceResult persistence_save_game(const char *path,
