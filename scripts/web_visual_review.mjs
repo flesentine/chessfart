@@ -356,9 +356,13 @@ try {
   const themeReplayTotal = await call(page, 'cf_review_replay_total');
   if (await call(page, 'cf_review_ui_theme') !== 0)
     throw new Error('Royal Basement was not the default UI theme');
+  await call(page, 'cf_review_seed_cpu_message_pending');
+  if (await call(page, 'cf_review_cpu_message_pending') !== 1)
+    throw new Error('theme redraw pending-message probe did not seed');
   if (await call(page, 'cf_review_set_ui_theme', 1) !== 1 ||
-      await call(page, 'cf_review_ui_theme') !== 1)
-    throw new Error('Crimson Cellar review theme switch failed');
+      await call(page, 'cf_review_ui_theme') !== 1 ||
+      await call(page, 'cf_review_cpu_message_pending') !== 1)
+    throw new Error('Crimson Cellar review theme switch changed pending message');
   const crimsonSig =
     await nativeShot(page, '33-theme-crimson-cellar-checkmate',
                      'theme-fixture', states);
@@ -373,8 +377,9 @@ try {
     throw new Error('theme switch changed gameplay/session state');
 
   if (await call(page, 'cf_review_set_ui_theme', 0) !== 1 ||
-      await call(page, 'cf_review_ui_theme') !== 0)
-    throw new Error('Royal Basement theme restore failed');
+      await call(page, 'cf_review_ui_theme') !== 0 ||
+      await call(page, 'cf_review_cpu_message_pending') !== 1)
+    throw new Error('Royal Basement theme restore changed pending message');
   const royalRestoredSig =
     await nativeShot(page, '34-theme-royal-restored-checkmate',
                      'theme-fixture', states);
