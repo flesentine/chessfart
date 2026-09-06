@@ -83,6 +83,16 @@ EMSCRIPTEN_KEEPALIVE int cf_review_match_mode(void)
     return (int)g_match_mode;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_practice_mode(void)
+{
+    return g_practice_mode;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_practice_undo_count(void)
+{
+    return g_practice_undo.count;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_replay_count(void)
 {
     return g_replay_timeline == 0 ? 0 : g_replay_timeline->count;
