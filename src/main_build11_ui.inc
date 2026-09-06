@@ -80,10 +80,19 @@ static void ux_draw_help_page(int page)
         font_draw_heading(x + 15, y + 34, "CONTROLS", UX_COL_GOLD, 1);
         font_draw_text(x + 15, y + 46, "ARROWS MOVE CURSOR", UX_COL_GAS, 1);
         font_draw_text(x + 15, y + 56, "ENTER/SPACE SELECT / CONFIRM", UX_COL_TEXT, 1);
-        font_draw_text(x + 15, y + 66,
-                       "F FART  S SAVE  L LOAD  R REPLAY", UX_COL_TEXT, 1);
-        font_draw_text(x + 15, y + 76,
-                       "H/? HELP   TAB/M LOG   C CREDITS", UX_COL_TEXT, 1);
+        if (g_practice_mode) {
+            font_draw_text(x + 15, y + 66,
+                           "F FART  U UNDO  R REPLAY", UX_COL_TEXT, 1);
+            font_draw_text(x + 15, y + 76,
+                           "PRACTICE: SAVE/LOAD OFF", UX_COL_GAS, 1);
+        } else {
+            font_draw_text(x + 15, y + 66,
+                           "F FART  S SAVE  L LOAD  R REPLAY",
+                           UX_COL_TEXT, 1);
+            font_draw_text(x + 15, y + 76,
+                           "H/? HELP   TAB/M LOG   C CREDITS",
+                           UX_COL_TEXT, 1);
+        }
 
         font_draw_heading(x + 15, y + 90, "GAS + FARTS", UX_COL_GOLD, 1);
         font_draw_text(x + 15, y + 102, "MOVE +1 GAS   CAPTURE +2 GAS", UX_COL_GAS, 1);
@@ -106,6 +115,15 @@ static void ux_draw_help_page(int page)
                            UX_COL_GAS, 1);
             font_draw_text(x + 15, y + 120,
                            "D ON TITLE: EASY / MED / HARD",
+                           UX_COL_TEXT, 1);
+        } else if (g_practice_mode) {
+            font_draw_heading(x + 15, y + 98,
+                              "PRACTICE", UX_COL_GOLD, 1);
+            font_draw_text(x + 15, y + 110,
+                           "WHITE + BLACK TAKE TURNS LOCALLY",
+                           UX_COL_GAS, 1);
+            font_draw_text(x + 15, y + 120,
+                           "U UNDO   SAVE/LOAD DISABLED",
                            UX_COL_TEXT, 1);
         } else {
             font_draw_heading(x + 15, y + 98,
@@ -199,13 +217,15 @@ static void ux_draw_terminal_overlay(CfGameStatus status,
                      status == CF_GAME_CHECKMATE ? UX_COL_GAS : UX_COL_GOLD);
     ux_draw_centered(x, y + 43, w, detail, UX_COL_TEXT);
     ux_draw_modal_footer(x, y, w, h,
+                         g_practice_mode ?
+                         "U UNDO  H HELP  R REPLAY  ESC" :
                          "H HELP   M LOG   R REPLAY   ESC QUIT");
 }
 
 static void ux_draw_title(int menu, int frame)
 {
     static const char *items[CF_UI_TITLE_MENU_ITEM_COUNT] = {
-        "PLAY CPU", "2 PLAYERS", "ATTRACT DEMO",
+        "PLAY CPU", "2 PLAYERS", "PRACTICE", "ATTRACT DEMO",
         "HELP / RULES", "CREDITS", "QUIT TO DOS"
     };
     char line[32];
@@ -328,14 +348,21 @@ static void ux_draw_action_two_lines(int x, int y, int second_y,
 
 static void ux_draw_match_row(int y)
 {
-    const char *label = ux_match_panel_label(g_match_mode);
-    const char *value = ux_match_mode_uses_cpu(g_match_mode) ?
-                        cpu_difficulty_name(g_cpu_config.difficulty) :
-                        ux_match_mode_name(g_match_mode);
+    const char *label;
+    const char *value;
+    if (g_practice_mode) {
+        label = "MODE";
+        value = "PRACTICE";
+    } else {
+        label = ux_match_panel_label(g_match_mode);
+        value = ux_match_mode_uses_cpu(g_match_mode) ?
+                cpu_difficulty_name(g_cpu_config.difficulty) :
+                ux_match_mode_name(g_match_mode);
+    }
     font_draw_text(CF_UI_HUD_LABEL_X, y, label, UX_COL_SELECTED, 1);
     font_draw_text(CF_UI_HUD_VALUE_X, y, value,
-                   ux_match_mode_uses_cpu(g_match_mode) ?
-                   UX_COL_GOLD : UX_COL_GAS, 1);
+                   ux_match_mode_uses_cpu(g_match_mode) &&
+                   !g_practice_mode ? UX_COL_GOLD : UX_COL_GAS, 1);
 }
 
 static void ux_fart_delta(CfFartDirection direction, int *df, int *dr)
@@ -685,6 +712,19 @@ static void ux_draw_command_bar(const CfBoard *board,
     sprintf(line, "%s TO MOVE", board_piece_color_name(board->side_to_move));
     font_draw_text(CF_UI_PROMPT_TURN_X, CF_UI_PROMPT_TEXT_Y,
                    line, UX_COL_GOLD, 1);
+    if (g_practice_mode) {
+        font_draw_text(96, CF_UI_PROMPT_TEXT_Y,
+                       "U UNDO", UX_COL_SELECTED, 1);
+        font_draw_text(140, CF_UI_PROMPT_TEXT_Y,
+                       "F FART", UX_COL_GAS, 1);
+        font_draw_text(184, CF_UI_PROMPT_TEXT_Y,
+                       "H HELP", UX_COL_TEXT, 1);
+        font_draw_text(228, CF_UI_PROMPT_TEXT_Y,
+                       "R RPLY", UX_COL_TEXT, 1);
+        font_draw_text(CF_UI_PROMPT_ESC_X, CF_UI_PROMPT_TEXT_Y,
+                       "ESC", UX_COL_MUTED, 1);
+        return;
+    }
     font_draw_text(CF_UI_PROMPT_FART_X, CF_UI_PROMPT_TEXT_Y,
                    "F FART", UX_COL_GAS, 1);
     font_draw_text(CF_UI_PROMPT_SAVE_X, CF_UI_PROMPT_TEXT_Y,
@@ -1237,9 +1277,14 @@ int ux_title_screen(const char *config_path)
         } else if (key == CF5_KEY_ENTER) {
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
             if (menu == CF_UI_TITLE_ITEM_PLAY_CPU ||
-                menu == CF_UI_TITLE_ITEM_PLAY_LOCAL) {
-                g_match_mode = menu == CF_UI_TITLE_ITEM_PLAY_LOCAL ?
-                               CF_MATCH_LOCAL : CF_MATCH_CPU;
+                menu == CF_UI_TITLE_ITEM_PLAY_LOCAL ||
+                menu == CF_UI_TITLE_ITEM_PRACTICE) {
+                g_practice_mode =
+                    menu == CF_UI_TITLE_ITEM_PRACTICE ? 1 : 0;
+                g_match_mode =
+                    menu == CF_UI_TITLE_ITEM_PLAY_CPU ?
+                    CF_MATCH_CPU : CF_MATCH_LOCAL;
+                practice_undo_init(&g_practice_undo);
                 (void)persistence_save_config(config_path, audio_get_config());
                 vga_shutdown();
                 return 1;
