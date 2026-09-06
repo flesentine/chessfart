@@ -24,7 +24,7 @@ The automated release gate covers the entire game from rules through the DOS pac
 - bounded 32-action Practice Undo with exact move/Fart/promotion/castling/en-passant, repetition-history, action-log and replay rollback
 - real-input Practice threefold-draw terminal lock and Undo-to-live regression, plus separate long-session ring-rollover stress
 - 600-frame replay-file ring round-trip and full CPU/local terminal replay certification
-- 34 native 320x200 visual-review states covering CPU/local HUDs, Fart, promotion, terminal states, and exact theme switch/restore proof
+- 36 native 320x200 visual-review states covering CPU/local HUDs, Fart, promotion, terminal states, exact theme switch/restore proof, and the real Crimson title/game path
 - 320x200 256-color VGA presentation
 - Sound Blaster / PC-speaker audio architecture
 - versioned save/load and audio config
