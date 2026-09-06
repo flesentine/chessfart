@@ -53,7 +53,7 @@ Humor should come from presentation and timing, not from making the rules incohe
 - Castling, en passant, promotion
 - Check, checkmate, stalemate and draw handling
 - Gas meters and Fart Actions
-- Undo in practice/debug mode
+- Undo in practice/debug mode — completed by Build 16
 - Move history panel
 - VGA sprite animation
 - Sound Blaster digital SFX path
