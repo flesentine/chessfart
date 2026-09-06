@@ -93,6 +93,11 @@ EMSCRIPTEN_KEEPALIVE int cf_review_practice_undo_count(void)
     return g_practice_undo.count;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_practice_presentation_undo_count(void)
+{
+    return g_practice_presentation_undo.count;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_replay_count(void)
 {
     return g_replay_timeline == 0 ? 0 : g_replay_timeline->count;
