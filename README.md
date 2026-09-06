@@ -8,7 +8,7 @@ The design goal is **real strategy first, toilet humor second**.
 
 **Chess Fart 1.0.0 — final release.**
 
-The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 completes replay/postgame review in DOS-safe slices: a bounded session timeline, read-only keyboard/mouse viewer, postgame UX, separate versioned CHESSFRT.RPL export/import, and 15.4 certification across long sessions, CPU/local terminal games, DOS memory, packaging, and browser invariants—without changing game-save v2. Build 16 begins the remaining master-plan Practice/Undo requirement with a bounded exact-rollback journal foundation.
+The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 completes replay/postgame review in DOS-safe slices: a bounded session timeline, read-only keyboard/mouse viewer, postgame UX, separate versioned CHESSFRT.RPL export/import, and 15.4 certification across long sessions, CPU/local terminal games, DOS memory, packaging, and browser invariants—without changing game-save v2. Build 16 is implementing the remaining master-plan Practice/Undo requirement with bounded exact rollback across game state, action log, and replay history.
 
 The automated release gate covers the entire game from rules through the DOS package:
 
