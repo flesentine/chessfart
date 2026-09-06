@@ -4,7 +4,7 @@ Build 16 closes the remaining required item from the original master plan: **Und
 
 The goal is not to make normal CPU or local matches casually rewindable. Undo belongs to an explicitly marked Practice session so competitive/default match semantics stay unchanged.
 
-**16.0–16.2 complete. Current slice: 16.3 hardening / closeout.**
+**Build 16 complete — 16.3 hardening / closeout certified.**
 
 ## Frozen contracts
 
@@ -114,4 +114,18 @@ The host gate must prove:
 - compile-time guards keep the presentation undo journal under 8 KiB and both Practice undo journals together under 16 KiB
 - Save v2, replay-file v1, rules, CPU behavior, and packaged version remain unchanged
 
-Final certification still requires strict host, Open Watcom 16-bit DOS, DOSBox/package, Web/WASM, full Chromium gameplay, and canonical visual review to pass on one exact head.
+### 16.3 certification evidence
+
+The closeout gate proves:
+
+- the 169-action host stress crosses the 128-position repetition-history boundary, retains only the newest 32 undo records, and restores the exact checkpoint after 32 undos
+- the 300-action Chromium stress overflows the 32-entry game/presentation undo journals, 32-line action log, 128-position repetition history, and 256-frame replay ring together
+- after 32 undos, board, Gas, repetition history, action log, and replay timeline match the 268-action checkpoint exactly
+- a 33rd undo is a transactional no-op because the older journal boundary has been deliberately discarded
+- ordinary promotion, Fart-push promotion, castling, en passant, normal moves, Farts, repeated undo, terminal undo, and mouse Undo all remain certified
+- the canonical browser visual suite remains at 32 states
+- Open Watcom still produces the real 16-bit DOS `CHESSFRT.EXE`; the certified executable is 135,154 bytes
+- the host profile still reports a 118-byte replay snapshot, 30,232-byte live replay timeline, and 60,464-byte live+transient-import peak
+- compile-time guards keep the presentation undo journal below 8 KiB and both Practice undo journals together below 16 KiB
+
+Build 16 closes with no save/config/replay-file format bump and no change to the packaged version number.
