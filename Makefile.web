@@ -8,6 +8,7 @@ WEB_SOURCES = \
 	src/main_build11.c \
 	src/game/board.c \
 	src/game/gas.c \
+	src/game/practice_undo.c \
 	src/game/cpu_config.c \
 	src/game/cpu_actions.c \
 	src/game/cpu_eval.c \
