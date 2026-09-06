@@ -14,6 +14,7 @@
 #include "practice_undo.h"
 #include "replay.h"
 #include "replay_file.h"
+#include "ui_layout.h"
 #include "ux.h"
 #include "vga.h"
 
