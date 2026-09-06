@@ -61,8 +61,8 @@ CPU regressions, a real Open Watcom 16-bit DOS build, DOSBox smoke, browser
 runtime/playtest coverage, deterministic full Chromium CPU games, a
 33-ply local two-player Chromium game with exact version-2 LOCAL save/load
 rollback, replay-viewer state invariance, transactional CHESSFRT.RPL
-export/import, 600-frame ring-file coverage, terminal replay integrity, and
-a 300-action Practice stress run that rolls over the undo, action-log,
+export/import, 600-frame ring-file coverage, terminal replay integrity, real-input Practice threefold-draw terminal/Undo coverage, and a separate
+300-action review commit-path stress that rolls over the undo, action-log,
 repetition-history and replay rings before exact 32-action rollback.
 Physical DOS hardware and specific third-party drivers remain explicitly
 unverified where listed in KNOWNISS.TXT.
