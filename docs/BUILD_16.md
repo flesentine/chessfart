@@ -4,7 +4,7 @@ Build 16 closes the remaining required item from the original master plan: **Und
 
 The goal is not to make normal CPU or local matches casually rewindable. Undo belongs to an explicitly marked Practice session so competitive/default match semantics stay unchanged.
 
-**16.0 and 16.1 complete. Current slice: 16.2 Practice integration.**
+**16.0–16.2 complete. Current slice: 16.3 hardening / closeout.**
 
 ## Frozen contracts
 
@@ -103,9 +103,15 @@ The host gate must prove:
 
 ### 16.3 — Hardening / closeout
 
-- repeated multi-action undo
-- journal-overflow behavior
-- repetition-history rollover
-- long-session Chromium regression
-- DOS memory/package review
-- final documentation and certification
+16.3 freezes the bounded-session semantics and proves them across all retained-history limits.
+
+- the undo window remains exactly 32 committed Practice actions
+- when a 33rd newer action displaces the oldest undo record, Undo never crosses that discarded boundary
+- a host stress sequence runs beyond the 128-position repetition ring, then undoes the latest 32 actions and requires byte-for-byte board, Gas, and repetition-history restoration
+- Chromium runs 300 committed Practice actions so the 32-entry undo journals, 32-line action log, 128-position repetition history, and 256-frame replay timeline have all rolled over
+- Chromium then undoes exactly 32 actions and requires the full board/Gas/history state plus raw action-log and replay-ring hashes to match the 268-action checkpoint
+- a 33rd Undo must be a transactional no-op
+- compile-time guards keep the presentation undo journal under 8 KiB and both Practice undo journals together under 16 KiB
+- Save v2, replay-file v1, rules, CPU behavior, and packaged version remain unchanged
+
+Final certification still requires strict host, Open Watcom 16-bit DOS, DOSBox/package, Web/WASM, full Chromium gameplay, and canonical visual review to pass on one exact head.
