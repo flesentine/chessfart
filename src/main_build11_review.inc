@@ -97,6 +97,33 @@ EMSCRIPTEN_KEEPALIVE int cf_review_match_mode(void)
     return (int)g_match_mode;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_ui_theme(void)
+{
+    return (int)ui_theme_get();
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_set_ui_theme(int theme)
+{
+    if (!ui_theme_set((CfUiTheme)theme)) return 0;
+    if (g_ux_cache.valid)
+        ux_redraw_cached();
+    else {
+        ux_draw_title(CF_UI_TITLE_ITEM_PLAY_CPU, 0);
+        vga_present();
+    }
+    return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_board_hash(void)
+{
+    return cf_review_hash_bytes(&g_board, sizeof(g_board));
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_gas_hash(void)
+{
+    return cf_review_hash_bytes(&g_gas, sizeof(g_gas));
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_practice_mode(void)
 {
     return g_practice_mode;
