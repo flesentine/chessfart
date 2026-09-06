@@ -93,10 +93,13 @@ static void test_full_history_undo_restores_dropped_key(void)
 
     board_init_starting_position(&board);
     gas_init(&gas);
-    history.count = 0;
+    memset(&history, 0, sizeof(history));
+    history.count = CF_GAS_HISTORY;
     for (i = 0; i < CF_GAS_HISTORY; ++i) {
-        board.halfmove_clock = (unsigned)i;
-        gas_history_record(&history, &board, &gas);
+        history.keys[i].state = (cf_u8)i;
+        history.keys[i].en_passant_file = (cf_u8)(i % 9);
+        history.keys[i].squares[0] = (cf_u8)(i & 0x3FU);
+        history.keys[i].squares[63] = (cf_u8)((i * 3) & 0x3FU);
     }
     before_board = board;
     before_gas = gas;
