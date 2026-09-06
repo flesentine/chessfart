@@ -115,6 +115,13 @@ EMSCRIPTEN_KEEPALIVE int cf_review_enable_practice_from_current(void)
     return 1;
 }
 
+EMSCRIPTEN_KEEPALIVE void cf_review_set_practice_mode_for_fixture(int enabled)
+{
+    g_practice_mode = enabled ? 1 : 0;
+    practice_undo_init(&g_practice_undo);
+    ux_practice_presentation_init();
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_replay_count(void)
 {
     return g_replay_timeline == 0 ? 0 : g_replay_timeline->count;
