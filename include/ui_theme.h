@@ -1,6 +1,8 @@
 #ifndef CF_UI_THEME_H
 #define CF_UI_THEME_H
 
+#include "cf_types.h"
+
 /* Canonical retail VGA palette roles. Keep renderer and UX overlays in sync. */
 #define CF_UI_COL_BG 0
 #define CF_UI_COL_PANEL 1
@@ -35,5 +37,17 @@
 
 #define CF_UI_ACTIVE_COLOR_COUNT 30
 #define CF_UI_GRAYSCALE_FIRST CF_UI_ACTIVE_COLOR_COUNT
+
+typedef enum CfUiTheme {
+    CF_UI_THEME_ROYAL_BASEMENT = 0,
+    CF_UI_THEME_CRIMSON_CELLAR,
+    CF_UI_THEME_COUNT
+} CfUiTheme;
+
+int ui_theme_valid(CfUiTheme theme);
+int ui_theme_set(CfUiTheme theme);
+CfUiTheme ui_theme_get(void);
+const char *ui_theme_name(CfUiTheme theme);
+void ui_theme_build_palette(cf_u8 *palette, int flash);
 
 #endif

@@ -14,7 +14,7 @@ wcl -zq -bt=dos -ml -3 -ox -w4 -Iinclude -fe=build/dos/CHESSFRT.EXE \
   src/game/cpu_config.c src/game/cpu_actions.c src/game/cpu_eval.c \
   src/game/cpu_search.c src/game/cpu_format.c src/game/ux.c src/game/replay.c \
   src/game/replay_file.c src/game/font.c src/game/board_view_build5.c src/game/board_view_build6.c \
-  src/game/ui_assets.c src/game/board_view_art.c src/game/presentation.c \
+  src/game/ui_assets.c src/game/ui_theme.c src/game/board_view_art.c src/game/presentation.c \
   src/game/audio.c src/game/audio_samples.c src/game/audio_game.c \
   src/game/persistence.c src/game/persistence_ui.c \
   src/platform/dos/vga_dos.c src/platform/dos/input_build5_dos.c \

@@ -55,59 +55,10 @@
 #define COL_PANEL_LINE CF_UI_COL_PANEL_LINE
 #define COL_PANEL_SOFT CF_UI_COL_PANEL_SOFT
 
-static void set_rgb(cf_u8 *palette, int index, int r, int g, int b)
-{
-    int base = index * 3;
-    palette[base] = (cf_u8)r;
-    palette[base + 1] = (cf_u8)g;
-    palette[base + 2] = (cf_u8)b;
-}
-
 static void load_art_palette(int flash)
 {
     cf_u8 palette[VGA_PALETTE_BYTES];
-    int i;
-    int shade;
-
-    for (i = 0; i < VGA_PALETTE_BYTES; ++i) palette[i] = 0;
-
-    /* Deliberately small, cohesive VGA palette: navy / teal / sand / brass. */
-    set_rgb(palette, COL_BG, 1, 4, 11);
-    set_rgb(palette, COL_PANEL, 3, 9, 23);
-    set_rgb(palette, COL_SQUARE_LIGHT, 55, 47, 29);
-    set_rgb(palette, COL_SQUARE_DARK, 6, 35, 31);
-    set_rgb(palette, COL_GOLD, flash ? 63 : 58, flash ? 63 : 45, 9);
-    set_rgb(palette, COL_TEXT, 61, 58, 49);
-    set_rgb(palette, COL_MUTED, 28, 31, 37);
-    set_rgb(palette, COL_GREEN, 15, 48, 23);
-    set_rgb(palette, COL_GAS, flash ? 63 : 38, 58, flash ? 35 : 13);
-    set_rgb(palette, COL_BLACK, 0, 0, 0);
-    set_rgb(palette, COL_PANEL_EDGE, 13, 19, 32);
-    set_rgb(palette, COL_WHITE_PIECE, 58, 52, 41);
-    set_rgb(palette, COL_WHITE_HI, 63, 62, 55);
-    set_rgb(palette, COL_BLACK_PIECE, 3, 8, 14);
-    set_rgb(palette, COL_BLACK_HI, 23, 33, 39);
-    set_rgb(palette, COL_CURSOR, 6, 51, 59);
-    set_rgb(palette, COL_SELECTED, 8, 59, 54);
-    set_rgb(palette, COL_SHADOW, 0, 1, 3);
-    set_rgb(palette, COL_LEGAL, 54, 43, 7);
-    set_rgb(palette, COL_CAPTURE, 58, 21, 7);
-    set_rgb(palette, COL_CHECK, 61, 9, 9);
-    set_rgb(palette, COL_PROMOTE, 48, 23, 56);
-    set_rgb(palette, COL_FART, flash ? 63 : 34, 56, 11);
-    set_rgb(palette, COL_FART_PUSH, 56, 35, 8);
-    set_rgb(palette, COL_SKY, 2, 10, 25);
-    set_rgb(palette, COL_CLOUD, 26, 47, 13);
-    set_rgb(palette, COL_FLASH, 63, 63, 40);
-    set_rgb(palette, COL_COPPER, 43, 27, 11);
-    set_rgb(palette, COL_PANEL_LINE, 24, 31, 43);
-    set_rgb(palette, COL_PANEL_SOFT, 8, 15, 29);
-
-    for (i = CF_UI_GRAYSCALE_FIRST; i < VGA_PALETTE_COLORS; ++i) {
-        shade = (i - CF_UI_GRAYSCALE_FIRST) * 63 /
-                (VGA_PALETTE_COLORS - (CF_UI_GRAYSCALE_FIRST + 1));
-        set_rgb(palette, i, shade, shade, shade);
-    }
+    ui_theme_build_palette(palette, flash);
     vga_set_palette(palette);
 }
 
