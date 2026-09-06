@@ -21,6 +21,7 @@ WEB_SOURCES = \
 	src/game/board_view_build5.c \
 	src/game/board_view_build6.c \
 	src/game/ui_assets.c \
+	src/game/ui_theme.c \
 	src/game/board_view_art.c \
 	src/game/presentation.c \
 	src/game/audio.c \
