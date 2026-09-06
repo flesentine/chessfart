@@ -164,6 +164,72 @@ static void test_journal_is_bounded_ring(void)
     CHECK(journal.start == 9);
 }
 
+
+static int make_stress_move(CfBoard *board, CfGasState *gas,
+                            CfGasMove *move, int index)
+{
+    switch (index & 3) {
+    case 0:
+        return gas_make_move(board, gas, 0, 0, 0, 1, move);
+    case 1:
+        return gas_make_move(board, gas, 7, 7, 7, 6, move);
+    case 2:
+        return gas_make_move(board, gas, 0, 1, 0, 0, move);
+    default:
+        return gas_make_move(board, gas, 7, 6, 7, 7, move);
+    }
+}
+
+static void test_overflow_and_full_history_multi_undo(void)
+{
+    CfBoard board;
+    CfBoard checkpoint_board;
+    CfGasState gas;
+    CfGasState checkpoint_gas;
+    CfGasHistory history;
+    CfGasHistory checkpoint_history;
+    CfGasMove move;
+    CfPracticeUndoJournal journal;
+    int i;
+    int checkpoint_actions = CF_GAS_HISTORY + 9;
+    int total_actions = checkpoint_actions + CF_PRACTICE_UNDO_CAPACITY;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    board.side_to_move = CF_COLOR_WHITE;
+    gas_history_init(&history, &board, &gas);
+    practice_undo_init(&journal);
+
+    for (i = 0; i < total_actions; ++i) {
+        CHECK(make_stress_move(&board, &gas, &move, i));
+        practice_undo_record_move(&journal, &move, &history);
+        gas_history_record(&history, &board, &gas);
+        if (i + 1 == checkpoint_actions) {
+            checkpoint_board = board;
+            checkpoint_gas = gas;
+            checkpoint_history = history;
+        }
+    }
+
+    CHECK(history.count == CF_GAS_HISTORY);
+    CHECK(journal.count == CF_PRACTICE_UNDO_CAPACITY);
+    CHECK(journal.start == (checkpoint_actions %
+                            CF_PRACTICE_UNDO_CAPACITY));
+
+    for (i = 0; i < CF_PRACTICE_UNDO_CAPACITY; ++i)
+        CHECK(practice_undo_apply_last(&journal, &board, &gas, &history));
+
+    CHECK(memcmp(&board, &checkpoint_board, sizeof(board)) == 0);
+    CHECK(memcmp(&gas, &checkpoint_gas, sizeof(gas)) == 0);
+    CHECK(memcmp(&history, &checkpoint_history, sizeof(history)) == 0);
+    CHECK(journal.count == 0);
+    CHECK(journal.start == 0);
+    CHECK(!practice_undo_apply_last(&journal, &board, &gas, &history));
+}
+
 int main(void)
 {
     test_memory_budget();
@@ -172,6 +238,7 @@ int main(void)
     test_full_history_undo_restores_dropped_key();
     test_history_mismatch_is_transactional();
     test_journal_is_bounded_ring();
+    test_overflow_and_full_history_multi_undo();
 
     if (failures != 0) {
         printf("Build 16 practice-undo tests failed: %d\n", failures);

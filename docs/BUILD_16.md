@@ -4,7 +4,7 @@ Build 16 closes the remaining required item from the original master plan: **Und
 
 The goal is not to make normal CPU or local matches casually rewindable. Undo belongs to an explicitly marked Practice session so competitive/default match semantics stay unchanged.
 
-**16.0 and 16.1 complete. Current slice: 16.2 Practice integration.**
+**Build 16 complete — 16.3 hardening / closeout certified.**
 
 ## Frozen contracts
 
@@ -103,9 +103,31 @@ The host gate must prove:
 
 ### 16.3 — Hardening / closeout
 
-- repeated multi-action undo
-- journal-overflow behavior
-- repetition-history rollover
-- long-session Chromium regression
-- DOS memory/package review
-- final documentation and certification
+16.3 freezes the bounded-session semantics and proves them across all retained-history limits.
+
+- the undo window remains exactly 32 committed Practice actions
+- when a 33rd newer action displaces the oldest undo record, Undo never crosses that discarded boundary
+- a host stress sequence runs beyond the 128-position repetition ring, then undoes the latest 32 actions and requires byte-for-byte board, Gas, and repetition-history restoration
+- Chromium separately proves a real-input threefold draw is terminal-locked and that `U` reopens the exact pre-draw Practice state
+- a review-only 300-action production-commit-path stress rolls the 32-entry undo journals, 32-line action log, 128-position repetition history, and 256-frame replay timeline past their retention boundaries
+- Chromium then undoes exactly 32 actions and requires the full board/Gas/history state plus raw action-log and replay-ring hashes to match the 268-action checkpoint
+- a 33rd Undo must be a transactional no-op
+- compile-time guards keep the presentation undo journal under 8 KiB and both Practice undo journals together under 16 KiB
+- Save v2, replay-file v1, rules, CPU behavior, and packaged version remain unchanged
+
+### 16.3 certification evidence
+
+The closeout gate proves:
+
+- the 169-action host stress crosses the 128-position repetition-history boundary, retains only the newest 32 undo records, and restores the exact checkpoint after 32 undos
+- real mouse/keyboard Practice play reaches a genuine threefold draw, rejects further gameplay input, and `U` restores a live pre-draw state
+- the separate 300-action review commit-path stress overflows the 32-entry game/presentation undo journals, 32-line action log, 128-position repetition history, and 256-frame replay ring together
+- after 32 undos, board, Gas, repetition history, action log, and replay timeline match the 268-action checkpoint exactly
+- a 33rd undo is a transactional no-op because the older journal boundary has been deliberately discarded
+- ordinary promotion, Fart-push promotion, castling, en passant, normal moves, Farts, repeated undo, terminal undo, and mouse Undo all remain certified
+- the canonical browser visual suite remains at 32 states
+- Open Watcom still produces the real 16-bit DOS `CHESSFRT.EXE`; the certified executable is 135,154 bytes
+- the host profile still reports a 118-byte replay snapshot, 30,232-byte live replay timeline, and 60,464-byte live+transient-import peak
+- compile-time guards keep the presentation undo journal below 8 KiB and both Practice undo journals together below 16 KiB
+
+Build 16 closes with no save/config/replay-file format bump and no change to the packaged version number.

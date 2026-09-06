@@ -1,6 +1,20 @@
 #include <emscripten/emscripten.h>
 #include "ui_layout.h"
 
+static int g_review_practice_stress_actions;
+
+static int cf_review_hash_bytes(const void *data, unsigned size)
+{
+    const unsigned char *bytes = (const unsigned char *)data;
+    unsigned long hash = 2166136261UL;
+    unsigned i;
+    for (i = 0U; i < size; ++i) {
+        hash ^= (unsigned long)bytes[i];
+        hash *= 16777619UL;
+    }
+    return (int)hash;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_status(void)
 {
     return (int)gas_game_status(&g_board, &g_gas, &g_history);
@@ -96,6 +110,113 @@ EMSCRIPTEN_KEEPALIVE int cf_review_practice_undo_count(void)
 EMSCRIPTEN_KEEPALIVE int cf_review_practice_presentation_undo_count(void)
 {
     return g_practice_presentation_undo.count;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_practice_undo_start(void)
+{
+    return g_practice_undo.start;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_practice_presentation_undo_start(void)
+{
+    return g_practice_presentation_undo.start;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_ux_history_start(void)
+{
+    return g_ux_history.start;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_start(void)
+{
+    return g_replay_timeline == 0 ? -1 : g_replay_timeline->start;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_gas_history_hash(void)
+{
+    return cf_review_hash_bytes(&g_history, sizeof(g_history));
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_ux_history_hash(void)
+{
+    return cf_review_hash_bytes(&g_ux_history, sizeof(g_ux_history));
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_replay_hash(void)
+{
+    if (g_replay_timeline == 0) return 0;
+    return cf_review_hash_bytes(g_replay_timeline,
+                                sizeof(*g_replay_timeline));
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_prepare_practice_stress(void)
+{
+    CfGameStatus status;
+    if (g_replay_timeline == 0) return 0;
+
+    board_clear(&g_board);
+    gas_init(&g_gas);
+    board_set_piece(&g_board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&g_board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&g_board, 3, 3, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    g_board.side_to_move = CF_COLOR_WHITE;
+    g_board.castling_rights = 0U;
+    g_board.en_passant_file = -1;
+    g_board.en_passant_rank = -1;
+    g_board.halfmove_clock = 0U;
+    g_board.fullmove_number = 1U;
+
+    g_match_mode = CF_MATCH_LOCAL;
+    g_practice_mode = 1;
+    practice_undo_init(&g_practice_undo);
+    ux_practice_presentation_init();
+    ux_history_init(&g_ux_history);
+    gas_history_init(&g_history, &g_board, &g_gas);
+    status = gas_game_status(&g_board, &g_gas, &g_history);
+    replay_timeline_reset(g_replay_timeline, &g_board, &g_gas,
+                          status, g_match_mode, "STRESS START");
+    g_cpu_message[0] = '\0';
+    g_cpu_message_pending = 0;
+    g_review_practice_stress_actions = 0;
+    return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_run_practice_stress_actions(int count)
+{
+    CfGasMove move;
+    int i;
+    int ok;
+    if (!g_practice_mode || count < 0) return 0;
+
+    for (i = 0; i < count; ++i) {
+        switch (g_review_practice_stress_actions & 3) {
+        case 0:
+            ok = ux_human_make_move(&g_board, &g_gas,
+                                     0, 0, 0, 1, &move);
+            break;
+        case 1:
+            ok = ux_human_make_move(&g_board, &g_gas,
+                                     7, 7, 7, 6, &move);
+            break;
+        case 2:
+            ok = ux_human_make_move(&g_board, &g_gas,
+                                     0, 1, 0, 0, &move);
+            break;
+        default:
+            ok = ux_human_make_move(&g_board, &g_gas,
+                                     7, 6, 7, 7, &move);
+            break;
+        }
+        if (!ok) return 0;
+        gas_history_record(&g_history, &g_board, &g_gas);
+        ++g_review_practice_stress_actions;
+    }
+    return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_practice_undo_direct(void)
+{
+    return ux_practice_undo_game(&g_board, &g_gas, &g_history);
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_enable_practice_from_current(void)
@@ -368,6 +489,7 @@ EMSCRIPTEN_KEEPALIVE const char *cf_review_history_line(int index)
  * 4: Black Fart-push promotion: charged D3 actor, Black pawn D2 -> D1
  * 5: White mate in one: QG6-G7#
  * 6: Black mate in one: QG3-G2#
+ * 7: Practice draw fixture: kings shuttle A1/A2 and H8/H7
  */
 EMSCRIPTEN_KEEPALIVE int cf_review_write_local_fixture(int fixture)
 {
@@ -423,6 +545,12 @@ EMSCRIPTEN_KEEPALIVE int cf_review_write_local_fixture(int fixture)
         board_set_piece(&board, 5, 2, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&board, 6, 2, CF_PIECE_QUEEN, CF_COLOR_BLACK);
         board.side_to_move = CF_COLOR_BLACK;
+    } else if (fixture == 7) {
+        board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_WHITE);
+        board.side_to_move = CF_COLOR_WHITE;
+        board.castling_rights = 0U;
     } else {
         return 0;
     }
