@@ -122,6 +122,12 @@ EMSCRIPTEN_KEEPALIVE int cf_review_cpu_message_pending(void)
     return g_cpu_message_pending;
 }
 
+EMSCRIPTEN_KEEPALIVE void cf_review_seed_cpu_message_pending(void)
+{
+    strcpy(g_cpu_message, "THEME MESSAGE");
+    g_cpu_message_pending = 1;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_board_hash(void)
 {
     return cf_review_hash_bytes(&g_board, sizeof(g_board));
