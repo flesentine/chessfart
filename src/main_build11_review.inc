@@ -98,6 +98,23 @@ EMSCRIPTEN_KEEPALIVE int cf_review_practice_presentation_undo_count(void)
     return g_practice_presentation_undo.count;
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_enable_practice_from_current(void)
+{
+    CfGameStatus status;
+    if (g_match_mode != CF_MATCH_LOCAL || g_replay_timeline == 0)
+        return 0;
+    g_practice_mode = 1;
+    practice_undo_init(&g_practice_undo);
+    ux_practice_presentation_init();
+    ux_history_init(&g_ux_history);
+    status = gas_game_status(&g_board, &g_gas, &g_history);
+    replay_timeline_reset(g_replay_timeline, &g_board, &g_gas,
+                          status, g_match_mode, "PRACTICE FIXTURE");
+    g_cpu_message[0] = '\0';
+    g_cpu_message_pending = 0;
+    return 1;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_replay_count(void)
 {
     return g_replay_timeline == 0 ? 0 : g_replay_timeline->count;
