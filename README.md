@@ -76,7 +76,8 @@ H / ?            Help
 Tab / M          Action log
 C                Credits
 R                Replay viewer; Left/Right step, R/Enter/Esc close
-U in Practice    Undo latest committed move or Fart
+U in Practice    Undo latest committed move or Fart; preserves prior log/replay
+Mouse in Practice Click U UNDO in the command bar
 S / L in Practice Disabled
 S / L in Replay  Export / import CHESSFRT.RPL
 Mouse in Replay  Previous / Next / Export / Import / Close footer controls
