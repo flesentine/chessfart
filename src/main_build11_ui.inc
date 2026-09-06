@@ -1295,6 +1295,7 @@ int ux_title_screen(const char *config_path)
                     menu == CF_UI_TITLE_ITEM_PLAY_CPU ?
                     CF_MATCH_CPU : CF_MATCH_LOCAL;
                 practice_undo_init(&g_practice_undo);
+                ux_practice_presentation_init();
                 (void)persistence_save_config(config_path, audio_get_config());
                 vga_shutdown();
                 return 1;
