@@ -4,7 +4,7 @@ Build 17 starts the first optional post-v1 roadmap item: **alternate boards/piec
 
 The implementation stays deliberately conservative. Themes are presentation policy only. They must never alter chess state, Gas, CPU behavior, persistence, replay content, Practice semantics, or package version.
 
-**Current slice: 17.0 alternate-theme foundation.**
+**17.0 complete. Current slice: 17.1 title-screen theme selector.**
 
 ## Frozen contracts
 
@@ -50,7 +50,7 @@ There is intentionally **no player-facing theme control yet**.
 - no save/replay field is added
 - Crimson Cellar is reachable only through CF_WEB_REVIEW probes for certification
 
-This keeps 17.0 focused on architecture and visual proof. A later slice can add a title/options control only after the foundation is certified.
+This keeps 17.0 focused on architecture and visual proof. Its exact-head certification passed strict host, Open Watcom DOS, DOSBox/package, Web/WASM, Chromium gameplay, and the 34-state native visual suite.
 
 ## 17.0 validation target
 
@@ -65,3 +65,29 @@ This keeps 17.0 focused on architecture and visual proof. A later slice can add 
 - board, Gas, repetition history, action-log count, and replay accounting remain unchanged by a theme switch
 - restoring Royal Basement reproduces the exact prior native-canvas signature
 - canonical visual suite expands from 32 to 34 states
+
+
+## 17.1 — Player-facing title theme selector
+
+17.1 exposes the certified theme foundation without adding persistence coupling.
+
+- `T` on the title screen cycles Royal Basement -> Crimson Cellar -> Royal Basement
+- the title footer always names the active theme
+- the selected theme carries into CPU, 2 PLAYERS, or PRACTICE for the current process/session
+- `T` during gameplay is intentionally a no-op; theme selection remains a title policy
+- Save/Load does not change the selected session theme
+- startup still resets to Royal Basement
+- audio config persistence remains unchanged
+- game-save v2 and replay-file v1 remain unchanged
+
+### 17.1 validation target
+
+- strict C89 theme-cycle tests
+- DOS and Web input backends map T/t to the appended theme key without renumbering earlier keys
+- real Chromium title input proves two-way wrap
+- Crimson Cellar carries from title into an actual CPU opening
+- in-game T does not mutate theme or gameplay
+- save/load preserves the current session theme without persisting it
+- canonical native visual suite expands to 36 states:
+  - real Crimson Cellar title selection
+  - real Crimson Cellar game opening
