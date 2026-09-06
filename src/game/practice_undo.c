@@ -26,8 +26,10 @@ static CfPracticeUndoEntry *practice_undo_push(CfPracticeUndoJournal *journal,
     memset(entry, 0, sizeof(*entry));
     entry->history_count_before = history->count;
     if (history->count == CF_GAS_HISTORY) {
-        entry->history_dropped_oldest = 1;
-        entry->dropped_history_key = history->keys[0];
+        entry->history_was_full = 1;
+        entry->history_key_before = history->keys[0];
+    } else {
+        entry->history_key_before = history->keys[history->count];
     }
     return entry;
 }
@@ -83,12 +85,14 @@ static void practice_undo_restore_history(
     CfGasHistory *history)
 {
     int i;
-    if (entry->history_dropped_oldest) {
+    if (entry->history_was_full) {
         for (i = CF_GAS_HISTORY - 1; i > 0; --i)
             history->keys[i] = history->keys[i - 1];
-        history->keys[0] = entry->dropped_history_key;
+        history->keys[0] = entry->history_key_before;
         history->count = CF_GAS_HISTORY;
     } else {
+        history->keys[entry->history_count_before] =
+            entry->history_key_before;
         history->count = entry->history_count_before;
     }
 }
