@@ -104,6 +104,8 @@ int ux_human_make_move(CfBoard *board, CfGasState *gas,
     ux_log_move(ux_match_actor_name(g_match_mode,
                                     local.chess_move.moved.color),
                 &local, line);
+    if (g_practice_mode)
+        practice_undo_record_move(&g_practice_undo, &local, &g_history);
     ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
@@ -121,6 +123,8 @@ int ux_human_make_move_ex(CfBoard *board, CfGasState *gas,
     ux_log_move(ux_match_actor_name(g_match_mode,
                                     local.chess_move.moved.color),
                 &local, line);
+    if (g_practice_mode)
+        practice_undo_record_move(&g_practice_undo, &local, &g_history);
     ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
@@ -137,9 +141,28 @@ int ux_human_make_fart(CfBoard *board, CfGasState *gas, int file, int rank,
                               direction, promotion, &local)) return 0;
     ux_log_fart(ux_match_actor_name(g_match_mode, local.previous_side),
                 &local, line);
+    if (g_practice_mode)
+        practice_undo_record_fart(&g_practice_undo, &local, &g_history);
     ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (action != 0) *action = local;
+    return 1;
+}
+
+int ux_practice_undo_game(CfBoard *board, CfGasState *gas,
+                          CfGasHistory *history)
+{
+    CfGameStatus status;
+    if (!g_practice_mode) return -1;
+    if (!practice_undo_apply_last(&g_practice_undo, board, gas, history))
+        return 0;
+
+    status = gas_game_status(board, gas, history);
+    ux_history_add(&g_ux_history, "SYSTEM UNDO");
+    replay_timeline_reset(g_replay_timeline, board, gas, status,
+                          g_match_mode, "UNDO START");
+    g_cpu_message[0] = '\0';
+    g_cpu_message_pending = 0;
     return 1;
 }
 
@@ -148,6 +171,7 @@ CfPersistenceResult ux_save_game(const char *path, const CfBoard *board,
                                  const CfGasHistory *history)
 {
     CfPersistenceResult result;
+    if (g_practice_mode) return CF_PERSIST_DISABLED;
     result = persistence_save_game_mode(path, board, gas, history, g_match_mode);
     if (result == CF_PERSIST_OK) ux_history_add(&g_ux_history, "SYSTEM SAVE OK");
     return result;
@@ -158,6 +182,7 @@ CfPersistenceResult ux_load_game(const char *path, CfBoard *board,
 {
     CfPersistenceResult result;
     CfMatchMode loaded_mode = g_match_mode;
+    if (g_practice_mode) return CF_PERSIST_DISABLED;
     result = persistence_load_game_mode(path, board, gas, history, &loaded_mode);
     if (result == CF_PERSIST_OK) {
         CfGameStatus loaded_status;

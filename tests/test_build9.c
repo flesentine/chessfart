@@ -272,6 +272,8 @@ int main(void)
     test_failed_load_is_transactional();
     test_missing_and_bad_source_state();
     test_config_round_trip();
+    CHECK(strcmp(persistence_result_name(CF_PERSIST_DISABLED),
+                 "DISABLED") == 0);
 
     if (failures != 0) {
         printf("Build 9 persistence tests failed: %d\n", failures);

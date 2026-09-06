@@ -11,6 +11,7 @@
 #include "persistence.h"
 #include "persistence_ui.h"
 #include "presentation.h"
+#include "practice_undo.h"
 #include "replay.h"
 #include "replay_file.h"
 #include "ux.h"
@@ -19,6 +20,8 @@
 static CfCpuConfig g_cpu_config;
 static CfCpuStats g_cpu_stats;
 static CfMatchMode g_match_mode;
+static int g_practice_mode;
+static CfPracticeUndoJournal g_practice_undo;
 static CfGasHistory g_cpu_search_history;
 static CfGasHistory g_cpu_history_backup;
 static char g_cpu_message[32];
@@ -70,6 +73,7 @@ int ux_human_make_move_ex(CfBoard *, CfGasState *, int, int, int, int,
                           CfPieceType, CfGasMove *);
 int ux_human_make_fart(CfBoard *, CfGasState *, int, int, CfFartDirection,
                        CfPieceType, CfFartAction *);
+int ux_practice_undo_game(CfBoard *, CfGasState *, CfGasHistory *);
 CfInputKey5 ux_poll_key(void);
 void ux_show_help_modal(void);
 void ux_show_history_modal(void);
@@ -84,9 +88,11 @@ void ux_show_replay_modal(void);
 #define audio_game_make_move_ex ux_human_make_move_ex
 #define audio_game_make_fart ux_human_make_fart
 #define input5_poll_key ux_poll_key
+#define CF_BUILD16_UNDO 1
 #define main chessfart_build9_ux_main
 #include "main_build9.c"
 #undef main
+#undef CF_BUILD16_UNDO
 #undef input5_poll_key
 #undef audio_game_make_fart
 #undef audio_game_make_move_ex
@@ -109,6 +115,8 @@ int main(void)
     if (0) ux_stamp_build11();
     cpu_config_for_difficulty(&g_cpu_config, CF_CPU_MEDIUM);
     g_match_mode = CF_MATCH_CPU;
+    g_practice_mode = 0;
+    practice_undo_init(&g_practice_undo);
     memset(&g_cpu_stats, 0, sizeof(g_cpu_stats));
     memset(&g_ux_cache, 0, sizeof(g_ux_cache));
     ux_history_init(&g_ux_history);

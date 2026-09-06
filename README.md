@@ -59,7 +59,7 @@ Extract the directory and run `CHESSFRT.EXE` in DOS/DOSBox. The included `DOSBOX
 ```text
 Title:
 Up/Down          Menu
-Enter / Space    Choose
+Enter / Space    Choose (PLAY CPU / 2 PLAYERS / PRACTICE)
 Left/Right       Audio device
 F                SFX level
 D                CPU difficulty
@@ -76,6 +76,8 @@ H / ?            Help
 Tab / M          Action log
 C                Credits
 R                Replay viewer; Left/Right step, R/Enter/Esc close
+U in Practice    Undo latest committed move or Fart
+S / L in Practice Disabled
 S / L in Replay  Export / import CHESSFRT.RPL
 Mouse in Replay  Previous / Next / Export / Import / Close footer controls
 Esc              Quit; cancel pending Fart/promotion choice

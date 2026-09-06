@@ -4,7 +4,7 @@ Build 16 closes the remaining required item from the original master plan: **Und
 
 The goal is not to make normal CPU or local matches casually rewindable. Undo belongs to an explicitly marked Practice session so competitive/default match semantics stay unchanged.
 
-**Current slice: 16.0 reversible-action journal foundation.**
+**16.0 complete. Current slice: 16.1 local Practice session.**
 
 ## Frozen contracts
 
@@ -79,12 +79,14 @@ The host gate must prove:
 
 ### 16.1 — Local Practice session
 
-- expose an explicit Practice entry from the title flow
-- use local White/Black play on the trusted existing rules path
-- add `U` to undo the latest committed action
-- clear selection, promotion/Fart aim, and terminal overlays after a successful undo
-- keep ordinary `2 PLAYERS` unchanged
-- do not serialize the Practice policy into save v2
+- add a third playable title choice: `PRACTICE`
+- Practice uses local White/Black turns on the trusted existing rules path, with no CPU reply
+- `U` undoes the latest committed move or Fart through the 16.0 journal
+- successful undo clears selection, promotion/Fart aim, and terminal presentation state
+- replay resets to one honest `UNDO START` baseline after an undo; exact replay/action-log rollback remains 16.2
+- Save and Load return `DISABLED` in Practice so the session policy is never smuggled into save v2
+- normal `PLAY CPU` and `2 PLAYERS` remain unchanged
+- Practice HUD/help explicitly identify `U UNDO` and the session-only policy
 
 ### 16.2 — Practice integration
 

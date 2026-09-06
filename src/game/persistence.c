@@ -76,6 +76,7 @@ const char *persistence_result_name(CfPersistenceResult result)
     case CF_PERSIST_BAD_MAGIC: return "BAD MAGIC";
     case CF_PERSIST_BAD_VERSION: return "BAD VERSION";
     case CF_PERSIST_BAD_DATA: return "BAD DATA";
+    case CF_PERSIST_DISABLED: return "DISABLED";
     default: return "ERROR";
     }
 }

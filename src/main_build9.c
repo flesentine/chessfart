@@ -159,6 +159,7 @@ static void play_key_sound(CfInputKey5 key)
         break;
     case CF5_KEY_SAVE:
     case CF5_KEY_LOAD:
+    case CF5_KEY_UNDO:
         audio_play_event(CF_AUDIO_MENU_CONFIRM);
         break;
     default:
@@ -307,6 +308,28 @@ int main(void)
                 audio_play_event(CF_AUDIO_INVALID);
             }
             changed = 1;
+#ifdef CF_BUILD16_UNDO
+        } else if (key == CF5_KEY_UNDO) {
+            int undo_result = ux_practice_undo_game(&g_board, &g_gas,
+                                                    &g_history);
+            if (undo_result > 0) {
+                status = gas_game_status(&g_board, &g_gas, &g_history);
+                has_selection = 0;
+                legal_moves.count = 0;
+                promotion_pending = 0;
+                fart_promotion_pending = 0;
+                fart_mode = 0;
+                fart_preview = CF_FART_INVALID;
+                strcpy(message, "UNDO OK");
+            } else if (undo_result < 0) {
+                strcpy(message, "PRACTICE ONLY");
+                audio_play_event(CF_AUDIO_INVALID);
+            } else {
+                strcpy(message, "NOTHING TO UNDO");
+                audio_play_event(CF_AUDIO_INVALID);
+            }
+            changed = 1;
+#endif
         } else if (fart_promotion_pending) {
             switch (key) {
             case CF5_KEY_LEFT:
