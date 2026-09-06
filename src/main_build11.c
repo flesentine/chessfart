@@ -15,6 +15,7 @@
 #include "replay.h"
 #include "replay_file.h"
 #include "ui_layout.h"
+#include "ui_theme.h"
 #include "ux.h"
 #include "vga.h"
 
@@ -134,6 +135,7 @@ int main(void)
     int result;
     if (0) ux_stamp_build11();
     cpu_config_for_difficulty(&g_cpu_config, CF_CPU_MEDIUM);
+    (void)ui_theme_set(CF_UI_THEME_ROYAL_BASEMENT);
     g_match_mode = CF_MATCH_CPU;
     g_practice_mode = 0;
     practice_undo_init(&g_practice_undo);
