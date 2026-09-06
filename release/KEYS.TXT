@@ -25,8 +25,9 @@ C                  Credits
 R                  Replay viewer
                    Left / Right step; R / Enter / Esc close
 U in PRACTICE      Undo latest committed move or Fart
+                   Latest 32 committed Practice actions are retained
 Practice mouse     Click U UNDO in the bottom command bar
-                   Earlier action log + replay history are restored
+                   Earlier retained action log + replay history are restored
 S / L in PRACTICE Disabled; Practice is session-only
 S / L in Replay    Export / import CHESSFRT.RPL
 Replay mouse       Previous / Next / Export / Import / Close footer controls
