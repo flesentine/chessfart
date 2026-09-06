@@ -131,8 +131,7 @@ int main(void)
     g_match_mode = CF_MATCH_CPU;
     g_practice_mode = 0;
     practice_undo_init(&g_practice_undo);
-    memset(&g_practice_presentation_undo, 0,
-           sizeof(g_practice_presentation_undo));
+    ux_practice_presentation_init();
     memset(&g_cpu_stats, 0, sizeof(g_cpu_stats));
     memset(&g_ux_cache, 0, sizeof(g_ux_cache));
     ux_history_init(&g_ux_history);
