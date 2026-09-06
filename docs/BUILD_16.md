@@ -43,12 +43,12 @@ Each journal entry stores:
 
 - the history count before the committed action was recorded
 - whether the history buffer was already full
-- the one oldest history key that would be dropped by the next record
+- the one history key that the next record will overwrite or displace
 
 On undo:
 
 - board and Gas are restored through the existing move/Fart unmake routine
-- a non-full history returns to its prior count
+- a non-full history restores the overwritten next slot and returns to its prior count
 - a full history shifts right and restores the exact dropped oldest key
 
 This keeps exact rollback without copying the ~8 KiB repetition history into every undo entry.
