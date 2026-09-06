@@ -77,6 +77,7 @@ Tab / M          Action log
 C                Credits
 R                Replay viewer; Left/Right step, R/Enter/Esc close
 U in Practice    Undo latest committed move or Fart; preserves prior log/replay
+                 Latest 32 committed Practice actions are retained for Undo
 Mouse in Practice Click U UNDO in the command bar
 S / L in Practice Disabled
 S / L in Replay  Export / import CHESSFRT.RPL
