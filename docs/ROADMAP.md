@@ -129,6 +129,16 @@ Build 16 closes the remaining master-plan required item: Undo in practice/debug 
 
 Practice is a session policy rather than a new persisted match-mode value, so the version-2 game-save contract remains unchanged. See `docs/BUILD_16.md`.
 
+## Build 17 — Alternate presentation themes
+**Status: 17.0 in progress**
+
+Build 17 begins the optional alternate boards/pieces roadmap without changing gameplay contracts.
+
+- 17.0 palette-backed theme foundation: Royal Basement default + review-only Crimson Cellar
+- later slices may add player-facing selection and additional authored theme assets after the foundation is certified
+
+See `docs/BUILD_17.md`.
+
 ## Post-v1 ideas
 
-Alternate boards/pieces, Turbo Gas, puzzle challenges, AI personalities, null-modem multiplayer, OPL2 expansion, and a shareware-style episode screen.
+Turbo Gas, puzzle challenges, AI personalities, null-modem multiplayer, OPL2 expansion, and a shareware-style episode screen.
