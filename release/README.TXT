@@ -17,7 +17,9 @@ DOSBox:
 A sample DOSBOX.CONF is included. On real DOS, run CHESSFRT.EXE directly.
 Choose PLAY CPU for the deterministic computer opponent, 2 PLAYERS for a
 local hot-seat White/Black match, or PRACTICE for local play with U undo.
-Practice is session-only and disables game Save/Load. A Microsoft-compatible mouse driver is
+Practice retains the latest 32 committed actions for exact Undo, including
+moves, Farts, promotion, castling and en passant. Practice is session-only
+and disables game Save/Load. A Microsoft-compatible mouse driver is
 optional; keyboard play is complete. During a match, press R to open the
 read-only session replay and step retained frames with Left/Right. With a
 mouse driver present, the replay footer provides Previous, Next, Export,
@@ -59,6 +61,8 @@ CPU regressions, a real Open Watcom 16-bit DOS build, DOSBox smoke, browser
 runtime/playtest coverage, deterministic full Chromium CPU games, a
 33-ply local two-player Chromium game with exact version-2 LOCAL save/load
 rollback, replay-viewer state invariance, transactional CHESSFRT.RPL
-export/import, 600-frame ring-file coverage, and terminal replay integrity.
+export/import, 600-frame ring-file coverage, terminal replay integrity, and
+a 300-action Practice stress run that rolls over the undo, action-log,
+repetition-history and replay rings before exact 32-action rollback.
 Physical DOS hardware and specific third-party drivers remain explicitly
 unverified where listed in KNOWNISS.TXT.
