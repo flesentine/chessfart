@@ -10,6 +10,7 @@ static void test_memory_budget(void)
 {
     CHECK(sizeof(CfReplayTimeline) < 32768U);
     CHECK(sizeof(CfReplaySnapshot) < 128U);
+    CHECK(sizeof(CfReplayTimelineDelta) < 160U);
     CHECK((unsigned long)sizeof(CfReplayTimeline) * 2UL < 65536UL);
 }
 
@@ -183,6 +184,45 @@ static void test_large_clock_round_trip(void)
     CHECK(restored.fullmove_number == 80000U);
 }
 
+static void test_timeline_delta_rollback(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfReplayTimeline timeline;
+    CfReplayTimeline before;
+    CfReplayTimelineDelta delta;
+    int i;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    replay_timeline_reset(&timeline, &board, &gas, CF_GAME_ONGOING,
+                          CF_MATCH_LOCAL, "START");
+    before = timeline;
+    CHECK(replay_timeline_capture_record_delta(&timeline, &delta));
+    board.fullmove_number = 2U;
+    replay_timeline_record(&timeline, &board, &gas, CF_GAME_ONGOING,
+                           CF_MATCH_LOCAL, "NEXT");
+    CHECK(replay_timeline_delta_matches_after_record(&timeline, &delta));
+    CHECK(replay_timeline_restore_record_delta(&timeline, &delta));
+    CHECK(memcmp(&timeline, &before, sizeof(timeline)) == 0);
+
+    replay_timeline_init(&timeline);
+    for (i = 0; i < CF_REPLAY_CAPACITY; ++i) {
+        board.fullmove_number = (unsigned)(i + 1);
+        replay_timeline_record(&timeline, &board, &gas, CF_GAME_ONGOING,
+                               CF_MATCH_LOCAL, "FULL");
+    }
+    before = timeline;
+    CHECK(replay_timeline_capture_record_delta(&timeline, &delta));
+    board.fullmove_number = 999U;
+    replay_timeline_record(&timeline, &board, &gas, CF_GAME_CHECK,
+                           CF_MATCH_LOCAL, "OVERFLOW");
+    CHECK(timeline.start != before.start);
+    CHECK(timeline.truncated);
+    CHECK(replay_timeline_restore_record_delta(&timeline, &delta));
+    CHECK(memcmp(&timeline, &before, sizeof(timeline)) == 0);
+}
+
 static void test_invalid_snapshot_rejected(void)
 {
     CfBoard board;
@@ -231,6 +271,7 @@ int main(void)
     test_fart_round_trip();
     test_ring_and_labels();
     test_large_clock_round_trip();
+    test_timeline_delta_rollback();
     test_invalid_snapshot_rejected();
 
     if (failures != 0) {

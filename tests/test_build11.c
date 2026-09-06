@@ -25,6 +25,37 @@ static void test_history_ring(void)
     CHECK(ux_history_get(&history, 32) == 0);
 }
 
+static void test_history_delta_rollback(void)
+{
+    CfUxHistory history;
+    CfUxHistory before;
+    CfUxHistoryDelta delta;
+    char line[20];
+    int i;
+
+    CHECK(sizeof(CfUxHistoryDelta) < 64U);
+    ux_history_init(&history);
+    ux_history_add(&history, "ONE");
+    before = history;
+    CHECK(ux_history_capture_add_delta(&history, &delta));
+    ux_history_add(&history, "TWO");
+    CHECK(ux_history_delta_matches_after_add(&history, &delta));
+    CHECK(ux_history_restore_add_delta(&history, &delta));
+    CHECK(memcmp(&history, &before, sizeof(history)) == 0);
+
+    ux_history_init(&history);
+    for (i = 0; i < CF_UX_HISTORY_CAPACITY; ++i) {
+        sprintf(line, "FULL %02d", i);
+        ux_history_add(&history, line);
+    }
+    before = history;
+    CHECK(ux_history_capture_add_delta(&history, &delta));
+    ux_history_add(&history, "OVERFLOW");
+    CHECK(strcmp(ux_history_get(&history, 0), "FULL 01") == 0);
+    CHECK(ux_history_restore_add_delta(&history, &delta));
+    CHECK(memcmp(&history, &before, sizeof(history)) == 0);
+}
+
 static void test_layout_contract(void)
 {
     int turn_width = 13 * 6 - 1;
@@ -61,6 +92,10 @@ static void test_layout_contract(void)
     CHECK(CF_UI_PROMPT_HELP_X + short_prompt_width < CF_UI_PROMPT_REPLAY_X);
     CHECK(CF_UI_PROMPT_REPLAY_X + replay_prompt_width < CF_UI_PROMPT_ESC_X);
     CHECK(CF_UI_PROMPT_ESC_X + esc_width < CF_UI_SCREEN_W);
+    CHECK(CF_UI_PRACTICE_UNDO_HIT_X <= CF_UI_PRACTICE_UNDO_X);
+    CHECK(CF_UI_PRACTICE_UNDO_X < CF_UI_PRACTICE_FART_X);
+    CHECK(CF_UI_PRACTICE_UNDO_HIT_X + CF_UI_PRACTICE_UNDO_HIT_W <=
+          CF_UI_PRACTICE_FART_X);
     CHECK(CF_UI_PROMPT_TEXT_Y + 7 <= CF_UI_SCREEN_H);
     CHECK(CF_UI_FART_BADGE_X >= 0);
     CHECK(CF_UI_FART_BADGE_X + CF_UI_FART_BADGE_W <= CF_UI_SCREEN_W);
@@ -253,6 +288,7 @@ static void test_attract_push(void)
 int main(void)
 {
     test_history_ring();
+    test_history_delta_rollback();
     test_layout_contract();
     test_hit_testing();
     test_hit_testing_every_square();

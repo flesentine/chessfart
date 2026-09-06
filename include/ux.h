@@ -15,9 +15,22 @@ typedef struct CfUxHistory {
     int count;
 } CfUxHistory;
 
+typedef struct CfUxHistoryDelta {
+    int start_before;
+    int count_before;
+    int slot;
+    char slot_before[CF_UX_HISTORY_LINE];
+} CfUxHistoryDelta;
+
 void ux_history_init(CfUxHistory *history);
 void ux_history_add(CfUxHistory *history, const char *line);
 const char *ux_history_get(const CfUxHistory *history, int index);
+int ux_history_capture_add_delta(const CfUxHistory *history,
+                                 CfUxHistoryDelta *delta);
+int ux_history_delta_matches_after_add(const CfUxHistory *history,
+                                       const CfUxHistoryDelta *delta);
+int ux_history_restore_add_delta(CfUxHistory *history,
+                                 const CfUxHistoryDelta *delta);
 
 void ux_format_move_line(const char *actor, const CfGasMove *move,
                          char *out, unsigned capacity);

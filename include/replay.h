@@ -31,6 +31,15 @@ typedef struct CfReplayTimeline {
     int truncated;
 } CfReplayTimeline;
 
+typedef struct CfReplayTimelineDelta {
+    int start_before;
+    int count_before;
+    unsigned long total_before;
+    int truncated_before;
+    int slot;
+    CfReplaySnapshot slot_before;
+} CfReplayTimelineDelta;
+
 void replay_timeline_init(CfReplayTimeline *timeline);
 void replay_timeline_reset(CfReplayTimeline *timeline,
                            const CfBoard *board,
@@ -44,6 +53,13 @@ void replay_timeline_record(CfReplayTimeline *timeline,
                             CfGameStatus status,
                             CfMatchMode match_mode,
                             const char *label);
+int replay_timeline_capture_record_delta(const CfReplayTimeline *timeline,
+                                         CfReplayTimelineDelta *delta);
+int replay_timeline_delta_matches_after_record(
+    const CfReplayTimeline *timeline,
+    const CfReplayTimelineDelta *delta);
+int replay_timeline_restore_record_delta(CfReplayTimeline *timeline,
+                                         const CfReplayTimelineDelta *delta);
 const CfReplaySnapshot *replay_timeline_get(const CfReplayTimeline *timeline,
                                             int index);
 int replay_snapshot_restore(const CfReplaySnapshot *snapshot,

@@ -40,6 +40,50 @@ const char *ux_history_get(const CfUxHistory *history, int index)
     return history->lines[slot];
 }
 
+int ux_history_capture_add_delta(const CfUxHistory *history,
+                                 CfUxHistoryDelta *delta)
+{
+    int slot;
+    if (history == 0 || delta == 0 ||
+        history->count < 0 || history->count > CF_UX_HISTORY_CAPACITY ||
+        history->start < 0 || history->start >= CF_UX_HISTORY_CAPACITY)
+        return 0;
+    slot = history->count < CF_UX_HISTORY_CAPACITY ?
+           (history->start + history->count) % CF_UX_HISTORY_CAPACITY :
+           history->start;
+    delta->start_before = history->start;
+    delta->count_before = history->count;
+    delta->slot = slot;
+    memcpy(delta->slot_before, history->lines[slot], CF_UX_HISTORY_LINE);
+    return 1;
+}
+
+int ux_history_delta_matches_after_add(const CfUxHistory *history,
+                                       const CfUxHistoryDelta *delta)
+{
+    int expected_start;
+    int expected_count;
+    if (history == 0 || delta == 0) return 0;
+    expected_count = delta->count_before < CF_UX_HISTORY_CAPACITY ?
+                     delta->count_before + 1 : CF_UX_HISTORY_CAPACITY;
+    expected_start = delta->count_before < CF_UX_HISTORY_CAPACITY ?
+                     delta->start_before :
+                     (delta->start_before + 1) % CF_UX_HISTORY_CAPACITY;
+    return history->count == expected_count &&
+           history->start == expected_start;
+}
+
+int ux_history_restore_add_delta(CfUxHistory *history,
+                                 const CfUxHistoryDelta *delta)
+{
+    if (!ux_history_delta_matches_after_add(history, delta)) return 0;
+    memcpy(history->lines[delta->slot], delta->slot_before,
+           CF_UX_HISTORY_LINE);
+    history->start = delta->start_before;
+    history->count = delta->count_before;
+    return 1;
+}
+
 void ux_format_move_line(const char *actor, const CfGasMove *move,
                          char *out, unsigned capacity)
 {

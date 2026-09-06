@@ -1,3 +1,75 @@
+static void ux_practice_presentation_init(void)
+{
+    memset(&g_practice_presentation_undo, 0,
+           sizeof(g_practice_presentation_undo));
+}
+
+static int ux_practice_presentation_record_before_action(void)
+{
+    CfPracticePresentationUndoEntry captured;
+    CfPracticePresentationUndoEntry *entry;
+    int index;
+    if (!g_practice_mode || g_replay_timeline == 0) return 0;
+    if (!ux_history_capture_add_delta(&g_ux_history, &captured.history) ||
+        !replay_timeline_capture_record_delta(g_replay_timeline,
+                                              &captured.replay))
+        return 0;
+
+    if (g_practice_presentation_undo.count <
+        CF_PRACTICE_UNDO_CAPACITY) {
+        index = (g_practice_presentation_undo.start +
+                 g_practice_presentation_undo.count) %
+                CF_PRACTICE_UNDO_CAPACITY;
+        ++g_practice_presentation_undo.count;
+    } else {
+        index = g_practice_presentation_undo.start;
+        g_practice_presentation_undo.start =
+            (g_practice_presentation_undo.start + 1) %
+            CF_PRACTICE_UNDO_CAPACITY;
+    }
+
+    entry = &g_practice_presentation_undo.entries[index];
+    *entry = captured;
+    return 1;
+}
+
+static int ux_practice_presentation_can_restore_last(void)
+{
+    CfPracticePresentationUndoEntry *entry;
+    int index;
+    if (g_replay_timeline == 0 ||
+        g_practice_presentation_undo.count <= 0)
+        return 0;
+    index = (g_practice_presentation_undo.start +
+             g_practice_presentation_undo.count - 1) %
+            CF_PRACTICE_UNDO_CAPACITY;
+    entry = &g_practice_presentation_undo.entries[index];
+    return ux_history_delta_matches_after_add(&g_ux_history,
+                                               &entry->history) &&
+           replay_timeline_delta_matches_after_record(g_replay_timeline,
+                                                       &entry->replay);
+}
+
+static int ux_practice_presentation_restore_last(void)
+{
+    CfPracticePresentationUndoEntry *entry;
+    int index;
+    if (!ux_practice_presentation_can_restore_last()) return 0;
+    index = (g_practice_presentation_undo.start +
+             g_practice_presentation_undo.count - 1) %
+            CF_PRACTICE_UNDO_CAPACITY;
+    entry = &g_practice_presentation_undo.entries[index];
+    if (!ux_history_restore_add_delta(&g_ux_history, &entry->history))
+        return 0;
+    if (!replay_timeline_restore_record_delta(g_replay_timeline,
+                                               &entry->replay))
+        return 0;
+    --g_practice_presentation_undo.count;
+    if (g_practice_presentation_undo.count == 0)
+        g_practice_presentation_undo.start = 0;
+    return 1;
+}
+
 static int ux_terminal(CfGameStatus status)
 {
     return status == CF_GAME_CHECKMATE || status == CF_GAME_STALEMATE ||
@@ -101,11 +173,13 @@ int ux_human_make_move(CfBoard *board, CfGasState *gas,
     CfGasMove local;
     char line[CF_UX_HISTORY_LINE];
     if (!audio_game_make_move(board, gas, ff, fr, tf, tr, &local)) return 0;
+    if (g_practice_mode) {
+        practice_undo_record_move(&g_practice_undo, &local, &g_history);
+        (void)ux_practice_presentation_record_before_action();
+    }
     ux_log_move(ux_match_actor_name(g_match_mode,
                                     local.chess_move.moved.color),
                 &local, line);
-    if (g_practice_mode)
-        practice_undo_record_move(&g_practice_undo, &local, &g_history);
     ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
@@ -120,11 +194,13 @@ int ux_human_make_move_ex(CfBoard *board, CfGasState *gas,
     char line[CF_UX_HISTORY_LINE];
     if (!audio_game_make_move_ex(board, gas, ff, fr, tf, tr,
                                  promotion, &local)) return 0;
+    if (g_practice_mode) {
+        practice_undo_record_move(&g_practice_undo, &local, &g_history);
+        (void)ux_practice_presentation_record_before_action();
+    }
     ux_log_move(ux_match_actor_name(g_match_mode,
                                     local.chess_move.moved.color),
                 &local, line);
-    if (g_practice_mode)
-        practice_undo_record_move(&g_practice_undo, &local, &g_history);
     ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (made != 0) *made = local;
@@ -139,10 +215,12 @@ int ux_human_make_fart(CfBoard *board, CfGasState *gas, int file, int rank,
     char line[CF_UX_HISTORY_LINE];
     if (!audio_game_make_fart(board, gas, file, rank,
                               direction, promotion, &local)) return 0;
+    if (g_practice_mode) {
+        practice_undo_record_fart(&g_practice_undo, &local, &g_history);
+        (void)ux_practice_presentation_record_before_action();
+    }
     ux_log_fart(ux_match_actor_name(g_match_mode, local.previous_side),
                 &local, line);
-    if (g_practice_mode)
-        practice_undo_record_fart(&g_practice_undo, &local, &g_history);
     ux_replay_record_current(board, gas, &g_history, line);
     (void)ux_cpu_take_turn(board, gas, &g_history, 0);
     if (action != 0) *action = local;
@@ -154,13 +232,16 @@ int ux_practice_undo_game(CfBoard *board, CfGasState *gas,
 {
     CfGameStatus status;
     if (!g_practice_mode) return -1;
+    if (g_practice_presentation_undo.count != g_practice_undo.count ||
+        !ux_practice_presentation_can_restore_last())
+        return 0;
     if (!practice_undo_apply_last(&g_practice_undo, board, gas, history))
+        return 0;
+    if (!ux_practice_presentation_restore_last())
         return 0;
 
     status = gas_game_status(board, gas, history);
-    ux_history_add(&g_ux_history, "SYSTEM UNDO");
-    replay_timeline_reset(g_replay_timeline, board, gas, status,
-                          g_match_mode, "UNDO START");
+    (void)status;
     g_cpu_message[0] = '\0';
     g_cpu_message_pending = 0;
     return 1;
@@ -258,6 +339,17 @@ CfInputKey5 ux_poll_key(void)
     if (mouse_poll(&mouse) && mouse.present) {
         pressed = mouse.buttons & ~g_ux_mouse_buttons;
         g_ux_mouse_buttons = mouse.buttons;
+        if ((pressed & 1U) != 0U && g_practice_mode &&
+            g_ux_cache.valid && !g_ux_cache.promotion_pending &&
+            !g_ux_cache.fart_mode &&
+            !g_ux_cache.fart_promotion_pending &&
+            mouse.y >= CF_UI_COMMAND_Y &&
+            mouse.y < CF_UI_COMMAND_Y + CF_UI_COMMAND_H &&
+            mouse.x >= CF_UI_PRACTICE_UNDO_HIT_X &&
+            mouse.x < CF_UI_PRACTICE_UNDO_HIT_X +
+                      CF_UI_PRACTICE_UNDO_HIT_W) {
+            return CF5_KEY_UNDO;
+        }
         if ((pressed & 2U) != 0U &&
             ux_board_hit_test(mouse.x, mouse.y, &file, &rank) &&
             g_ux_cache.valid && !g_ux_cache.fart_mode &&
