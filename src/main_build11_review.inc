@@ -128,6 +128,11 @@ EMSCRIPTEN_KEEPALIVE void cf_review_seed_cpu_message_pending(void)
     g_cpu_message_pending = 1;
 }
 
+EMSCRIPTEN_KEEPALIVE void cf_review_clear_cpu_message_pending(void)
+{
+    g_cpu_message_pending = 0;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_board_hash(void)
 {
     return cf_review_hash_bytes(&g_board, sizeof(g_board));
