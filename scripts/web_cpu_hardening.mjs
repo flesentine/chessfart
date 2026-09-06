@@ -628,9 +628,46 @@ async function verifyPracticeUndo(browser) {
     throw new Error('Practice Fart undo did not restore actor Gas');
   await canvasShot(page,'practice-04-after-fart-undo');
 
+  /* Undo the four charging moves to prove repeated rollback reaches the
+   * exact opening state, then exercise U from a real terminal position. */
+  for (let i = 0; i < 4; ++i) {
+    await page.keyboard.press('u');
+    await sleep(90);
+  }
+  if (!samePersistedState(opening,await persistedState(page)) ||
+      await call(page,'cf_review_practice_undo_count') !== 0 ||
+      await call(page,'cf_review_side') !== 1 ||
+      await call(page,'cf_review_fullmove') !== 1)
+    throw new Error('Practice repeated undo did not return exactly to opening');
+
+  /* Fool's Mate through the real local Practice path: f3 e5 g4 Qh4#. */
+  await clickSquare(page,5,1); await clickSquare(page,5,2);
+  await clickSquare(page,4,6); await clickSquare(page,4,4);
+  await clickSquare(page,6,1); await clickSquare(page,6,3);
+  const beforeMate = await persistedState(page);
+  const beforeMateUndoCount = await call(page,'cf_review_practice_undo_count');
+  await clickSquare(page,3,7); await clickSquare(page,7,3);
+  await sleep(180);
+  if (await call(page,'cf_review_status') !== 2 ||
+      await call(page,'cf_review_side') !== 1 ||
+      await call(page,'cf_review_practice_undo_count') !== beforeMateUndoCount + 1)
+    throw new Error('Practice Fool\'s Mate did not reach journaled checkmate');
+  await canvasShot(page,'practice-05-checkmate');
+
+  await page.keyboard.press('u');
+  await sleep(180);
+  if (!samePersistedState(beforeMate,await persistedState(page)) ||
+      await call(page,'cf_review_status') >= 2 ||
+      await call(page,'cf_review_side') !== 2 ||
+      await call(page,'cf_review_practice_undo_count') !== beforeMateUndoCount ||
+      await call(page,'cf_review_replay_count') !== 1 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Practice terminal undo did not restore live pre-mate state');
+  await canvasShot(page,'practice-06-after-terminal-undo');
+
   if (errors.length) throw new Error(`practice-undo: ${errors.join(' | ')}`);
   await page.close();
-  return 'PRACTICE_UNDO=PASS title=practice local=no-cpu save-load=disabled move=exact fart=exact replay=honest-baseline';
+  return 'PRACTICE_UNDO=PASS title=practice local=no-cpu save-load=disabled move=exact fart=exact repeated=opening terminal=live replay=honest-baseline';
 }
 
 async function verifyMatchModes(browser) {
