@@ -108,7 +108,8 @@ The host gate must prove:
 - the undo window remains exactly 32 committed Practice actions
 - when a 33rd newer action displaces the oldest undo record, Undo never crosses that discarded boundary
 - a host stress sequence runs beyond the 128-position repetition ring, then undoes the latest 32 actions and requires byte-for-byte board, Gas, and repetition-history restoration
-- Chromium runs 300 committed Practice actions so the 32-entry undo journals, 32-line action log, 128-position repetition history, and 256-frame replay timeline have all rolled over
+- Chromium separately proves a real-input threefold draw is terminal-locked and that `U` reopens the exact pre-draw Practice state
+- a review-only 300-action production-commit-path stress rolls the 32-entry undo journals, 32-line action log, 128-position repetition history, and 256-frame replay timeline past their retention boundaries
 - Chromium then undoes exactly 32 actions and requires the full board/Gas/history state plus raw action-log and replay-ring hashes to match the 268-action checkpoint
 - a 33rd Undo must be a transactional no-op
 - compile-time guards keep the presentation undo journal under 8 KiB and both Practice undo journals together under 16 KiB
@@ -119,7 +120,8 @@ The host gate must prove:
 The closeout gate proves:
 
 - the 169-action host stress crosses the 128-position repetition-history boundary, retains only the newest 32 undo records, and restores the exact checkpoint after 32 undos
-- the 300-action Chromium stress overflows the 32-entry game/presentation undo journals, 32-line action log, 128-position repetition history, and 256-frame replay ring together
+- real mouse/keyboard Practice play reaches a genuine threefold draw, rejects further gameplay input, and `U` restores a live pre-draw state
+- the separate 300-action review commit-path stress overflows the 32-entry game/presentation undo journals, 32-line action log, 128-position repetition history, and 256-frame replay ring together
 - after 32 undos, board, Gas, repetition history, action log, and replay timeline match the 268-action checkpoint exactly
 - a 33rd undo is a transactional no-op because the older journal boundary has been deliberately discarded
 - ordinary promotion, Fart-push promotion, castling, en passant, normal moves, Farts, repeated undo, terminal undo, and mouse Undo all remain certified
