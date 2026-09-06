@@ -33,6 +33,7 @@ static void test_history_delta_rollback(void)
     char line[20];
     int i;
 
+    CHECK(sizeof(CfUxHistoryDelta) < 64U);
     ux_history_init(&history);
     ux_history_add(&history, "ONE");
     before = history;
