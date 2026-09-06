@@ -1069,6 +1069,56 @@ async function verifyPracticeLongSession(browser) {
 async function verifyMatchModes(browser) {
   const summary = [];
 
+  const theme = await browser.newPage();
+  const themeErrors = [];
+  theme.on('pageerror',e=>themeErrors.push(`PAGE ${String(e)}`));
+  theme.on('console',m=>{ if(m.type()==='error') themeErrors.push(`CONSOLE ${m.text()}`); });
+  await theme.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await theme.goto('http://127.0.0.1:8127/?hardening=title-theme',
+                   {waitUntil:'domcontentloaded',timeout:15000});
+  await theme.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await theme.waitForFunction(
+    ()=>typeof Module._cf_review_ui_theme==='function',
+    {timeout:15000}
+  );
+  if (await call(theme,'cf_review_ui_theme') !== 0)
+    throw new Error('fresh title theme is not Royal Basement');
+  await theme.keyboard.press('t');
+  await sleep(160);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('T did not select Crimson Cellar on title');
+  await canvasShot(theme,'title-theme-crimson');
+  await theme.keyboard.press('t');
+  await sleep(120);
+  if (await call(theme,'cf_review_ui_theme') !== 0)
+    throw new Error('second T did not wrap to Royal Basement');
+  await theme.keyboard.press('t');
+  await theme.keyboard.press('Enter');
+  await sleep(450);
+  await waitForMatchState(theme,1,1);
+  if (await call(theme,'cf_review_ui_theme') !== 1 ||
+      await call(theme,'cf_review_match_mode') !== 0 ||
+      await call(theme,'cf_review_replay_count') !== 1)
+    throw new Error('Crimson Cellar did not carry into CPU session');
+  await canvasShot(theme,'game-theme-crimson-opening');
+  await theme.keyboard.press('t');
+  await sleep(120);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('in-game T unexpectedly changed session theme');
+  await theme.keyboard.press('s');
+  await sleep(160);
+  await theme.keyboard.press('l');
+  await sleep(220);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('save/load changed session-only theme');
+  if (themeErrors.length)
+    throw new Error(`title-theme: ${themeErrors.join(' | ')}`);
+  summary.push('TITLE_THEME=PASS T=royal/crimson wrap=royal session=crimson game-T=noop save-load=preserved');
+  await theme.close();
+
   const keyboard = await browser.newPage();
   await keyboard.setViewport({width:1100,height:850,deviceScaleFactor:1});
   await keyboard.goto('http://127.0.0.1:8127/?hardening=title-keyboard-local',{waitUntil:'domcontentloaded',timeout:15000});
