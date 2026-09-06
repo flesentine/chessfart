@@ -22,6 +22,7 @@ The automated release gate covers the entire game from rules through the DOS pac
 - exact version-2 LOCAL save/load rollback of board metadata, all piece/Gas squares and repetition history
 - bounded replay timeline plus transactional version-1 CHESSFRT.RPL export/import
 - bounded 32-action Practice Undo with exact move/Fart/promotion/castling/en-passant, repetition-history, action-log and replay rollback
+- real-input Practice threefold-draw terminal lock and Undo-to-live regression, plus separate long-session ring-rollover stress
 - 600-frame replay-file ring round-trip and full CPU/local terminal replay certification
 - 32 native 320x200 visual-review states covering CPU/local HUDs, Fart, promotion and terminal states
 - 320x200 256-color VGA presentation
