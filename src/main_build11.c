@@ -35,6 +35,12 @@ typedef struct CfPracticePresentationUndoJournal {
     int count;
 } CfPracticePresentationUndoJournal;
 
+typedef char CfPracticePresentationUndoJournalFits[
+    sizeof(CfPracticePresentationUndoJournal) < 8192U ? 1 : -1];
+typedef char CfPracticeCombinedUndoJournalsFit[
+    sizeof(CfPracticePresentationUndoJournal) +
+    sizeof(CfPracticeUndoJournal) < 16384U ? 1 : -1];
+
 static CfPracticePresentationUndoJournal g_practice_presentation_undo;
 static CfGasHistory g_cpu_search_history;
 static CfGasHistory g_cpu_history_backup;
