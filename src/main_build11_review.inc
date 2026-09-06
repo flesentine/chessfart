@@ -489,6 +489,7 @@ EMSCRIPTEN_KEEPALIVE const char *cf_review_history_line(int index)
  * 4: Black Fart-push promotion: charged D3 actor, Black pawn D2 -> D1
  * 5: White mate in one: QG6-G7#
  * 6: Black mate in one: QG3-G2#
+ * 7: Practice draw fixture: kings shuttle A1/A2 and H8/H7
  */
 EMSCRIPTEN_KEEPALIVE int cf_review_write_local_fixture(int fixture)
 {
@@ -544,6 +545,12 @@ EMSCRIPTEN_KEEPALIVE int cf_review_write_local_fixture(int fixture)
         board_set_piece(&board, 5, 2, CF_PIECE_KING, CF_COLOR_BLACK);
         board_set_piece(&board, 6, 2, CF_PIECE_QUEEN, CF_COLOR_BLACK);
         board.side_to_move = CF_COLOR_BLACK;
+    } else if (fixture == 7) {
+        board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_WHITE);
+        board.side_to_move = CF_COLOR_WHITE;
+        board.castling_rights = 0U;
     } else {
         return 0;
     }
