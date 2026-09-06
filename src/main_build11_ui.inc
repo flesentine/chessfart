@@ -723,13 +723,13 @@ static void ux_draw_command_bar(const CfBoard *board,
     font_draw_text(CF_UI_PROMPT_TURN_X, CF_UI_PROMPT_TEXT_Y,
                    line, UX_COL_GOLD, 1);
     if (g_practice_mode) {
-        font_draw_text(96, CF_UI_PROMPT_TEXT_Y,
+        font_draw_text(CF_UI_PRACTICE_UNDO_X, CF_UI_PROMPT_TEXT_Y,
                        "U UNDO", UX_COL_SELECTED, 1);
-        font_draw_text(140, CF_UI_PROMPT_TEXT_Y,
+        font_draw_text(CF_UI_PRACTICE_FART_X, CF_UI_PROMPT_TEXT_Y,
                        "F FART", UX_COL_GAS, 1);
-        font_draw_text(184, CF_UI_PROMPT_TEXT_Y,
+        font_draw_text(CF_UI_PRACTICE_HELP_X, CF_UI_PROMPT_TEXT_Y,
                        "H HELP", UX_COL_TEXT, 1);
-        font_draw_text(228, CF_UI_PROMPT_TEXT_Y,
+        font_draw_text(CF_UI_PRACTICE_REPLAY_X, CF_UI_PROMPT_TEXT_Y,
                        "R RPLY", UX_COL_TEXT, 1);
         font_draw_text(CF_UI_PROMPT_ESC_X, CF_UI_PROMPT_TEXT_Y,
                        "ESC", UX_COL_MUTED, 1);
