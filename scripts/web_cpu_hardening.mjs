@@ -887,6 +887,89 @@ async function verifyPracticeEdgeUndo(browser) {
   return 'PRACTICE_EDGE_UNDO=PASS promotion=exact fart-promotion=exact';
 }
 
+async function verifyPracticeDrawUndo(browser) {
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror',e=>errors.push(`PAGE ${String(e)}`));
+  page.on('console',m=>{ if(m.type()==='error') errors.push(`CONSOLE ${m.text()}`); });
+  await page.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await page.goto('http://127.0.0.1:8127/?hardening=practice-draw-undo',
+                  {waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await sleep(450);
+  await enablePracticeFromLocalFixture(page,7,1,1);
+
+  const moves = [
+    [0,0,0,1],
+    [7,7,7,6],
+    [0,1,0,0],
+    [7,6,7,7]
+  ];
+  let terminalPly = -1;
+  for (let ply = 0; ply < 24; ++ply) {
+    const m = moves[ply & 3];
+    await clickSquare(page,m[0],m[1]);
+    await clickSquare(page,m[2],m[3]);
+    await sleep(90);
+    const status = await call(page,'cf_review_status');
+    if (status >= 4) {
+      terminalPly = ply;
+      break;
+    }
+  }
+  if (terminalPly < 0 ||
+      await call(page,'cf_review_status') !== 5)
+    throw new Error('real Practice shuttle did not reach THREEFOLD DRAW');
+
+  const terminalState = await persistedState(page);
+  const terminalHistory = await call(page,'cf_review_history_count');
+  const terminalReplay = await call(page,'cf_review_replay_count');
+  const terminalReplayTotal = await call(page,'cf_review_replay_total');
+  const terminalUndo = await call(page,'cf_review_practice_undo_count');
+  const terminalPresentation =
+    await call(page,'cf_review_practice_presentation_undo_count');
+  const terminalGasHash = await call(page,'cf_review_gas_history_hash');
+  const next = moves[(terminalPly + 1) & 3];
+
+  await canvasShot(page,'practice-draw-01-threefold');
+  await clickSquare(page,next[0],next[1]);
+  await clickSquare(page,next[2],next[3]);
+  await sleep(140);
+  if (!samePersistedState(terminalState,await persistedState(page)) ||
+      await call(page,'cf_review_status') !== 5 ||
+      await call(page,'cf_review_history_count') !== terminalHistory ||
+      await call(page,'cf_review_replay_count') !== terminalReplay ||
+      await call(page,'cf_review_replay_total') !== terminalReplayTotal ||
+      await call(page,'cf_review_practice_undo_count') !== terminalUndo ||
+      await call(page,'cf_review_practice_presentation_undo_count') !==
+        terminalPresentation ||
+      await call(page,'cf_review_gas_history_hash') !== terminalGasHash)
+    throw new Error('real Practice terminal draw accepted gameplay input');
+
+  await page.keyboard.press('u');
+  await sleep(180);
+  if (await call(page,'cf_review_status') >= 4 ||
+      await call(page,'cf_review_practice_undo_count') !== terminalUndo - 1 ||
+      await call(page,'cf_review_practice_presentation_undo_count') !==
+        terminalPresentation - 1 ||
+      await call(page,'cf_review_history_count') !== terminalHistory - 1 ||
+      await call(page,'cf_review_replay_count') !== terminalReplay - 1 ||
+      await call(page,'cf_review_replay_total') !== terminalReplayTotal - 1 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Practice U did not reopen exact pre-draw state');
+  await canvasShot(page,'practice-draw-02-after-undo');
+
+  if (errors.length) throw new Error(`practice-draw-undo: ${errors.join(' | ')}`);
+  await page.close();
+  return `PRACTICE_DRAW_UNDO=PASS draw=threefold terminal-lock=real-input undo=live ply=${terminalPly+1}`;
+}
+
 async function verifyPracticeLongSession(browser) {
   const page = await browser.newPage();
   const errors = [];
@@ -907,8 +990,9 @@ async function verifyPracticeLongSession(browser) {
   if (await call(page,'cf_review_prepare_practice_stress') !== 1)
     throw new Error('could not prepare Practice stress session');
 
-  /* 268 committed actions put repetition history, the action log and replay
-   * timeline past their respective rollover boundaries. */
+  /* Review-only commit-path stress: 268 committed actions put repetition
+   * history, action log and replay timeline past their rollover boundaries.
+   * Real terminal/draw input semantics are covered separately above. */
   if (await call(page,'cf_review_run_practice_stress_actions',268) !== 1)
     throw new Error('Practice stress checkpoint actions failed');
   if (await call(page,'cf_review_gas_history_count') !== 128 ||
@@ -979,7 +1063,7 @@ async function verifyPracticeLongSession(browser) {
 
   if (errors.length) throw new Error(`practice-long-session: ${errors.join(' | ')}`);
   await page.close();
-  return 'PRACTICE_LONG_SESSION=PASS actions=300 undo=32 boundary=locked history=128 replay=256/269 truncated=1 exact=board+gas+history+log+replay';
+  return 'PRACTICE_RING_STRESS=PASS review-commit-actions=300 undo=32 boundary=locked history=128 replay=256/269 truncated=1 exact=board+gas+history+log+replay';
 }
 
 async function verifyMatchModes(browser) {
@@ -1811,6 +1895,7 @@ try {
   const matchSummary = await verifyMatchModes(browser);
   const practiceSummary = await verifyPracticeUndo(browser);
   const practiceEdgeSummary = await verifyPracticeEdgeUndo(browser);
+  const practiceDrawSummary = await verifyPracticeDrawUndo(browser);
   const practiceLongSummary = await verifyPracticeLongSession(browser);
   const localEdgeSummary = await verifyLocalEdgeHardening(browser);
   const replaySummary = await verifyReplayTimeline(browser);
@@ -1824,7 +1909,8 @@ try {
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
   const summary = [...matchSummary, practiceSummary, practiceEdgeSummary,
-                   practiceLongSummary, ...localEdgeSummary, replaySummary,
+                   practiceDrawSummary, practiceLongSummary,
+                   ...localEdgeSummary, replaySummary,
                    replayViewerSummary, localFullSummary];
   for (const r of results) {
     summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} replay=${r.replayCount}/${r.replayTotal} truncated=${r.replayTruncated} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
