@@ -4,6 +4,7 @@
 #include "board_view_build6.h"
 #include "board_view_build7.h"
 #include "font.h"
+#include "ui_theme.h"
 #include "vga.h"
 
 #define BOARD_X 10
@@ -39,54 +40,10 @@
 #define COL_FLASH 26
 #define COL_COPPER 27
 
-static void set_rgb(cf_u8 *palette, int index, int r, int g, int b)
-{
-    int base = index * 3;
-    palette[base] = (cf_u8)r;
-    palette[base + 1] = (cf_u8)g;
-    palette[base + 2] = (cf_u8)b;
-}
-
 static void load_build7_palette(int flash)
 {
     cf_u8 palette[VGA_PALETTE_BYTES];
-    int i;
-    int shade;
-
-    for (i = 0; i < VGA_PALETTE_BYTES; ++i) palette[i] = 0;
-    set_rgb(palette, COL_BG, 3, 4, 9);
-    set_rgb(palette, COL_PANEL, 7, 9, 17);
-    set_rgb(palette, COL_SQUARE_LIGHT, 52, 44, 28);
-    set_rgb(palette, COL_SQUARE_DARK, 12, 25, 23);
-    set_rgb(palette, COL_GOLD, flash ? 63 : 58, flash ? 63 : 45, 10);
-    set_rgb(palette, COL_TEXT, 63, 62, 52);
-    set_rgb(palette, COL_MUTED, 27, 31, 34);
-    set_rgb(palette, COL_GREEN, 14, 52, 22);
-    set_rgb(palette, COL_GAS, flash ? 63 : 38, 63, flash ? 35 : 10);
-    set_rgb(palette, COL_BLACK, 0, 0, 0);
-    set_rgb(palette, COL_PANEL_EDGE, 20, 24, 35);
-    set_rgb(palette, COL_WHITE_PIECE, 59, 55, 43);
-    set_rgb(palette, COL_WHITE_HI, 63, 63, 58);
-    set_rgb(palette, COL_BLACK_PIECE, 5, 7, 12);
-    set_rgb(palette, COL_BLACK_HI, 27, 31, 41);
-    set_rgb(palette, COL_CURSOR, 10, 56, 63);
-    set_rgb(palette, COL_SELECTED, 63, 15, 43);
-    set_rgb(palette, COL_SHADOW, 1, 2, 4);
-    set_rgb(palette, COL_LEGAL, 18, 63, 26);
-    set_rgb(palette, COL_CAPTURE, 63, 22, 8);
-    set_rgb(palette, COL_CHECK, 63, 7, 7);
-    set_rgb(palette, COL_PROMOTE, 55, 25, 63);
-    set_rgb(palette, COL_FART, flash ? 63 : 37, 63, 8);
-    set_rgb(palette, COL_FART_PUSH, 63, 40, 7);
-    set_rgb(palette, COL_SKY, 5, 13, 28);
-    set_rgb(palette, COL_CLOUD, 31, 58, 14);
-    set_rgb(palette, COL_FLASH, 63, 63, 40);
-    set_rgb(palette, COL_COPPER, 48, 23, 8);
-
-    for (i = 28; i < VGA_PALETTE_COLORS; ++i) {
-        shade = (i - 28) * 63 / (VGA_PALETTE_COLORS - 29);
-        set_rgb(palette, i, shade, shade, shade);
-    }
+    ui_theme_build_palette(palette, flash);
     vga_set_palette(palette);
 }
 
