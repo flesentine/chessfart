@@ -887,6 +887,101 @@ async function verifyPracticeEdgeUndo(browser) {
   return 'PRACTICE_EDGE_UNDO=PASS promotion=exact fart-promotion=exact';
 }
 
+async function verifyPracticeLongSession(browser) {
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror',e=>errors.push(`PAGE ${String(e)}`));
+  page.on('console',m=>{ if(m.type()==='error') errors.push(`CONSOLE ${m.text()}`); });
+  await page.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await page.goto('http://127.0.0.1:8127/?hardening=practice-long-session',
+                  {waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await page.waitForFunction(
+    ()=>typeof Module._cf_review_prepare_practice_stress==='function',
+    {timeout:15000}
+  );
+
+  if (await call(page,'cf_review_prepare_practice_stress') !== 1)
+    throw new Error('could not prepare Practice stress session');
+
+  /* 268 committed actions put repetition history, the action log and replay
+   * timeline past their respective rollover boundaries. */
+  if (await call(page,'cf_review_run_practice_stress_actions',268) !== 1)
+    throw new Error('Practice stress checkpoint actions failed');
+  if (await call(page,'cf_review_gas_history_count') !== 128 ||
+      await call(page,'cf_review_history_count') !== 32 ||
+      await call(page,'cf_review_replay_count') !== 256 ||
+      await call(page,'cf_review_replay_total') !== 269 ||
+      await call(page,'cf_review_replay_truncated') !== 1 ||
+      await call(page,'cf_review_replay_start') !== 13 ||
+      await call(page,'cf_review_practice_undo_count') !== 32 ||
+      await call(page,'cf_review_practice_presentation_undo_count') !== 32)
+    throw new Error('Practice stress checkpoint ring accounting mismatch');
+
+  const checkpoint = await persistedState(page);
+  const checkpointGasHash = await call(page,'cf_review_gas_history_hash');
+  const checkpointUxHash = await call(page,'cf_review_ux_history_hash');
+  const checkpointReplayHash = await call(page,'cf_review_replay_hash');
+
+  /* Add exactly one full undo-window. All prior undo records must be evicted,
+   * while all three presentation/history rings continue rolling. */
+  if (await call(page,'cf_review_run_practice_stress_actions',32) !== 1)
+    throw new Error('Practice stress overflow actions failed');
+  if (await call(page,'cf_review_practice_undo_count') !== 32 ||
+      await call(page,'cf_review_practice_presentation_undo_count') !== 32 ||
+      await call(page,'cf_review_practice_undo_start') !== 12 ||
+      await call(page,'cf_review_practice_presentation_undo_start') !== 12 ||
+      await call(page,'cf_review_history_count') !== 32 ||
+      await call(page,'cf_review_ux_history_start') !== 12 ||
+      await call(page,'cf_review_gas_history_count') !== 128 ||
+      await call(page,'cf_review_replay_count') !== 256 ||
+      await call(page,'cf_review_replay_total') !== 301 ||
+      await call(page,'cf_review_replay_start') !== 45 ||
+      await call(page,'cf_review_replay_truncated') !== 1)
+    throw new Error('Practice stress full-overflow accounting mismatch');
+
+  for (let i = 0; i < 32; ++i) {
+    if (await call(page,'cf_review_practice_undo_direct') !== 1)
+      throw new Error(`Practice stress undo failed at ${i+1}/32`);
+  }
+
+  if (!samePersistedState(checkpoint,await persistedState(page)) ||
+      await call(page,'cf_review_gas_history_hash') !== checkpointGasHash ||
+      await call(page,'cf_review_ux_history_hash') !== checkpointUxHash ||
+      await call(page,'cf_review_replay_hash') !== checkpointReplayHash ||
+      await call(page,'cf_review_practice_undo_count') !== 0 ||
+      await call(page,'cf_review_practice_presentation_undo_count') !== 0 ||
+      await call(page,'cf_review_practice_undo_start') !== 0 ||
+      await call(page,'cf_review_practice_presentation_undo_start') !== 0 ||
+      await call(page,'cf_review_gas_history_count') !== 128 ||
+      await call(page,'cf_review_history_count') !== 32 ||
+      await call(page,'cf_review_ux_history_start') !== 12 ||
+      await call(page,'cf_review_replay_count') !== 256 ||
+      await call(page,'cf_review_replay_total') !== 269 ||
+      await call(page,'cf_review_replay_start') !== 13 ||
+      await call(page,'cf_review_replay_truncated') !== 1 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Practice stress rollback did not exactly restore checkpoint');
+
+  const boundary = await persistedState(page);
+  const boundaryGasHash = await call(page,'cf_review_gas_history_hash');
+  const boundaryUxHash = await call(page,'cf_review_ux_history_hash');
+  const boundaryReplayHash = await call(page,'cf_review_replay_hash');
+  if (await call(page,'cf_review_practice_undo_direct') !== 0 ||
+      !samePersistedState(boundary,await persistedState(page)) ||
+      await call(page,'cf_review_gas_history_hash') !== boundaryGasHash ||
+      await call(page,'cf_review_ux_history_hash') !== boundaryUxHash ||
+      await call(page,'cf_review_replay_hash') !== boundaryReplayHash)
+    throw new Error('Practice stress 33rd undo crossed bounded journal boundary');
+
+  if (errors.length) throw new Error(`practice-long-session: ${errors.join(' | ')}`);
+  await page.close();
+  return 'PRACTICE_LONG_SESSION=PASS actions=300 undo=32 boundary=locked history=128 replay=256/269 truncated=1 exact=board+gas+history+log+replay';
+}
+
 async function verifyMatchModes(browser) {
   const summary = [];
 
@@ -1716,6 +1811,7 @@ try {
   const matchSummary = await verifyMatchModes(browser);
   const practiceSummary = await verifyPracticeUndo(browser);
   const practiceEdgeSummary = await verifyPracticeEdgeUndo(browser);
+  const practiceLongSummary = await verifyPracticeLongSession(browser);
   const localEdgeSummary = await verifyLocalEdgeHardening(browser);
   const replaySummary = await verifyReplayTimeline(browser);
   const replayViewerSummary = await verifyReplayViewer(browser);
@@ -1728,8 +1824,8 @@ try {
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
   const summary = [...matchSummary, practiceSummary, practiceEdgeSummary,
-                   ...localEdgeSummary, replaySummary, replayViewerSummary,
-                   localFullSummary];
+                   practiceLongSummary, ...localEdgeSummary, replaySummary,
+                   replayViewerSummary, localFullSummary];
   for (const r of results) {
     summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} replay=${r.replayCount}/${r.replayTotal} truncated=${r.replayTruncated} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
     for (const line of r.fartLines) summary.push(`  ${line}`);
