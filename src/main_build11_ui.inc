@@ -84,7 +84,8 @@ static void ux_draw_help_page(int page)
             font_draw_text(x + 15, y + 66,
                            "F FART  U UNDO  R REPLAY", UX_COL_TEXT, 1);
             font_draw_text(x + 15, y + 76,
-                           "PRACTICE: SAVE/LOAD OFF", UX_COL_GAS, 1);
+                           "H HELP M LOG C CREDITS  SAVE/LOAD OFF",
+                           UX_COL_GAS, 1);
         } else {
             font_draw_text(x + 15, y + 66,
                            "F FART  S SAVE  L LOAD  R REPLAY",
@@ -135,8 +136,13 @@ static void ux_draw_help_page(int page)
                            "MODE CHOSEN ON TITLE SCREEN",
                            UX_COL_TEXT, 1);
         }
-        font_draw_text(x + 15, y + 130, "GAS COUNTS IN THREEFOLD IDENTITY", UX_COL_TEXT, 1);
-        font_draw_text(x + 15, y + 139, "SAVE STORES GAS + REPETITION HISTORY", UX_COL_MUTED, 1);
+        font_draw_text(x + 15, y + 130,
+                       "GAS COUNTS IN THREEFOLD IDENTITY", UX_COL_TEXT, 1);
+        font_draw_text(x + 15, y + 139,
+                       g_practice_mode ?
+                       "PRACTICE JOURNAL IS SESSION-ONLY" :
+                       "SAVE STORES GAS + REPETITION HISTORY",
+                       UX_COL_MUTED, 1);
     }
     ux_draw_modal_footer(x, y, w, h, "LEFT/RIGHT PAGE   ENTER CLOSE");
 }
