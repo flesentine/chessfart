@@ -15,8 +15,9 @@ DOSBox:
   3. Run CHESSFRT.EXE.
 
 A sample DOSBOX.CONF is included. On real DOS, run CHESSFRT.EXE directly.
-Choose PLAY CPU for the deterministic computer opponent or 2 PLAYERS for a
-local hot-seat White/Black match. A Microsoft-compatible mouse driver is
+Choose PLAY CPU for the deterministic computer opponent, 2 PLAYERS for a
+local hot-seat White/Black match, or PRACTICE for local play with U undo.
+Practice is session-only and disables game Save/Load. A Microsoft-compatible mouse driver is
 optional; keyboard play is complete. During a match, press R to open the
 read-only session replay and step retained frames with Left/Right. With a
 mouse driver present, the replay footer provides Previous, Next, Export,
