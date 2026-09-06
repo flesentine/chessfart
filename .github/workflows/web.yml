@@ -69,7 +69,7 @@ jobs:
           grep -q '^LOCAL_FULL_GAME=PASS opera-game plies=33 rollback=exact-persisted-state replay=2 castling=O-O-O result=CHECKMATE winner=WHITE terminal-lock$' build/web-playtest/hardening/hardening.txt
           cat build/web-playtest/playtest.txt
           cat build/web-playtest/hardening/hardening.txt
-      - name: Build 14 visual review states
+      - name: Build 17 visual review states
         run: |
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_visual_review.mjs
           test -s build/web-visual-review/manifest.json
@@ -98,106 +98,8 @@ jobs:
           test -s build/web-visual-review/32-local-black-checkmate.png
           test -s build/web-visual-review/33-theme-crimson-cellar-checkmate.png
           test -s build/web-visual-review/34-theme-royal-restored-checkmate.png
-          grep -q '^PASS
-      - name: Preserve web diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web-diagnostics
-          path: |
-            web-build.log
-            build/assets/ASSET_REPORT.txt
-            build/assets/FONT_REPORT.txt
-            build/web-smoke.txt
-            build/web-smoke.png
-            build/web-playtest/
-            build/web-visual-review/
-      - name: Preserve browser bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web
-          path: build/web/
- build/web-visual-review/visual-review.txt
-          cat build/web-visual-review/visual-review.txt
-      - name: Preserve web diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web-diagnostics
-          path: |
-            web-build.log
-            build/assets/ASSET_REPORT.txt
-            build/assets/FONT_REPORT.txt
-            build/web-smoke.txt
-            build/web-smoke.png
-            build/web-playtest/
-            build/web-visual-review/
-      - name: Preserve browser bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web
-          path: build/web/
- build/web-visual-review/visual-review.txt
-          grep -q '^states=34
-      - name: Preserve web diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web-diagnostics
-          path: |
-            web-build.log
-            build/assets/ASSET_REPORT.txt
-            build/assets/FONT_REPORT.txt
-            build/web-smoke.txt
-            build/web-smoke.png
-            build/web-playtest/
-            build/web-visual-review/
-      - name: Preserve browser bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web
-          path: build/web/
- build/web-visual-review/visual-review.txt
-          cat build/web-visual-review/visual-review.txt
-      - name: Preserve web diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web-diagnostics
-          path: |
-            web-build.log
-            build/assets/ASSET_REPORT.txt
-            build/assets/FONT_REPORT.txt
-            build/web-smoke.txt
-            build/web-smoke.png
-            build/web-playtest/
-            build/web-visual-review/
-      - name: Preserve browser bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web
-          path: build/web/
- build/web-visual-review/visual-review.txt
-          cat build/web-visual-review/visual-review.txt
-      - name: Preserve web diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web-diagnostics
-          path: |
-            web-build.log
-            build/assets/ASSET_REPORT.txt
-            build/assets/FONT_REPORT.txt
-            build/web-smoke.txt
-            build/web-smoke.png
-            build/web-playtest/
-            build/web-visual-review/
-      - name: Preserve browser bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: chessfart-web
-          path: build/web/
- build/web-visual-review/visual-review.txt
+          grep -q '^PASS$' build/web-visual-review/visual-review.txt
+          grep -q '^states=34$' build/web-visual-review/visual-review.txt
           cat build/web-visual-review/visual-review.txt
       - name: Preserve web diagnostics
         if: always()
