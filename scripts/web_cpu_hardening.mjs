@@ -703,6 +703,113 @@ async function verifyPracticeUndo(browser) {
   return 'PRACTICE_UNDO=PASS title=practice mouse=undo local=no-cpu save-load=disabled move=exact fart=exact history=exact replay=exact repeated=opening terminal=live';
 }
 
+async function enablePracticeFromLocalFixture(page, fixture, side, fullmove=1) {
+  await loadLocalFixture(page, fixture, side, fullmove);
+  if (await call(page,'cf_review_enable_practice_from_current') !== 1)
+    throw new Error(`failed to convert fixture ${fixture} to Practice`);
+  if (await call(page,'cf_review_practice_mode') !== 1 ||
+      await call(page,'cf_review_practice_undo_count') !== 0 ||
+      await call(page,'cf_review_practice_presentation_undo_count') !== 0 ||
+      await call(page,'cf_review_history_count') !== 0 ||
+      await call(page,'cf_review_replay_count') !== 1 ||
+      await call(page,'cf_review_replay_total') !== 1 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error(`Practice fixture ${fixture} baseline mismatch`);
+}
+
+async function verifyPracticeEdgeUndo(browser) {
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror',e=>errors.push(`PAGE ${String(e)}`));
+  page.on('console',m=>{ if(m.type()==='error') errors.push(`CONSOLE ${m.text()}`); });
+  await page.setViewport({width:1100,height:850,deviceScaleFactor:1});
+  await page.goto('http://127.0.0.1:8127/?hardening=practice-edge-undo',
+                  {waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await page.waitForFunction(
+    ()=>typeof Module._cf_review_enable_practice_from_current==='function',
+    {timeout:15000}
+  );
+
+  /* Start the production LOCAL path; fixtures are loaded through save v2
+   * before the review-only policy switch enables Practice. */
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await sleep(450);
+
+  /* Ordinary promotion B7-B8=R, then exact Practice undo. */
+  await enablePracticeFromLocalFixture(page,1,1,1);
+  let before = await persistedState(page);
+  await clickSquare(page,1,6);
+  await clickSquare(page,1,7);
+  if (await call(page,'cf_review_promotion_pending') !== 1)
+    throw new Error('Practice ordinary promotion did not enter choice state');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  await waitForMatchState(page,2,1);
+  let p = decodePiece(await call(page,'cf_review_piece',1,7));
+  if (p.type !== 4 || p.color !== 1 ||
+      await call(page,'cf_review_history_count') !== 1 ||
+      await call(page,'cf_review_replay_count') !== 2 ||
+      await call(page,'cf_review_practice_undo_count') !== 1 ||
+      await call(page,'cf_review_practice_presentation_undo_count') !== 1)
+    throw new Error('Practice ordinary promotion journal mismatch');
+  await page.keyboard.press('u');
+  await sleep(160);
+  if (!samePersistedState(before,await persistedState(page)) ||
+      await call(page,'cf_review_history_count') !== 0 ||
+      await call(page,'cf_review_replay_count') !== 1 ||
+      await call(page,'cf_review_replay_total') !== 1 ||
+      await call(page,'cf_review_practice_undo_count') !== 0 ||
+      await call(page,'cf_review_practice_presentation_undo_count') !== 0 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Practice ordinary promotion undo was not exact');
+  p = decodePiece(await call(page,'cf_review_piece',1,6));
+  if (p.type !== 1 || p.color !== 1)
+    throw new Error('Practice ordinary promotion undo did not restore B7 pawn');
+  await canvasShot(page,'practice-edge-01-promotion-undo');
+
+  /* Fart-push promotion D7-D8=R, then exact Practice undo. */
+  await page.evaluate(()=>{ Module._cf_review_practice_mode && 0; });
+  /* Temporarily disable Practice so production Load can install fixture 3. */
+  await page.evaluate(()=>{ Module._cf_review_set_practice_mode_for_fixture?.(0); });
+  await enablePracticeFromLocalFixture(page,3,1,1);
+  before = await persistedState(page);
+  await clickSquare(page,3,5,'right');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Enter');
+  await sleep(120);
+  if (await call(page,'cf_review_fart_promotion_pending') !== 1)
+    throw new Error('Practice Fart-promotion did not enter choice state');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  await waitForMatchState(page,2,1);
+  p = decodePiece(await call(page,'cf_review_piece',3,7));
+  if (p.type !== 4 || p.color !== 1 ||
+      await call(page,'cf_review_history_count') !== 1 ||
+      await call(page,'cf_review_replay_count') !== 2)
+    throw new Error('Practice Fart-promotion journal mismatch');
+  await page.keyboard.press('u');
+  await sleep(160);
+  if (!samePersistedState(before,await persistedState(page)) ||
+      await call(page,'cf_review_history_count') !== 0 ||
+      await call(page,'cf_review_replay_count') !== 1 ||
+      await call(page,'cf_review_replay_total') !== 1 ||
+      await call(page,'cf_review_replay_last_matches_current') !== 1)
+    throw new Error('Practice Fart-promotion undo was not exact');
+  p = decodePiece(await call(page,'cf_review_piece',3,6));
+  if (p.type !== 1 || p.color !== 1 || p.gas !== 2)
+    throw new Error('Practice Fart-promotion undo did not restore D7 pawn/Gas');
+  await canvasShot(page,'practice-edge-02-fart-promotion-undo');
+
+  if (errors.length) throw new Error(`practice-edge-undo: ${errors.join(' | ')}`);
+  await page.close();
+  return 'PRACTICE_EDGE_UNDO=PASS promotion=exact fart-promotion=exact';
+}
+
 async function verifyMatchModes(browser) {
   const summary = [];
 
@@ -1531,6 +1638,7 @@ try {
   browser = await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
   const matchSummary = await verifyMatchModes(browser);
   const practiceSummary = await verifyPracticeUndo(browser);
+  const practiceEdgeSummary = await verifyPracticeEdgeUndo(browser);
   const localEdgeSummary = await verifyLocalEdgeHardening(browser);
   const replaySummary = await verifyReplayTimeline(browser);
   const replayViewerSummary = await verifyReplayViewer(browser);
@@ -1542,8 +1650,9 @@ try {
   ];
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
-  const summary = [...matchSummary, practiceSummary, ...localEdgeSummary,
-                   replaySummary, replayViewerSummary, localFullSummary];
+  const summary = [...matchSummary, practiceSummary, practiceEdgeSummary,
+                   ...localEdgeSummary, replaySummary, replayViewerSummary,
+                   localFullSummary];
   for (const r of results) {
     summary.push(`${r.label}: difficulty=${r.difficulty} result=${r.result} turns=${r.whiteTurns} replay=${r.replayCount}/${r.replayTotal} truncated=${r.replayTruncated} cpuFarts=${r.cpuFarts} cpuPushes=${r.cpuPushes} humanFarts=${r.humanFarts} errors=${r.errors}`);
     for (const line of r.fartLines) summary.push(`  ${line}`);
