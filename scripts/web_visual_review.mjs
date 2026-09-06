@@ -343,13 +343,49 @@ try {
   await clickSquare(page, 6, 2);
   await clickSquare(page, 6, 1);
   await waitForStatus(page, 2, 1, 2);
-  await nativeShot(page, '32-local-black-checkmate', 'real', states);
+  const royalBlackMateSig =
+    await nativeShot(page, '32-local-black-checkmate', 'real', states);
+
+  /* Build 17.0 palette-only theme foundation. The game state must remain
+   * byte-identical while the same terminal frame changes presentation. */
+  const themeBoardHash = await call(page, 'cf_review_board_hash');
+  const themeGasHash = await call(page, 'cf_review_gas_hash');
+  const themeHistoryHash = await call(page, 'cf_review_gas_history_hash');
+  const themeHistoryCount = await call(page, 'cf_review_history_count');
+  const themeReplayCount = await call(page, 'cf_review_replay_count');
+  const themeReplayTotal = await call(page, 'cf_review_replay_total');
+  if (await call(page, 'cf_review_ui_theme') !== 0)
+    throw new Error('Royal Basement was not the default UI theme');
+  if (await call(page, 'cf_review_set_ui_theme', 1) !== 1 ||
+      await call(page, 'cf_review_ui_theme') !== 1)
+    throw new Error('Crimson Cellar review theme switch failed');
+  const crimsonSig =
+    await nativeShot(page, '33-theme-crimson-cellar-checkmate',
+                     'theme-fixture', states);
+  if (crimsonSig === royalBlackMateSig)
+    throw new Error('Crimson Cellar rendered identically to Royal Basement');
+  if (await call(page, 'cf_review_board_hash') !== themeBoardHash ||
+      await call(page, 'cf_review_gas_hash') !== themeGasHash ||
+      await call(page, 'cf_review_gas_history_hash') !== themeHistoryHash ||
+      await call(page, 'cf_review_history_count') !== themeHistoryCount ||
+      await call(page, 'cf_review_replay_count') !== themeReplayCount ||
+      await call(page, 'cf_review_replay_total') !== themeReplayTotal)
+    throw new Error('theme switch changed gameplay/session state');
+
+  if (await call(page, 'cf_review_set_ui_theme', 0) !== 1 ||
+      await call(page, 'cf_review_ui_theme') !== 0)
+    throw new Error('Royal Basement theme restore failed');
+  const royalRestoredSig =
+    await nativeShot(page, '34-theme-royal-restored-checkmate',
+                     'theme-fixture', states);
+  if (royalRestoredSig !== royalBlackMateSig)
+    throw new Error('Royal Basement did not restore exact visual signature');
 
   if (errors.length) throw new Error(errors.join(' | '));
 
   const manifest = {
     schema: 1,
-    purpose: 'Chess Fart Build 14 canonical visual review states',
+    purpose: 'Chess Fart canonical visual review states through Build 17',
     native_resolution: '320x200',
     commit: process.env.GITHUB_SHA || 'local',
     states
@@ -360,7 +396,7 @@ try {
     `PASS\nnative=320x200\nstates=${states.length}\n` +
       states.map((state) => `${state.name}=${state.signature} (${state.source})`).join('\n') + '\n'
   );
-  console.log(`Build 14 visual review passed: ${states.length} native 320x200 states`);
+  console.log(`Chess Fart visual review passed: ${states.length} native 320x200 states`);
   for (const state of states) console.log(`${state.name}=${state.signature} (${state.source})`);
 } catch (error) {
   fs.writeFileSync(
