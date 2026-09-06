@@ -116,6 +116,60 @@ void replay_timeline_record(CfReplayTimeline *timeline,
     ++timeline->total;
 }
 
+int replay_timeline_capture_record_delta(const CfReplayTimeline *timeline,
+                                         CfReplayTimelineDelta *delta)
+{
+    int slot;
+    if (timeline == 0 || delta == 0 ||
+        timeline->count < 0 || timeline->count > CF_REPLAY_CAPACITY ||
+        timeline->start < 0 || timeline->start >= CF_REPLAY_CAPACITY)
+        return 0;
+    slot = timeline->count < CF_REPLAY_CAPACITY ?
+           (timeline->start + timeline->count) % CF_REPLAY_CAPACITY :
+           timeline->start;
+    delta->start_before = timeline->start;
+    delta->count_before = timeline->count;
+    delta->total_before = timeline->total;
+    delta->truncated_before = timeline->truncated;
+    delta->slot = slot;
+    delta->slot_before = timeline->snapshots[slot];
+    return 1;
+}
+
+int replay_timeline_delta_matches_after_record(
+    const CfReplayTimeline *timeline,
+    const CfReplayTimelineDelta *delta)
+{
+    int expected_start;
+    int expected_count;
+    int expected_truncated;
+    if (timeline == 0 || delta == 0) return 0;
+    expected_count = delta->count_before < CF_REPLAY_CAPACITY ?
+                     delta->count_before + 1 : CF_REPLAY_CAPACITY;
+    expected_start = delta->count_before < CF_REPLAY_CAPACITY ?
+                     delta->start_before :
+                     (delta->start_before + 1) % CF_REPLAY_CAPACITY;
+    expected_truncated = delta->count_before < CF_REPLAY_CAPACITY ?
+                         delta->truncated_before : 1;
+    return timeline->count == expected_count &&
+           timeline->start == expected_start &&
+           timeline->total == delta->total_before + 1UL &&
+           timeline->truncated == expected_truncated;
+}
+
+int replay_timeline_restore_record_delta(CfReplayTimeline *timeline,
+                                         const CfReplayTimelineDelta *delta)
+{
+    if (!replay_timeline_delta_matches_after_record(timeline, delta))
+        return 0;
+    timeline->snapshots[delta->slot] = delta->slot_before;
+    timeline->start = delta->start_before;
+    timeline->count = delta->count_before;
+    timeline->total = delta->total_before;
+    timeline->truncated = delta->truncated_before;
+    return 1;
+}
+
 const CfReplaySnapshot *replay_timeline_get(const CfReplayTimeline *timeline,
                                             int index)
 {
