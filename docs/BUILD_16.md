@@ -4,7 +4,7 @@ Build 16 closes the remaining required item from the original master plan: **Und
 
 The goal is not to make normal CPU or local matches casually rewindable. Undo belongs to an explicitly marked Practice session so competitive/default match semantics stay unchanged.
 
-**16.0 complete. Current slice: 16.1 local Practice session.**
+**16.0 and 16.1 complete. Current slice: 16.2 Practice integration.**
 
 ## Frozen contracts
 
@@ -90,10 +90,16 @@ The host gate must prove:
 
 ### 16.2 — Practice integration
 
-- roll back session action-log and replay timeline entries with the same committed action
-- add mouse/help/HUD discoverability
-- define Load/new-game behavior for the journal
-- harden ordinary promotion, Fart-push promotion, castling, en passant, and terminal undo
+16.2 upgrades Undo from an honest-baseline reset to exact session-history rollback.
+
+- each committed Practice action captures compact deltas for the UX action-log ring and replay timeline ring before those rings append
+- `U` restores board, Gas, repetition history, action log, and replay timeline as one synchronized transaction
+- full-ring rollback restores the displaced oldest UX line/replay snapshot instead of merely decrementing counters
+- replay `count`, `total`, `start`, and `truncated` return to their exact pre-action values
+- the Practice command-bar `U UNDO` region is mouse-clickable
+- entering a playable title mode resets both the game undo journal and presentation undo journal
+- Save/Load remain disabled in Practice; no save-v2 policy change
+- Chromium proves exact move/Fart/terminal/repeated rollback while retaining the prior replay/action history
 
 ### 16.3 — Hardening / closeout
 
