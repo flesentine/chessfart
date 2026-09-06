@@ -104,14 +104,22 @@ EMSCRIPTEN_KEEPALIVE int cf_review_ui_theme(void)
 
 EMSCRIPTEN_KEEPALIVE int cf_review_set_ui_theme(int theme)
 {
+    int cpu_message_pending;
     if (!ui_theme_set((CfUiTheme)theme)) return 0;
-    if (g_ux_cache.valid)
+    if (g_ux_cache.valid) {
+        cpu_message_pending = g_cpu_message_pending;
         ux_redraw_cached();
-    else {
+        g_cpu_message_pending = cpu_message_pending;
+    } else {
         ux_draw_title(CF_UI_TITLE_ITEM_PLAY_CPU, 0);
         vga_present();
     }
     return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_cpu_message_pending(void)
+{
+    return g_cpu_message_pending;
 }
 
 EMSCRIPTEN_KEEPALIVE int cf_review_board_hash(void)
