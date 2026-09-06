@@ -42,16 +42,22 @@ KEYS.TXT       Complete controls
 KNOWNISS.TXT   Platform notes and unverified hardware targets
 BUILDINFO.TXT  Exact source/toolchain build information
 
-SAVE FILES
-----------
+SAVE / REPLAY FILES
+-------------------
 The game writes CHESSFRT.SAV and CHESSFRT.CFG in the current directory.
 New game saves use format version 2 so CPU/local match mode is preserved.
 Legacy version-1 game saves remain loadable and restore CPU mode. The config
 format remains version 1.
 
+CHESSFRT.RPL is created only when the player exports from Replay. It is a
+separate version-1 replay file and is not included as a pre-made file in the
+release ZIP. Importing it for review does not replace the live game replay.
+
 This is Chess Fart 1.0.0. The automated release gate covers host rules and
 CPU regressions, a real Open Watcom 16-bit DOS build, DOSBox smoke, browser
 runtime/playtest coverage, deterministic full Chromium CPU games, a
 33-ply local two-player Chromium game with exact version-2 LOCAL save/load
-rollback, and read-only replay-viewer state-invariance coverage. Physical DOS hardware and specific third-party drivers remain
-explicitly unverified where listed in KNOWNISS.TXT.
+rollback, replay-viewer state invariance, transactional CHESSFRT.RPL
+export/import, 600-frame ring-file coverage, and terminal replay integrity.
+Physical DOS hardware and specific third-party drivers remain explicitly
+unverified where listed in KNOWNISS.TXT.

@@ -19,6 +19,12 @@
 - [x] Build 14 local White/Black checkmate delivery and terminal-state input locks
 - [x] 33-ply local two-player Opera Game from the normal title/start position through 17.Rd8#
 - [x] exact version-2 LOCAL checkpoint rollback/replay of mode, board metadata, all piece/Gas squares and repetition-history keys
+- [x] Build 15 bounded 256-frame replay timeline and read-only viewer state invariants
+- [x] transactional version-1 CHESSFRT.RPL export/import without changing CHESSFRT.SAV v2
+- [x] 600-frame replay-file ring round-trip with logical-order/truncation preservation
+- [x] Opera Game replay lifecycle across save/load reset through terminal CHECKMATE
+- [x] EASY/MED/HARD full-game terminal replay frame/status matches
+- [x] replay memory profile: 118-byte snapshot, 30,232-byte timeline, 60,464-byte live+transient-import peak
 - [x] 32 deterministic native 320x200 visual-review states
 - [x] deterministic full Chromium games at EASY/MED/HARD, each reaching a terminal result with zero browser errors and exercising live Fart mechanics
 - [x] Build 12 release audit

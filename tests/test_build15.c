@@ -10,6 +10,7 @@ static void test_memory_budget(void)
 {
     CHECK(sizeof(CfReplayTimeline) < 32768U);
     CHECK(sizeof(CfReplaySnapshot) < 128U);
+    CHECK((unsigned long)sizeof(CfReplayTimeline) * 2UL < 65536UL);
 }
 
 static void test_move_round_trip(void)

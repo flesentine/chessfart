@@ -105,7 +105,7 @@ Build 14 closes the original local hot-seat requirement without forking the trus
 The existing CPU game remains the startup default. Build 14.3 advances newly written game saves to format version 2 while keeping legacy version-1 saves loadable as CPU-mode saves. Build 14 closes with 32 native visual states and a full 33-ply local Opera Game Chromium regression with exact persisted-state rollback/replay.
 
 ## Build 15 — Replay / postgame review
-**Status: 15.3 complete; 15.4 next**
+**Status: complete — 15.4 closeout**
 
 Build 15 takes the master plan's replay-file idea in staged, DOS-safe slices:
 
@@ -113,9 +113,9 @@ Build 15 takes the master plan's replay-file idea in staged, DOS-safe slices:
 - 15.1 read-only replay viewer modal
 - 15.2 terminal/postgame replay UX and mouse hardening
 - 15.3 separate versioned replay-file export/import without changing game-save v2
-- 15.4 replay hardening and closeout
+- 15.4 replay hardening, 600-frame ring/file certification, full CPU/local terminal replay checks, memory/package review, and closeout
 
-See `docs/BUILD_15.md`.
+Build 15 closes with 118-byte snapshots, a 30,232-byte 256-frame live timeline, a 60,464-byte live+transient-import peak, separate version-1 `CHESSFRT.RPL` files, and unchanged game-save v2 semantics. See `docs/BUILD_15.md`.
 
 ## Post-v1 ideas
 

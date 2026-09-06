@@ -27,3 +27,5 @@ SAVE COMPATIBILITY
 New CHESSFRT.SAV files use game-save format version 2 and store CPU/local match
 mode explicitly. Legacy version-1 saves from the original 1.0 line remain
 loadable and restore CPU mode. CHESSFRT.CFG remains config format version 1.
+CHESSFRT.RPL is a separate replay format version 1; importing replay data does
+not alter game-save compatibility or replace the active live replay timeline.
