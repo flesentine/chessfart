@@ -1,6 +1,8 @@
 #ifndef CF_UI_THEME_H
 #define CF_UI_THEME_H
 
+#include "cf_types.h"
+
 /* Canonical retail VGA palette roles. Keep renderer and UX overlays in sync. */
 #define CF_UI_COL_BG 0
 #define CF_UI_COL_PANEL 1
