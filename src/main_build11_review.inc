@@ -112,6 +112,16 @@ EMSCRIPTEN_KEEPALIVE int cf_review_ui_piece_material(void)
     return (int)ui_theme_piece_material(ui_theme_get());
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_ui_white_piece_accent(void)
+{
+    return (int)ui_theme_piece_accent(ui_theme_get(), 0);
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_ui_black_piece_accent(void)
+{
+    return (int)ui_theme_piece_accent(ui_theme_get(), 1);
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_set_ui_theme(int theme)
 {
     int cpu_message_pending;
