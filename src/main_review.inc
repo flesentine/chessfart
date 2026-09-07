@@ -625,7 +625,7 @@ EMSCRIPTEN_KEEPALIVE int cf_review_write_local_fixture(int fixture)
     status = gas_game_status(&board, &gas, &history);
     if (status != CF_GAME_ONGOING) return 0;
 
-    return persistence_save_game_mode(BUILD9_SAVE_PATH, &board, &gas,
+    return persistence_save_game_mode(CF_GAME_SAVE_PATH, &board, &gas,
                                       &history, CF_MATCH_LOCAL) ==
            CF_PERSIST_OK;
 }

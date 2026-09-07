@@ -4,10 +4,6 @@
 #include "board.h"
 #include "gas.h"
 
-int presentation_title_screen(void);
-int presentation_make_fart(CfBoard *board, CfGasState *gas,
-                           int file, int rank, CfFartDirection direction,
-                           CfPieceType promotion, CfFartAction *action);
 void presentation_animate_fart(const CfBoard *before_board,
                                const CfGasState *before_gas,
                                const CfBoard *after_board,

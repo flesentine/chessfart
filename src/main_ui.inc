@@ -25,10 +25,6 @@ static void ux_capture(const char *stem) { (void)stem; }
 #define UX_COL_PANEL_SOFT CF_UI_COL_PANEL_SOFT
 #define UX_COL_CHECK CF_UI_COL_CHECK
 
-static void ux_stamp_build11(void)
-{
-    /* Retail renderer deliberately hides internal build numbering. */
-}
 
 static void ux_draw_centered(int x, int y, int w,
                              const char *text, cf_u8 color)
@@ -240,7 +236,7 @@ static void ux_draw_title(int menu, int frame)
     int i;
     int iy;
 
-    board_view_render_title7(menu, frame);
+    board_view_render_title(menu, frame);
 
     sprintf(line, "AUDIO %s/%s",
             audio_device_name(stats->actual_device),
@@ -789,7 +785,7 @@ static void ux_render_cached_base(void)
     if (!g_ux_cache.valid) return;
 
     shown = g_cpu_message_pending ? g_cpu_message : g_ux_cache.message;
-    persistence_render_game(&g_ux_cache.board, &g_ux_cache.gas,
+    audio_game_render(&g_ux_cache.board, &g_ux_cache.gas,
                             g_ux_cache.cursor_file, g_ux_cache.cursor_rank,
                             g_ux_cache.has_selection,
                             g_ux_cache.selected_file, g_ux_cache.selected_rank,
@@ -829,7 +825,7 @@ static void ux_render_cached_base(void)
 
 static void ux_redraw_cached(void)
 {
-    ux_capture("chessfart_build11");
+    ux_capture("chessfart");
     ux_render_cached_base();
     vga_present();
 }
@@ -837,17 +833,17 @@ static void ux_redraw_cached(void)
 static void ux_wait_for_close(int page_mode)
 {
 #ifndef CF_HOST_BUILD
-    CfInputKey5 key;
+    CfInputKey key;
     int page = 0;
     for (;;) {
-        key = input5_poll_key();
-        if (page_mode && (key == CF5_KEY_LEFT || key == CF5_KEY_RIGHT)) {
+        key = input_poll_key();
+        if (page_mode && (key == CF_KEY_LEFT || key == CF_KEY_RIGHT)) {
             page = page == 0 ? 1 : 0;
             ux_draw_help_page(page);
             vga_present();
-        } else if (key == CF5_KEY_ESCAPE || key == CF5_KEY_ENTER ||
-                   key == CF5_KEY_HELP || key == CF5_KEY_HISTORY ||
-                   key == CF5_KEY_CREDITS) {
+        } else if (key == CF_KEY_ESCAPE || key == CF_KEY_ENTER ||
+                   key == CF_KEY_HELP || key == CF_KEY_HISTORY ||
+                   key == CF_KEY_CREDITS) {
             break;
         }
     }
@@ -1026,7 +1022,7 @@ void ux_show_replay_modal(void)
 {
     int index;
 #ifndef CF_HOST_BUILD
-    CfInputKey5 key;
+    CfInputKey key;
     CfMouseState mouse;
     unsigned replay_mouse_buttons;
     unsigned pressed;
@@ -1056,23 +1052,23 @@ void ux_show_replay_modal(void)
     replay_mouse_buttons = g_ux_mouse_buttons;
     close_viewer = 0;
     while (!close_viewer) {
-        key = input5_poll_key();
-        if (key == CF5_KEY_LEFT) {
+        key = input_poll_key();
+        if (key == CF_KEY_LEFT) {
             g_replay_file_notice[0] = '\0';
             if (index > 0) --index;
             g_replay_viewer_index = index;
             (void)ux_render_replay_frame(index);
-        } else if (key == CF5_KEY_RIGHT) {
+        } else if (key == CF_KEY_RIGHT) {
             g_replay_file_notice[0] = '\0';
             if (index + 1 < g_replay_timeline->count) ++index;
             g_replay_viewer_index = index;
             (void)ux_render_replay_frame(index);
-        } else if (key == CF5_KEY_SAVE) {
+        } else if (key == CF_KEY_SAVE) {
             ux_replay_export_file(session_timeline, index);
-        } else if (key == CF5_KEY_LOAD) {
+        } else if (key == CF_KEY_LOAD) {
             ux_replay_import_file(&file_timeline, &index);
-        } else if (key == CF5_KEY_ESCAPE || key == CF5_KEY_ENTER ||
-                   key == CF5_KEY_REPLAY) {
+        } else if (key == CF_KEY_ESCAPE || key == CF_KEY_ENTER ||
+                   key == CF_KEY_REPLAY) {
             close_viewer = 1;
         }
 
@@ -1115,7 +1111,7 @@ void ux_show_replay_modal(void)
 
 void ux_show_help_modal(void)
 {
-    ux_capture("chessfart_build11_help");
+    ux_capture("chessfart_help");
     ux_draw_help_page(0);
     vga_present();
     ux_wait_for_close(1);
@@ -1124,7 +1120,7 @@ void ux_show_help_modal(void)
 
 void ux_show_history_modal(void)
 {
-    ux_capture("chessfart_build11_history");
+    ux_capture("chessfart_history");
     ux_draw_history_screen();
     vga_present();
     ux_wait_for_close(0);
@@ -1133,7 +1129,7 @@ void ux_show_history_modal(void)
 
 void ux_show_credits_modal(void)
 {
-    ux_capture("chessfart_build11_credits");
+    ux_capture("chessfart_credits");
     ux_draw_credits_screen();
     vga_present();
     ux_wait_for_close(0);
@@ -1165,8 +1161,8 @@ static void ux_run_attract(void)
     after_gas = before_gas;
     moves.count = 0;
 
-    ux_capture("chessfart_build11_attract");
-    persistence_render_game(&before_board, &before_gas, 2, 2, 1, 2, 2,
+    ux_capture("chessfart_attract");
+    audio_game_render(&before_board, &before_gas, 2, 2, 1, 2, 2,
                             &moves, CF_GAME_ONGOING, 0, CF_PIECE_QUEEN,
                             1, CF_FART_NE, CF_FART_PUSH, 0,
                             CF_PIECE_QUEEN, "CHARGED KNIGHT");
@@ -1180,7 +1176,7 @@ static void ux_run_attract(void)
                       CF_PIECE_QUEEN, &action)) {
         presentation_animate_fart(&before_board, &before_gas,
                                   &after_board, &after_gas, &action);
-        persistence_render_game(&after_board, &after_gas, 2, 2, 0, 0, 0,
+        audio_game_render(&after_board, &after_gas, 2, 2, 0, 0, 0,
                                 &moves, CF_GAME_ONGOING, 0, CF_PIECE_QUEEN,
                                 0, CF_FART_NE, CF_FART_INVALID, 0,
                                 CF_PIECE_QUEEN, "D4 BLASTED TO E5");
@@ -1202,8 +1198,8 @@ static void ux_render_terminal_preview(void)
     board_init_starting_position(&board);
     gas_init(&gas);
     moves.count = 0;
-    ux_capture("chessfart_build11_terminal");
-    persistence_render_game(&board, &gas, 4, 1, 0, 0, 0, &moves,
+    ux_capture("chessfart_terminal");
+    audio_game_render(&board, &gas, 4, 1, 0, 0, 0, &moves,
                             CF_GAME_CHECKMATE, 0, CF_PIECE_QUEEN, 0,
                             CF_FART_N, CF_FART_INVALID, 0,
                             CF_PIECE_QUEEN, "CHECKMATE");
@@ -1222,26 +1218,26 @@ int ux_title_screen(const char *config_path)
     int menu = 0;
     int frame = 0;
 #ifndef CF_HOST_BUILD
-    CfInputKey5 key;
+    CfInputKey key;
     clock_t last_input;
     CfMouseState mouse;
     unsigned old_buttons = 0U;
     unsigned pressed;
 #endif
     if (vga_init() != 0) return 0;
-    ux_capture("chessfart_build11_title");
+    ux_capture("chessfart_title");
     ux_draw_title(menu, frame);
     vga_present();
 #ifdef CF_HOST_BUILD
     ux_run_attract();
-    ux_capture("chessfart_build11_help");
+    ux_capture("chessfart_help");
     ux_draw_help_page(0);
     vga_present();
-    ux_capture("chessfart_build11_credits");
+    ux_capture("chessfart_credits");
     ux_draw_credits_screen();
     vga_present();
     ux_render_terminal_preview();
-    ux_capture("chessfart_build11_title");
+    ux_capture("chessfart_title");
     ux_draw_title(menu, ++frame);
     vga_present();
     audio_play_event(CF_AUDIO_MENU_CONFIRM);
@@ -1249,49 +1245,49 @@ int ux_title_screen(const char *config_path)
     vga_shutdown();
     return 1;
 #else
-    input5_init();
+    input_init();
     last_input = clock();
     for (;;) {
-        key = input5_poll_key();
+        key = input_poll_key();
         if (mouse_poll(&mouse) && mouse.present) {
             pressed = mouse.buttons & ~old_buttons;
             old_buttons = mouse.buttons;
             if ((pressed & 1U) != 0U &&
                 ux_title_menu_hit_test(mouse.x, mouse.y, &menu))
-                key = CF5_KEY_ENTER;
+                key = CF_KEY_ENTER;
         }
-        if (key != CF5_KEY_NONE) last_input = clock();
-        if (key == CF5_KEY_ESCAPE) {
+        if (key != CF_KEY_NONE) last_input = clock();
+        if (key == CF_KEY_ESCAPE) {
             (void)ux_save_config(config_path, audio_get_config());
             vga_shutdown();
             return 0;
         }
-        if (key == CF5_KEY_UP) {
+        if (key == CF_KEY_UP) {
             menu = (menu + CF_UI_TITLE_MENU_ITEM_COUNT - 1) %
                    CF_UI_TITLE_MENU_ITEM_COUNT;
             ++frame; audio_play_event(CF_AUDIO_CURSOR);
-        } else if (key == CF5_KEY_DOWN) {
+        } else if (key == CF_KEY_DOWN) {
             menu = (menu + 1) % CF_UI_TITLE_MENU_ITEM_COUNT;
             ++frame; audio_play_event(CF_AUDIO_CURSOR);
-        } else if (key == CF5_KEY_LEFT || key == CF5_KEY_RIGHT) {
+        } else if (key == CF_KEY_LEFT || key == CF_KEY_RIGHT) {
             audio_cycle_device(); ++frame; audio_play_event(CF_AUDIO_MENU_CONFIRM);
             (void)ux_save_config(config_path, audio_get_config());
-        } else if (key == CF5_KEY_FART) {
+        } else if (key == CF_KEY_FART) {
             audio_cycle_sfx_level(); ++frame; audio_play_event(CF_AUDIO_MENU_CONFIRM);
             (void)ux_save_config(config_path, audio_get_config());
-        } else if (key == CF5_KEY_DIFFICULTY) {
+        } else if (key == CF_KEY_DIFFICULTY) {
             cpu_cycle_difficulty(&g_cpu_config); ++frame;
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
-        } else if (key == CF5_KEY_THEME) {
+        } else if (key == CF_KEY_THEME) {
             (void)ui_theme_set(ui_theme_next(ui_theme_get()));
             ++frame;
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
             (void)ux_save_config(config_path, audio_get_config());
-        } else if (key == CF5_KEY_HELP) {
+        } else if (key == CF_KEY_HELP) {
             ux_draw_help_page(0); vga_present(); ux_wait_for_close(1); ++frame;
-        } else if (key == CF5_KEY_CREDITS) {
+        } else if (key == CF_KEY_CREDITS) {
             ux_draw_credits_screen(); vga_present(); ux_wait_for_close(0); ++frame;
-        } else if (key == CF5_KEY_ENTER) {
+        } else if (key == CF_KEY_ENTER) {
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
             if (menu == CF_UI_TITLE_ITEM_PLAY_CPU ||
                 menu == CF_UI_TITLE_ITEM_PLAY_LOCAL ||
@@ -1325,7 +1321,7 @@ int ux_title_screen(const char *config_path)
         } else {
             continue;
         }
-        ux_capture("chessfart_build11_title");
+        ux_capture("chessfart_title");
         ux_draw_title(menu, frame);
         vga_present();
     }
@@ -1363,6 +1359,6 @@ void ux_render_game(const CfBoard *board, const CfGasState *gas,
     strncpy(g_ux_cache.message, message == 0 ? "" : message,
             sizeof(g_ux_cache.message) - 1U);
     g_ux_cache.message[sizeof(g_ux_cache.message) - 1U] = '\0';
-    ux_capture("chessfart_build11");
+    ux_capture("chessfart");
     ux_render_cached_base();
 }

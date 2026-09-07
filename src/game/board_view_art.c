@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "board_view_build7.h"
+#include "board_view.h"
 #include "font.h"
 #include "ui_assets.h"
 #include "ui_layout.h"
@@ -721,7 +721,7 @@ static void draw_fx(const CfPresentationFx *fx)
                  frame == 2 ? COL_FLASH : COL_COPPER);
 }
 
-void board_view_render_build7_fx(const CfBoard *board,
+void board_view_render_game_fx(const CfBoard *board,
                                  const CfGasState *gas,
                                  int cursor_file,
                                  int cursor_rank,
@@ -764,7 +764,7 @@ void board_view_render_build7_fx(const CfBoard *board,
     draw_fx(fx);
 }
 
-void board_view_render_build7(const CfBoard *board,
+void board_view_render_game(const CfBoard *board,
                               const CfGasState *gas,
                               int cursor_file,
                               int cursor_rank,
@@ -782,7 +782,7 @@ void board_view_render_build7(const CfBoard *board,
                               CfPieceType fart_promotion_choice,
                               const char *message)
 {
-    board_view_render_build7_fx(board, gas, cursor_file, cursor_rank,
+    board_view_render_game_fx(board, gas, cursor_file, cursor_rank,
                                 has_selection, selected_file, selected_rank,
                                 legal_moves, status, promotion_pending,
                                 promotion_choice, fart_mode, fart_direction,
@@ -790,7 +790,7 @@ void board_view_render_build7(const CfBoard *board,
                                 fart_promotion_choice, message, 0);
 }
 
-void board_view_render_title7(int menu_index, int frame)
+void board_view_render_title(int menu_index, int frame)
 {
     int phase = frame & 1;
 
