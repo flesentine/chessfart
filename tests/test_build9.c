@@ -280,8 +280,8 @@ static void test_config_round_trip(void)
     if (fp != 0) {
         fprintf(fp, "CHESSFART_CONFIG 1\n");
         fprintf(fp, "AUDIO %d %d %d\n",
-                (int)CF_AUDIO_DEVICE_SOUND_BLASTER,
-                (int)CF_AUDIO_LEVEL_MEDIUM,
+                (int)CF_AUDIO_DEVICE_SB,
+                (int)CF_AUDIO_LEVEL_MED,
                 (int)CF_AUDIO_LEVEL_OFF);
         fprintf(fp, "END\n");
         fclose(fp);
