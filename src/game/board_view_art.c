@@ -86,10 +86,34 @@ static cf_u8 square_color(int file, int rank)
 
 static void draw_square_surface(int x, int y, int file, int rank, cf_u8 color)
 {
+    CfUiBoardSurface surface;
     cf_u8 grain;
+    int seam_y;
 
+    surface = ui_theme_board_surface(ui_theme_get());
     grain = color == COL_SQUARE_LIGHT ? COL_COPPER : COL_PANEL_SOFT;
     vga_fill_rect(x, y, SQUARE_SIZE, SQUARE_SIZE, color);
+
+    if (surface == CF_UI_BOARD_SURFACE_CELLAR_BRICK) {
+        /*
+         * Crimson Cellar uses staggered edge mortar and chipped corners.
+         * Keep the square center quiet so the 16x18 piece silhouette wins.
+         */
+        grain = color == COL_SQUARE_LIGHT ? COL_COPPER : COL_PANEL_LINE;
+        seam_y = ((file + rank) & 1) ? 6 : 12;
+        vga_fill_rect(x + 1, y + seam_y, 4, 1, grain);
+        vga_fill_rect(x + 15, y + seam_y, 4, 1, grain);
+        vga_put_pixel(x + 5, y + seam_y - 1, grain);
+        vga_put_pixel(x + 14, y + seam_y + 1, grain);
+        vga_put_pixel(x + 2, y + 2, grain);
+        vga_put_pixel(x + 17, y + 17, grain);
+        return;
+    }
+
+    /*
+     * Royal Basement is the established stone-grain baseline. Do not move
+     * these pixels: the native visual suite treats Royal as the exact anchor.
+     */
     vga_put_pixel(x + 2, y + 2, grain);
     vga_put_pixel(x + 15, y + 15, grain);
     if (((file * 3 + rank) & 3) == 0)

@@ -130,14 +130,15 @@ Build 16 closes the remaining master-plan required item: Undo in practice/debug 
 Practice is a session policy rather than a new persisted match-mode value, so the version-2 game-save contract remains unchanged. See `docs/BUILD_16.md`.
 
 ## Build 17 — Alternate presentation themes
-**Status: 17.0–17.1 complete; 17.2 in progress**
+**Status: 17.0–17.2 complete; 17.3 in progress**
 
 Build 17 begins the optional alternate boards/pieces roadmap without changing gameplay contracts.
 
 - 17.0 palette-backed theme foundation: Royal Basement default + certified Crimson Cellar
 - 17.1 player-facing T selector on the title screen
 - 17.2 backward-compatible config v2 persistence for the selected theme
-- later slices may add additional authored theme assets after persistence is certified
+- 17.3 theme-specific authored board surfaces: exact Royal stone grain + Crimson cellar brick treatment
+- later slices may add theme-specific piece treatments or additional presentation assets after the board-surface path is certified
 
 See `docs/BUILD_17.md`.
 

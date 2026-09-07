@@ -46,6 +46,14 @@ The board is the visual anchor and must remain legible under animation.
 - legal fart direction: green wedge/arrow
 - check: red/orange pulse behind king
 
+### Alternate theme: Crimson Cellar
+
+- burgundy/copper palette remains the defining color language
+- squares use a sparse staggered cellar-brick/mortar treatment instead of Royal's stone grain
+- mortar/chip pixels stay near square edges and out of the piece silhouette center
+- board frame, square size, coordinates and semantic overlay colors remain shared
+- the alternate surface must never reduce legal-move, selection, Gas or check readability
+
 ## 4. Piece sprites
 
 Target footprint: about **16x18 pixels** inside each 20x20 square.

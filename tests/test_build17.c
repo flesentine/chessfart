@@ -36,6 +36,15 @@ static void test_theme_identity(void)
           CF_UI_THEME_ROYAL_BASEMENT);
     CHECK(ui_theme_next((CfUiTheme)99) ==
           CF_UI_THEME_ROYAL_BASEMENT);
+    CHECK(CF_UI_BOARD_SURFACE_STONE_GRAIN == 0);
+    CHECK(CF_UI_BOARD_SURFACE_CELLAR_BRICK == 1);
+    CHECK(CF_UI_BOARD_SURFACE_COUNT == 2);
+    CHECK(ui_theme_board_surface(CF_UI_THEME_ROYAL_BASEMENT) ==
+          CF_UI_BOARD_SURFACE_STONE_GRAIN);
+    CHECK(ui_theme_board_surface(CF_UI_THEME_CRIMSON_CELLAR) ==
+          CF_UI_BOARD_SURFACE_CELLAR_BRICK);
+    CHECK(ui_theme_board_surface((CfUiTheme)99) ==
+          CF_UI_BOARD_SURFACE_STONE_GRAIN);
 }
 
 static void test_palette_switch(void)

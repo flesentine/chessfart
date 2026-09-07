@@ -44,11 +44,18 @@ typedef enum CfUiTheme {
     CF_UI_THEME_COUNT
 } CfUiTheme;
 
+typedef enum CfUiBoardSurface {
+    CF_UI_BOARD_SURFACE_STONE_GRAIN = 0,
+    CF_UI_BOARD_SURFACE_CELLAR_BRICK,
+    CF_UI_BOARD_SURFACE_COUNT
+} CfUiBoardSurface;
+
 int ui_theme_valid(CfUiTheme theme);
 int ui_theme_set(CfUiTheme theme);
 CfUiTheme ui_theme_get(void);
 CfUiTheme ui_theme_next(CfUiTheme theme);
 const char *ui_theme_name(CfUiTheme theme);
+CfUiBoardSurface ui_theme_board_surface(CfUiTheme theme);
 void ui_theme_build_palette(cf_u8 *palette, int flash);
 
 #endif
