@@ -4,7 +4,7 @@ Build 17 starts the first optional post-v1 roadmap item: **alternate boards/piec
 
 The implementation stays deliberately conservative. Themes are presentation policy only. They must never alter chess state, Gas, CPU behavior, persistence, replay content, Practice semantics, or package version.
 
-**17.0–17.1 complete. Current slice: 17.2 persistent theme config.**
+**17.0–17.2 complete. Current slice: 17.3 authored board surfaces.**
 
 ## Frozen contracts
 
@@ -118,3 +118,27 @@ This keeps 17.0 focused on architecture and visual proof. Its exact-head certifi
 - Web/WASM runtime
 - Chromium config text proof, IDBFS flush/reload, v1 fallback/migration, and malformed-v2 fallback
 - existing 36-state visual suite remains unchanged
+
+
+## 17.3 — Authored board surfaces
+
+17.3 moves the alternate-theme work beyond palette swaps while preserving the exact Royal Basement baseline.
+
+- Royal Basement keeps its established sparse stone-grain square pixels exactly
+- Crimson Cellar receives a distinct staggered brick/mortar treatment with chipped corner details
+- texture marks stay near square edges so the 16x18 piece silhouettes remain dominant
+- theme-to-surface mapping lives in the shared theme API rather than renderer-local theme checks
+- the same authored surface path is used by host, Web/WASM and DOS renderers
+- no new theme/config ID is added; config v2 continues to persist Royal/Crimson exactly as in 17.2
+- piece sprite masks, board geometry, gameplay state, replay state and save formats remain unchanged
+
+### 17.3 validation target
+
+- strict C89 theme tests certify Royal -> stone grain and Crimson -> cellar brick mapping
+- invalid theme values fail closed to the Royal stone surface
+- Royal Basement retains its exact established native visual signature after theme switch/restore
+- real Chromium review proves the active surface follows the title-selected theme
+- Crimson title/game/checkmate states render through the authored brick surface
+- board/Gas/history/replay hashes remain unchanged by presentation switching
+- Open Watcom 16-bit DOS, DOSBox/package and Web/WASM gates remain green
+- canonical visual suite remains 36 native 320x200 states
