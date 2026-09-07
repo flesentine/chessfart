@@ -143,6 +143,6 @@ Build 17 begins the optional alternate boards/pieces roadmap without changing ga
 
 Build 17 closes with Royal Basement as the exact default/fallback presentation and Crimson Cellar as a persisted, authored alternate board/piece treatment. Config v2 persists the theme while game-save v2 and replay-file v1 remain unchanged. See `docs/BUILD_17.md`.
 
-## Post-v1 ideas
+## Archived ideas — not planned
 
-Turbo Gas, puzzle challenges, AI personalities, null-modem multiplayer, OPL2 expansion, and a shareware-style episode screen.
+Turbo Gas, puzzle challenges, AI personalities, null-modem multiplayer, OPL2 expansion, and a shareware-style episode screen are retained only as historical idea notes. Feature development is frozen after Build 17; none of these items is currently planned.

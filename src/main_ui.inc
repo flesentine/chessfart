@@ -1038,7 +1038,7 @@ void ux_show_replay_modal(void)
     index = g_replay_timeline->count - 1;
     g_replay_viewer_active = 1;
     g_replay_viewer_index = index;
-    ux_capture("chessfart_build15_replay");
+    ux_capture("chessfart_replay");
     if (!ux_render_replay_frame(index)) {
         g_replay_viewer_active = 0;
         g_replay_viewer_index = -1;

@@ -6,39 +6,17 @@ The design goal is **real strategy first, toilet humor second**.
 
 ## Project status
 
-**Chess Fart 1.0.0 — final release.**
+**Chess Fart 1.0.0 — complete and maintenance-only.**
 
-The source on `main` also includes the post-v1 **Build 13 presentation refresh** and **Build 14 local two-player expansion**. Build 13 modernizes the authored VGA presentation; Build 14 adds `2 PLAYERS` hot-seat play with backward-compatible v1 saves and mode-aware v2 saves. Build 15 completes replay/postgame review in DOS-safe slices: a bounded session timeline, read-only keyboard/mouse viewer, postgame UX, separate versioned CHESSFRT.RPL export/import, and 15.4 certification across long sessions, CPU/local terminal games, DOS memory, packaging, and browser invariants—without changing game-save v2. Build 16 completes the remaining master-plan Practice/Undo requirement with a bounded 32-action undo window and exact rollback across game state, action log, and replay history. Build 17 completes the optional alternate-presentation roadmap item with a certified theme system. Royal Basement remains the exact default/fallback; Crimson Cellar is a persisted alternate with its own cellar-brick board surface and copper-accented piece material on the same sprite masks. Build 17.5 pins the semantic roles and native visual signatures. Game-save v2 and replay-file v1 remain unchanged.
+The shipped game now includes CPU play, local two-player, Practice/Undo, replay export/import, save/load, mouse support, audio, and the Royal Basement / Crimson Cellar presentation themes. Gameplay rules and the persisted contracts are frozen: game-save v2, replay-file v1, and config v2 remain the compatibility anchors.
 
-The automated release gate covers the entire game from rules through the DOS package:
+The repository is intentionally **not** pursuing the old optional feature backlog. Current work is limited to defects, compatibility, test hardening, and simplification of the existing game.
 
-- complete legal chess plus Gas/Fart displacement rules
-- `PLAY CPU`: human White versus deterministic CPU Black
-- `2 PLAYERS`: local hot-seat White versus Black on the same rules path
-- Fart-aware CPU tactical regressions, including check escape, forcing check, castling-right damage and pushed promotion
-- corrected Fart edge-bonus alpha-beta pruning
-- deterministic full Chromium CPU games at Easy, Medium and Hard, each exercising live Fart mechanics
-- a 33-ply local two-player Opera Game Chromium regression from title selection through checkmate
-- exact version-2 LOCAL save/load rollback of board metadata, all piece/Gas squares and repetition history
-- bounded replay timeline plus transactional version-1 CHESSFRT.RPL export/import
-- bounded 32-action Practice Undo with exact move/Fart/promotion/castling/en-passant, repetition-history, action-log and replay rollback
-- real-input Practice threefold-draw terminal lock and Undo-to-live regression, plus separate long-session ring-rollover stress
-- 600-frame replay-file ring round-trip and full CPU/local terminal replay certification
-- 36 native 320x200 visual-review states covering CPU/local HUDs, Fart, promotion, terminal states, exact theme switch/restore proof, and the real Crimson authored board/piece treatment
-- 320x200 256-color VGA presentation
-- Sound Blaster / PC-speaker audio architecture
-- versioned save/load and audio/theme config
-- session history, help, credits and attract demo
-- optional DOS mouse support
-- strict C89 Build 4–11 regression stack
-- host CPU/memory profiling and release-source audit
-- real 16-bit DOS `CHESSFRT.EXE` built with Open Watcom 2.0
-- DOSBox platform smoke covering VGA, mouse probe and audio initialization
-- verified `chessfart-1.0.0-dos.zip` with SHA-256
+The automated gate covers rules, Gas/Fart legality, deterministic CPU tactics and full games, local play through checkmate, save/load rollback, replay and Practice Undo, 36 native 320x200 visual states, generated assets, strict C89 host builds, real Open Watcom 16-bit DOS compilation, DOSBox smoke, and release packaging.
 
-The final release does **not** claim exhaustive physical-hardware compatibility. Physical 386/486 systems, MS-DOS/FreeDOS variants, real Sound Blaster models and third-party DOS mouse drivers remain documented manual/community targets.
+Physical 386/486 systems, MS-DOS/FreeDOS variants, real Sound Blaster models, and third-party DOS mouse drivers remain documented manual/community compatibility targets rather than claimed automated coverage.
 
-See [`docs/BUILD_12.md`](docs/BUILD_12.md), [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md), and [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
+See [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md), [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md), and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Play 1.0
 
@@ -95,7 +73,7 @@ With a compatible DOS mouse driver, left-click targets board/menu items and righ
 Host release gate:
 
 ```sh
-make test-build12
+make test
 ```
 
 With Open Watcom set up for a DOS target:
@@ -110,11 +88,6 @@ Package the compiled DOS executable:
 sh scripts/package_release.sh
 ```
 
-Classic Open Watcom users may use:
-
-```bat
-wmake -f makefile.build12.dos dos
-```
 
 Automated verification is intentionally not described as exhaustive hardware compatibility. See `docs/COMPATIBILITY.md` for exactly what is verified and what remains unverified.
 

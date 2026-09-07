@@ -1,72 +1,58 @@
 # Contributing to Chess Fart
 
-## Project rule #1
+## Project state
+
+Chess Fart is feature-complete. Contributions should default to **maintenance**, not expansion: fix defects, improve compatibility, strengthen tests, simplify code, or improve documentation without changing the established game.
 
 A funny feature is not worth corrupting chess state.
 
-## Build discipline
+## Supported build paths
 
-Work in small vertical milestones matching `docs/ROADMAP.md`.
+- host regression gate: `make test`
+- browser build: `make -f Makefile.web web`
+- Open Watcom DOS build: `sh scripts/build_dos_ci.sh`
+- release package: `sh scripts/package_release.sh`
 
-Each build should leave the repository in a runnable/testable state.
+Historical `docs/BUILD_*.md` files describe how the game evolved; they are not separate supported build systems.
 
 ## Code organization
 
-- pure rules in `src/core`
-- AI in `src/ai`
-- UI/game flow in `src/game`
-- DOS-specific hardware code in `src/platform/dos`
-- shared declarations in `include`
-- host tests in `tests`
-- asset converters in `tools`
+- rules and game-state truth: `src/game/board.c`, `src/game/gas.c`
+- CPU: `src/game/cpu_*.c`
+- current game flow: `src/main.c`, `src/main_loop.inc`, `src/main_hooks.inc`, `src/main_ui.inc`
+- presentation/assets/themes: `src/game/board_view_art.c`, `src/game/presentation.c`, `src/game/ui_*.c`
+- persistence/replay/undo: `src/game/persistence.c`, `src/game/replay*.c`, `src/game/practice_undo.c`
+- platform backends: `src/platform/{dos,host,web}`
+- shared declarations: `include/`
+- regression tests: `tests/`
+- asset converters: `tools/`
 
-Do not call VGA/audio/input APIs from core rules code.
+Rules code must remain independent of platform VGA/audio/input implementations.
 
 ## C style
 
-- target C89/C90 unless there is an explicit decision to change
-- favor small functions
-- explicit integer/state transitions over clever macros
-- braces even for short control blocks where ambiguity is possible
-- no hidden heap allocation in frequently called move-generation paths
-- comments explain *why*, not obvious syntax
+- stay within the C89/C90 subset used by the DOS target
+- favor small functions and explicit state transitions
+- avoid clever macro indirection when a normal function or module boundary is clearer
+- no hidden heap allocation in hot move-generation/search paths
+- comments explain invariants and reasons, not build-history trivia
 
-## Rules changes
+## Compatibility contracts
 
-Any gameplay rule change involving Gas, fart displacement, kings, draws, castling or promotion must update:
+Do not casually change:
 
-1. `docs/GAME_DESIGN.md`
-2. `docs/DECISIONS.md`
-3. relevant tests
+- chess/Gas/Fart rules
+- game-save format v2
+- replay-file format v1
+- config format v2
+- deterministic CPU regression expectations
+- certified native visual signatures
 
-Do not change only the code.
+A deliberate contract change requires matching tests and documentation.
 
-## Art rules
+## Testing
 
-- native-size readability first
-- no anti-aliased runtime sprites
-- remain within indexed palette constraints
-- source assets and converters should be reproducible
-
-## Commit guidance
-
-Prefer focused commits such as:
-
-- `Build 1: add Mode 13h framebuffer`
-- `Core: implement knight move generation`
-- `Rules: add legal fart displacement`
-- `Art: add white piece sprite set`
-
-Avoid commits that mix engine changes, unrelated art and docs unless they form one vertical feature.
-
-## Testing requirement
-
-Before a core rules change is considered complete:
-
-- host tests pass
-- apply/unapply round-trip is preserved
-- no action can leave acting side's king illegally in check
-- new edge cases are represented by regression tests
+Before merging maintenance work, run the relevant focused tests and the full gate. Changes touching presentation or browser input also require the Chromium playtest and 36-state visual review. Changes touching DOS/platform code require the Open Watcom and DOSBox gates.
 
 ## Humor guideline
 
