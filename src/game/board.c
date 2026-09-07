@@ -479,11 +479,10 @@ static void apply_stateful(CfBoard *board, CfMove *move)
     board->side_to_move = board_other_color(board->side_to_move);
 }
 
-void board_unmake_move(CfBoard *board, const CfMove *move)
+static void unapply_position_only(CfBoard *board, const CfMove *move)
 {
     CfPiece empty = make_piece(CF_PIECE_NONE, CF_COLOR_NONE);
     int home_rank;
-    if (board == 0 || move == 0) return;
 
     board->squares[move->from_rank][move->from_file] = move->moved;
     if ((move->flags & CF_MOVE_EN_PASSANT) != 0U) {
@@ -502,7 +501,13 @@ void board_unmake_move(CfBoard *board, const CfMove *move)
         board->squares[home_rank][0] = board->squares[home_rank][3];
         board->squares[home_rank][3] = empty;
     }
+}
 
+void board_unmake_move(CfBoard *board, const CfMove *move)
+{
+    if (board == 0 || move == 0) return;
+
+    unapply_position_only(board, move);
     board->side_to_move = move->prev_side_to_move;
     board->castling_rights = move->prev_castling_rights;
     board->en_passant_file = move->prev_en_passant_file;
@@ -523,11 +528,12 @@ void board_generate_legal_moves(const CfBoard *board, int file, int rank, CfMove
     piece = board->squares[rank][file];
     if (piece.type == CF_PIECE_NONE || piece.color != board->side_to_move) return;
     generate_pseudo_moves(board, file, rank, &pseudo);
+    scratch = *board;
     for (i = 0; i < pseudo.count; ++i) {
-        scratch = *board;
         apply_position_only(&scratch, &pseudo.moves[i]);
         if (!board_is_in_check(&scratch, piece.color) && list->count < CF_MAX_MOVES)
             list->moves[list->count++] = pseudo.moves[i];
+        unapply_position_only(&scratch, &pseudo.moves[i]);
     }
 }
 

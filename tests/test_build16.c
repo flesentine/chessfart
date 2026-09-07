@@ -10,8 +10,9 @@ static int failures;
 
 static void test_memory_budget(void)
 {
-    CHECK(sizeof(CfPracticeUndoJournal) < 8192U);
-    CHECK(sizeof(CfPracticeUndoEntry) < 256U);
+    CHECK(sizeof(CfGasMove) < 96U);
+    CHECK(sizeof(CfPracticeUndoJournal) < 6144U);
+    CHECK(sizeof(CfPracticeUndoEntry) < 192U);
 }
 
 static void test_move_undo_exact(void)

@@ -86,7 +86,7 @@ int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
     actor_color = board_other_color(after->side_to_move);
     opponent_color = after->side_to_move;
     bonus = 0;
-    target = &undo->fart.previous_target_piece;
+    target = &undo->action.fart.previous_target_piece;
 
     if (action->fart_result == CF_FART_PROMOTION) {
         promotion_gain = piece_value(action->promotion) - piece_value(CF_PIECE_PAWN);
@@ -123,11 +123,11 @@ int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
     if (board_is_in_check(after, after->side_to_move)) bonus += 55;
     if (actor_was_in_check) bonus += 18;
 
-    lost_rights = undo->fart.previous_castling_rights &
+    lost_rights = undo->action.fart.previous_castling_rights &
                   ~after->castling_rights & rights_for_color(opponent_color);
     bonus += bit_count(lost_rights) * 24;
 
-    lost_actor_rights = undo->fart.previous_castling_rights &
+    lost_actor_rights = undo->action.fart.previous_castling_rights &
                         ~after->castling_rights & rights_for_color(actor_color);
     bonus -= bit_count(lost_actor_rights) * 20;
 
