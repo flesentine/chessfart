@@ -21,7 +21,8 @@ typedef enum CfInputKey5 {
     CF5_KEY_HISTORY,
     CF5_KEY_CREDITS,
     CF5_KEY_REPLAY,
-    CF5_KEY_UNDO
+    CF5_KEY_UNDO,
+    CF5_KEY_THEME
 } CfInputKey5;
 
 void input5_init(void);

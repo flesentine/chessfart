@@ -7,6 +7,7 @@ Enter / Space      Choose (PLAY CPU, 2 PLAYERS or PRACTICE)
 Left / Right       Cycle audio device
 F                  Cycle SFX level
 D                  Cycle CPU difficulty
+T                  Cycle Royal Basement / Crimson Cellar theme
 H                  Help / rules
 C                  Credits
 Mouse left         Choose menu item when DOS mouse driver is present

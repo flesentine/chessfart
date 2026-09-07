@@ -103,6 +103,12 @@ CfUiTheme ui_theme_get(void)
     return g_ui_theme;
 }
 
+CfUiTheme ui_theme_next(CfUiTheme theme)
+{
+    if (!ui_theme_valid(theme)) return CF_UI_THEME_ROYAL_BASEMENT;
+    return (CfUiTheme)(((int)theme + 1) % (int)CF_UI_THEME_COUNT);
+}
+
 const char *ui_theme_name(CfUiTheme theme)
 {
     switch (theme) {

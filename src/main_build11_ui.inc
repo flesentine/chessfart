@@ -234,7 +234,7 @@ static void ux_draw_title(int menu, int frame)
         "PLAY CPU", "2 PLAYERS", "PRACTICE", "ATTRACT DEMO",
         "HELP / RULES", "CREDITS", "QUIT TO DOS"
     };
-    char line[32];
+    char line[48];
     const CfAudioConfig *config = audio_get_config();
     const CfAudioStats *stats = audio_get_stats();
     int i;
@@ -279,9 +279,11 @@ static void ux_draw_title(int menu, int frame)
                   CF_UI_SCREEN_H - (CF_UI_TITLE_FOOTER_Y - 1),
                   UX_COL_BG);
     ux_draw_centered(0, CF_UI_TITLE_FOOTER_Y, CF_UI_SCREEN_W,
-                     "UP/DOWN SELECT   ENTER CONFIRM", UX_COL_TEXT);
+                     "UP/DOWN SELECT  ENTER CONFIRM  L/R AUDIO", UX_COL_TEXT);
+    sprintf(line, "T THEME %s  D CPU  F SFX",
+            ui_theme_name(ui_theme_get()));
     ux_draw_centered(0, CF_UI_TITLE_FOOTER2_Y, CF_UI_SCREEN_W,
-                     "D CPU   F SFX   LEFT/RIGHT AUDIO", UX_COL_MUTED);
+                     line, UX_COL_MUTED);
 }
 
 static void ux_panel_outline(void)
@@ -1279,6 +1281,10 @@ int ux_title_screen(const char *config_path)
             (void)persistence_save_config(config_path, audio_get_config());
         } else if (key == CF5_KEY_DIFFICULTY) {
             cpu_cycle_difficulty(&g_cpu_config); ++frame;
+            audio_play_event(CF_AUDIO_MENU_CONFIRM);
+        } else if (key == CF5_KEY_THEME) {
+            (void)ui_theme_set(ui_theme_next(ui_theme_get()));
+            ++frame;
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
         } else if (key == CF5_KEY_HELP) {
             ux_draw_help_page(0); vga_present(); ux_wait_for_close(1); ++frame;

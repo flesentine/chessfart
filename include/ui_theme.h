@@ -47,6 +47,7 @@ typedef enum CfUiTheme {
 int ui_theme_valid(CfUiTheme theme);
 int ui_theme_set(CfUiTheme theme);
 CfUiTheme ui_theme_get(void);
+CfUiTheme ui_theme_next(CfUiTheme theme);
 const char *ui_theme_name(CfUiTheme theme);
 void ui_theme_build_palette(cf_u8 *palette, int flash);
 

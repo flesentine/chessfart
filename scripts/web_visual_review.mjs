@@ -392,6 +392,27 @@ try {
     throw new Error('theme redraw consumed pending CPU message');
   await call(page, 'cf_review_clear_cpu_message_pending');
 
+  /* Build 17.1: real player-facing T selector and session carry. */
+  await page.goto('http://127.0.0.1:8128/?visual=theme-selector',
+                  { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.waitForFunction(
+    () => document.getElementById('status')?.textContent.startsWith('Ready'),
+    { timeout: 15000 }
+  );
+  if (await call(page, 'cf_review_ui_theme') !== 0)
+    throw new Error('17.1 visual selector did not start Royal Basement');
+  await press(page, 't', 220);
+  if (await call(page, 'cf_review_ui_theme') !== 1)
+    throw new Error('17.1 visual T did not select Crimson Cellar');
+  await nativeShot(page, '35-title-crimson-cellar-selected', 'real', states);
+  await press(page, 'Enter', 450);
+  if (await call(page, 'cf_review_ui_theme') !== 1 ||
+      await call(page, 'cf_review_match_mode') !== 0 ||
+      await call(page, 'cf_review_side') !== 1 ||
+      await call(page, 'cf_review_fullmove') !== 1)
+    throw new Error('17.1 Crimson title selection did not carry into game');
+  await nativeShot(page, '36-crimson-cellar-game-opening', 'real', states);
+
   if (errors.length) throw new Error(errors.join(' | '));
 
   const manifest = {

@@ -33,5 +33,6 @@ CfInputKey5 input5_poll_key(void)
     if (ch == 'c' || ch == 'C') return CF5_KEY_CREDITS;
     if (ch == 'r' || ch == 'R') return CF5_KEY_REPLAY;
     if (ch == 'u' || ch == 'U') return CF5_KEY_UNDO;
+    if (ch == 't' || ch == 'T') return CF5_KEY_THEME;
     return CF5_KEY_NONE;
 }
