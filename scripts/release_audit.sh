@@ -24,25 +24,7 @@ grep -q 'format version 2' release/README.TXT
 grep -q 'Legacy version-1 game saves remain loadable and restore CPU mode' release/README.TXT
 grep -q 'CHESSFRT.RPL' release/README.TXT
 grep -q 'CHESSFRT.RPL' release/KEYS.TXT
-grep -q '^THEMES
-
-# A bare ======= line is valid DOS text decoration, so only the unambiguous
-# opening/closing merge markers are release blockers here.
-if grep -R -n -E '^(<<<<<<<|>>>>>>>)' src include tests release docs >/tmp/chessfart-conflicts.txt; then
-    cat /tmp/chessfart-conflicts.txt >&2
-    exit 1
-fi
-
-if grep -R -n -E '\b(TODO|FIXME|XXX)\b' src include >/tmp/chessfart-release-todos.txt; then
-    cat /tmp/chessfart-release-todos.txt >&2
-    echo "Release source contains TODO/FIXME/XXX markers." >&2
-    exit 1
-fi
-
-git diff --check
-
-echo "Release audit passed for Chess Fart $VERSION."
- release/README.TXT
+grep -q '^THEMES$' release/README.TXT
 grep -q 'Royal Basement / Crimson Cellar' release/README.TXT
 grep -q 'CHESSFRT.CFG version 2' release/README.TXT
 grep -q 'T                  Cycle Royal Basement / Crimson Cellar theme' release/KEYS.TXT
