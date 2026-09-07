@@ -94,7 +94,7 @@ $(TEST8_BINARY): tests/test_build8.c src/game/audio.c src/game/audio_samples.c s
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build8.c src/game/audio.c src/game/audio_samples.c src/platform/host/audio_build11_host.c -o $(TEST8_BINARY)
 
-$(TEST9_BINARY): tests/test_build9.c src/game/board.c src/game/gas.c src/game/persistence.c include/persistence.h include/match_mode.h include/audio.h include/gas.h include/board.h include/cf_types.h
+$(TEST9_BINARY): tests/test_build9.c src/game/board.c src/game/gas.c src/game/persistence.c include/persistence.h include/ui_theme.h include/match_mode.h include/audio.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/test_build9.c src/game/board.c src/game/gas.c src/game/persistence.c -o $(TEST9_BINARY)
 
