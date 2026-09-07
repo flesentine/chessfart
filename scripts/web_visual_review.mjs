@@ -13,6 +13,11 @@ const server = spawn('python3', ['-m', 'http.server', '8128', '--directory', 'bu
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let reviewGeometry = null;
 
+const BUILD17_ROYAL_CHECKMATE_SIG = 825377442;
+const BUILD17_CRIMSON_CHECKMATE_SIG = 3048219000;
+const BUILD17_CRIMSON_TITLE_SIG = 685477904;
+const BUILD17_CRIMSON_OPENING_SIG = 1615732062;
+
 async function call(page, name, ...args) {
   return await page.evaluate(({ name, args }) => {
     const fn = Module[`_${name}`];
@@ -345,6 +350,8 @@ try {
   await waitForStatus(page, 2, 1, 2);
   const royalBlackMateSig =
     await nativeShot(page, '32-local-black-checkmate', 'real', states);
+  if (royalBlackMateSig !== BUILD17_ROYAL_CHECKMATE_SIG)
+    throw new Error('Build 17 Royal Basement baseline signature drifted');
 
   /* Build 17.0 palette-only theme foundation. The game state must remain
    * byte-identical while the same terminal frame changes presentation. */
@@ -356,18 +363,24 @@ try {
   const themeReplayTotal = await call(page, 'cf_review_replay_total');
   if (await call(page, 'cf_review_ui_theme') !== 0 ||
       await call(page, 'cf_review_ui_board_surface') !== 0 ||
-      await call(page, 'cf_review_ui_piece_material') !== 0)
-    throw new Error('Royal Basement was not the default stone/gilt presentation');
+      await call(page, 'cf_review_ui_piece_material') !== 0 ||
+      await call(page, 'cf_review_ui_white_piece_accent') !== 4 ||
+      await call(page, 'cf_review_ui_black_piece_accent') !== 6)
+    throw new Error('Royal Basement was not the exact stone/gilt presentation');
   if (await call(page, 'cf_review_set_ui_theme', 1) !== 1 ||
       await call(page, 'cf_review_ui_theme') !== 1 ||
       await call(page, 'cf_review_ui_board_surface') !== 1 ||
-      await call(page, 'cf_review_ui_piece_material') !== 1)
-    throw new Error('Crimson Cellar brick/copper presentation switch failed');
+      await call(page, 'cf_review_ui_piece_material') !== 1 ||
+      await call(page, 'cf_review_ui_white_piece_accent') !== 27 ||
+      await call(page, 'cf_review_ui_black_piece_accent') !== 27)
+    throw new Error('Crimson Cellar exact brick/copper presentation switch failed');
   const crimsonSig =
     await nativeShot(page, '33-theme-crimson-cellar-checkmate',
                      'theme-fixture', states);
   if (crimsonSig === royalBlackMateSig)
     throw new Error('Crimson Cellar rendered identically to Royal Basement');
+  if (crimsonSig !== BUILD17_CRIMSON_CHECKMATE_SIG)
+    throw new Error('Build 17 Crimson Cellar checkmate signature drifted');
   if (await call(page, 'cf_review_board_hash') !== themeBoardHash ||
       await call(page, 'cf_review_gas_hash') !== themeGasHash ||
       await call(page, 'cf_review_gas_history_hash') !== themeHistoryHash ||
@@ -379,13 +392,16 @@ try {
   if (await call(page, 'cf_review_set_ui_theme', 0) !== 1 ||
       await call(page, 'cf_review_ui_theme') !== 0 ||
       await call(page, 'cf_review_ui_board_surface') !== 0 ||
-      await call(page, 'cf_review_ui_piece_material') !== 0)
-    throw new Error('Royal Basement stone/gilt restore failed');
+      await call(page, 'cf_review_ui_piece_material') !== 0 ||
+      await call(page, 'cf_review_ui_white_piece_accent') !== 4 ||
+      await call(page, 'cf_review_ui_black_piece_accent') !== 6)
+    throw new Error('Royal Basement exact stone/gilt restore failed');
   const royalRestoredSig =
     await nativeShot(page, '34-theme-royal-restored-checkmate',
                      'theme-fixture', states);
-  if (royalRestoredSig !== royalBlackMateSig)
-    throw new Error('Royal Basement did not restore exact visual signature');
+  if (royalRestoredSig !== royalBlackMateSig ||
+      royalRestoredSig !== BUILD17_ROYAL_CHECKMATE_SIG)
+    throw new Error('Royal Basement did not restore certified visual signature');
 
   /* Redrawing a theme must not consume an unrelated pending CPU message. */
   await call(page, 'cf_review_seed_cpu_message_pending');
@@ -406,21 +422,31 @@ try {
     () => document.getElementById('status')?.textContent.startsWith('Ready'),
     { timeout: 15000 }
   );
-  if (await call(page, 'cf_review_ui_theme') !== 0)
-    throw new Error('17.1 visual selector did not start Royal Basement');
+  if (await call(page, 'cf_review_ui_theme') !== 0 ||
+      await call(page, 'cf_review_ui_white_piece_accent') !== 4 ||
+      await call(page, 'cf_review_ui_black_piece_accent') !== 6)
+    throw new Error('17.5 visual selector did not start certified Royal treatment');
   await press(page, 't', 220);
   if (await call(page, 'cf_review_ui_theme') !== 1 ||
       await call(page, 'cf_review_ui_board_surface') !== 1 ||
-      await call(page, 'cf_review_ui_piece_material') !== 1)
-    throw new Error('17.4 visual T did not select Crimson brick/copper treatment');
-  await nativeShot(page, '35-title-crimson-cellar-selected', 'real', states);
+      await call(page, 'cf_review_ui_piece_material') !== 1 ||
+      await call(page, 'cf_review_ui_white_piece_accent') !== 27 ||
+      await call(page, 'cf_review_ui_black_piece_accent') !== 27)
+    throw new Error('17.5 visual T did not select certified Crimson treatment');
+  const crimsonTitleSig =
+    await nativeShot(page, '35-title-crimson-cellar-selected', 'real', states);
+  if (crimsonTitleSig !== BUILD17_CRIMSON_TITLE_SIG)
+    throw new Error('Build 17 Crimson Cellar title signature drifted');
   await press(page, 'Enter', 450);
   if (await call(page, 'cf_review_ui_theme') !== 1 ||
       await call(page, 'cf_review_match_mode') !== 0 ||
       await call(page, 'cf_review_side') !== 1 ||
       await call(page, 'cf_review_fullmove') !== 1)
     throw new Error('17.1 Crimson title selection did not carry into game');
-  await nativeShot(page, '36-crimson-cellar-game-opening', 'real', states);
+  const crimsonOpeningSig =
+    await nativeShot(page, '36-crimson-cellar-game-opening', 'real', states);
+  if (crimsonOpeningSig !== BUILD17_CRIMSON_OPENING_SIG)
+    throw new Error('Build 17 Crimson Cellar opening signature drifted');
 
   if (errors.length) throw new Error(errors.join(' | '));
 
