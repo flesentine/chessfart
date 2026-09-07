@@ -33,7 +33,7 @@
 #define CF_UI_COMMAND_W CF_UI_SCREEN_W
 #define CF_UI_COMMAND_H 19
 
-/* Build 13.5 normal gameplay HUD positions. */
+/* Normal gameplay HUD positions. */
 #define CF_UI_HEADER_TITLE_X 10
 #define CF_UI_HEADER_TITLE_Y 5
 #define CF_UI_HEADER_TAGLINE_X 165
@@ -80,7 +80,7 @@
 #define CF_UI_PRACTICE_UNDO_HIT_X 88
 #define CF_UI_PRACTICE_UNDO_HIT_W 48
 
-/* Build 13.6 Fart-mode presentation positions. */
+/* Fart-mode presentation positions. */
 #define CF_UI_FART_HEADER_TAGLINE_X 112
 #define CF_UI_FART_HEADER_PUFF_X 224
 #define CF_UI_FART_HEADER_PUFF_Y 1
@@ -116,7 +116,7 @@
 #define CF_UI_FART_PROMPT_ENTER_X 157
 #define CF_UI_FART_PROMPT_ESC_X 247
 
-/* Build 13.7 title and modal presentation. */
+/* Title and modal presentation. */
 #define CF_UI_TITLE_MENU_X 69
 #define CF_UI_TITLE_MENU_Y 96
 #define CF_UI_TITLE_MENU_W 182

@@ -2,7 +2,16 @@
 
 All notable project milestones are recorded here.
 
-## Maintenance consolidation
+## Maintenance consolidation — round 2
+
+- removed the final orphaned pre-retail renderer source
+- folded unique Build 2/3 board-contract checks into the permanent standard-chess suite and removed the two unrun orphan test executables
+- unified duplicate terminal-state predicates inside the current runtime
+- removed build-lineage comments from current layout constants
+- corrected current compatibility, UX, test-plan, and art-style documentation
+- added release-audit guards against reintroducing retired build-lineage runtime files or per-build DOS makefiles
+
+## Maintenance consolidation — round 1
 
 - collapsed the active Build 9/11 macro-and-include trampoline into the canonical `src/main.c` + `main_loop.inc` runtime
 - canonicalized current input, board-view, host, and DOS backend names while preserving input enum values and behavior

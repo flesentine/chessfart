@@ -817,7 +817,7 @@ static void ux_render_cached_base(void)
                         g_ux_cache.fart_promotion_pending);
     ux_draw_persistence_notice(shown);
 
-    if (ux_terminal(g_ux_cache.status))
+    if (status_is_terminal(g_ux_cache.status))
         ux_draw_terminal_overlay(g_ux_cache.status,
                                  g_ux_cache.board.side_to_move);
     g_cpu_message_pending = 0;

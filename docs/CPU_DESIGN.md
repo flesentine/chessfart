@@ -6,7 +6,7 @@ The CPU must play the same game the human plays. A Fart Action is a first-class 
 
 ## Search
 
-Build 10 uses deterministic iterative-deepening negamax with alpha-beta pruning.
+The current CPU uses deterministic iterative-deepening negamax with alpha-beta pruning.
 
 Each completed iteration becomes the fallback result for the next one. Search stops when it reaches any configured limit:
 
@@ -24,7 +24,7 @@ If a deeper iteration is interrupted, the best action from the last completely s
 | MED | 2 | 8,000 | 500 ms |
 | HARD | 3 | 50,000 | 1,500 ms |
 
-The limits are deliberately conservative for the DOS target and can be tuned after DOSBox/real-hardware profiling.
+The limits are deliberately conservative for the DOS target and are part of the current frozen behavior.
 
 ## Action generation
 
@@ -52,7 +52,7 @@ PUFF and BLOCKED actions remain searchable but are ordered behind immediately pr
 
 ## Evaluation
 
-The Build 10 evaluation combines:
+The evaluation combines:
 
 - material
 - Gas carried by pieces
@@ -67,15 +67,15 @@ Mate/stalemate are resolved by actual legal action generation, not by evaluation
 
 ## Draw handling
 
-The root position uses the real Gas-aware history and therefore respects an already-earned threefold draw. Search also respects fifty-move and insufficient-material states. Build 10 does not extend the real repetition-history array down speculative search branches; doing that without large DOS stack copies is reserved for a later search optimization if testing shows it matters.
+The root position uses the real Gas-aware history and therefore respects an already-earned threefold draw. Search also respects fifty-move and insufficient-material states. Speculative search does not copy the full repetition-history array down every branch; the current bounded approach is accepted as part of the frozen CPU design.
 
 ## Player model
 
-Build 10 is human White versus CPU Black. The CPU moves immediately after a successful White move/Fart. Save/load remains exact; if a loaded save is Black to move, the CPU immediately consumes that turn and records the history transition correctly.
+In CPU mode the human is White and the CPU is Black. The CPU moves immediately after a successful White move/Fart. Local two-player and Practice sessions bypass automatic CPU replies. Save/load remains exact; if a CPU-mode save is loaded with Black to move, the CPU immediately consumes that turn and records the history transition correctly.
 
-## Future tuning
+## Archived tuning ideas
 
-Possible later work:
+The game is feature-frozen. These remain historical ideas rather than planned work:
 
 - transposition table
 - killer/history ordering

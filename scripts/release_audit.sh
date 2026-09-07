@@ -43,6 +43,23 @@ if grep -R -n -E '\b(TODO|FIXME|XXX)\b' src include >/tmp/chessfart-release-todo
     exit 1
 fi
 
+legacy_runtime="$(find src include scripts -type f \
+    \( -name 'main_build*' -o -name 'board_view_build*' \
+       -o -name '*_build*_host.c' -o -name '*_build*_dos.c' \
+       -o -name '*_build*.h' -o -name 'build_dos_build*.bat' \) -print)"
+if [ -n "$legacy_runtime" ]; then
+    printf '%s\n' "$legacy_runtime" >&2
+    echo "Retired build-lineage runtime scaffolding has reappeared." >&2
+    exit 1
+fi
+
+legacy_makefiles="$(find . -maxdepth 1 -type f -name 'makefile.build*.dos' -print)"
+if [ -n "$legacy_makefiles" ]; then
+    printf '%s\n' "$legacy_makefiles" >&2
+    echo "Retired per-build DOS makefiles have reappeared." >&2
+    exit 1
+fi
+
 git diff --check
 
 echo "Release audit passed for Chess Fart $VERSION."
