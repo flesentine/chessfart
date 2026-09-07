@@ -78,12 +78,14 @@ static void test_basic_board_contracts(void)
 
     board_clear(&board);
     board_set_piece(&board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
-    board_set_piece(&board, 4, 1, CF_PIECE_ROOK, CF_COLOR_WHITE);
     board_set_piece(&board, 4, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
     board_set_piece(&board, 0, 7, CF_PIECE_KING, CF_COLOR_BLACK);
     board.side_to_move = CF_COLOR_WHITE;
     CHECK(board_square_is_attacked(&board, 4, 0, CF_COLOR_BLACK));
     CHECK(board_is_in_check(&board, CF_COLOR_WHITE));
+
+    board_set_piece(&board, 4, 1, CF_PIECE_ROOK, CF_COLOR_WHITE);
+    CHECK(!board_is_in_check(&board, CF_COLOR_WHITE));
     board_generate_legal_moves(&board, 4, 1, &list);
     CHECK(!has_move(&list, 5, 1, 0U));
     CHECK(has_move(&list, 4, 2, 0U));
