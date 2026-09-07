@@ -38,15 +38,21 @@ static const cf_u8 *piece_sprite(const CfPiece *piece)
 
 static cf_u8 piece_color(const CfPiece *piece, int code)
 {
+    CfUiPieceMaterial material;
+
     if (code <= 1) return CF_UI_COL_SHADOW;
+    material = ui_theme_piece_material(ui_theme_get());
     if (piece->color == CF_COLOR_WHITE) {
-        if (code == 2) return CF_UI_COL_GOLD;
+        if (code == 2)
+            return material == CF_UI_PIECE_MATERIAL_CELLAR_COPPER ?
+                   CF_UI_COL_COPPER : CF_UI_COL_GOLD;
         if (code == 3) return CF_UI_COL_WHITE_PIECE;
         return CF_UI_COL_WHITE_HI;
     }
     if (code == 2) return CF_UI_COL_BLACK_PIECE;
     if (code == 3) return CF_UI_COL_BLACK_HI;
-    return CF_UI_COL_MUTED;
+    return material == CF_UI_PIECE_MATERIAL_CELLAR_COPPER ?
+           CF_UI_COL_COPPER : CF_UI_COL_MUTED;
 }
 
 static int piece_pixel(const cf_u8 *sprite, int x, int y)
