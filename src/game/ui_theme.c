@@ -125,6 +125,13 @@ CfUiBoardSurface ui_theme_board_surface(CfUiTheme theme)
     return CF_UI_BOARD_SURFACE_STONE_GRAIN;
 }
 
+CfUiPieceMaterial ui_theme_piece_material(CfUiTheme theme)
+{
+    if (theme == CF_UI_THEME_CRIMSON_CELLAR)
+        return CF_UI_PIECE_MATERIAL_CELLAR_COPPER;
+    return CF_UI_PIECE_MATERIAL_CLASSIC_GILT;
+}
+
 void ui_theme_build_palette(cf_u8 *palette, int flash)
 {
     int i;
