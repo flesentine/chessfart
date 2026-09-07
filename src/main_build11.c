@@ -95,6 +95,8 @@ int ux_human_make_move_ex(CfBoard *, CfGasState *, int, int, int, int,
 int ux_human_make_fart(CfBoard *, CfGasState *, int, int, CfFartDirection,
                        CfPieceType, CfFartAction *);
 int ux_practice_undo_game(CfBoard *, CfGasState *, CfGasHistory *);
+CfPersistenceResult ux_load_config(const char *, CfAudioConfig *);
+CfPersistenceResult ux_save_config(const char *, const CfAudioConfig *);
 CfInputKey5 ux_poll_key(void);
 void ux_show_help_modal(void);
 void ux_show_history_modal(void);
@@ -105,6 +107,8 @@ void ux_show_replay_modal(void);
 #define persistence_render_game ux_render_game
 #define persistence_load_game ux_load_game
 #define persistence_save_game ux_save_game
+#define persistence_load_config ux_load_config
+#define persistence_save_config ux_save_config
 #define audio_game_make_move ux_human_make_move
 #define audio_game_make_move_ex ux_human_make_move_ex
 #define audio_game_make_fart ux_human_make_fart
@@ -118,6 +122,8 @@ void ux_show_replay_modal(void);
 #undef audio_game_make_fart
 #undef audio_game_make_move_ex
 #undef audio_game_make_move
+#undef persistence_save_config
+#undef persistence_load_config
 #undef persistence_save_game
 #undef persistence_load_game
 #undef persistence_render_game
