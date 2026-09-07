@@ -289,8 +289,8 @@ static void test_config_round_trip(void)
     theme = CF_UI_THEME_CRIMSON_CELLAR;
     CHECK(persistence_load_config_theme(path, &loaded, &theme) ==
           CF_PERSIST_OK);
-    CHECK(loaded.device == CF_AUDIO_DEVICE_SOUND_BLASTER);
-    CHECK(loaded.sfx_level == CF_AUDIO_LEVEL_MEDIUM);
+    CHECK(loaded.device == CF_AUDIO_DEVICE_SB);
+    CHECK(loaded.sfx_level == CF_AUDIO_LEVEL_MED);
     CHECK(loaded.music_level == CF_AUDIO_LEVEL_OFF);
     CHECK(theme == CF_UI_THEME_ROYAL_BASEMENT);
 
