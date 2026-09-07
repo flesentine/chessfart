@@ -132,6 +132,13 @@ CfUiPieceMaterial ui_theme_piece_material(CfUiTheme theme)
     return CF_UI_PIECE_MATERIAL_CLASSIC_GILT;
 }
 
+cf_u8 ui_theme_piece_accent(CfUiTheme theme, int black_piece)
+{
+    if (ui_theme_piece_material(theme) == CF_UI_PIECE_MATERIAL_CELLAR_COPPER)
+        return CF_UI_COL_COPPER;
+    return black_piece ? CF_UI_COL_MUTED : CF_UI_COL_GOLD;
+}
+
 void ui_theme_build_palette(cf_u8 *palette, int flash)
 {
     int i;
