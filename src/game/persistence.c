@@ -324,19 +324,31 @@ CfPersistenceResult persistence_load_game(const char *path,
                                       &ignored_mode);
 }
 
-CfPersistenceResult persistence_save_config(const char *path,
-                                            const CfAudioConfig *config)
+static int valid_audio_config(const CfAudioConfig *config)
+{
+    if (config == 0) return 0;
+    return (int)config->device >= (int)CF_AUDIO_DEVICE_AUTO &&
+           (int)config->device <= (int)CF_AUDIO_DEVICE_NONE &&
+           (int)config->sfx_level >= (int)CF_AUDIO_LEVEL_OFF &&
+           (int)config->sfx_level <= (int)CF_AUDIO_LEVEL_HIGH &&
+           (int)config->music_level >= (int)CF_AUDIO_LEVEL_OFF &&
+           (int)config->music_level <= (int)CF_AUDIO_LEVEL_HIGH;
+}
+
+static int valid_theme_value(int theme)
+{
+    return theme >= (int)CF_UI_THEME_ROYAL_BASEMENT &&
+           theme < (int)CF_UI_THEME_COUNT;
+}
+
+CfPersistenceResult persistence_save_config_theme(
+    const char *path, const CfAudioConfig *config, CfUiTheme theme)
 {
     FILE *fp;
     char temp[CF_PATH_BUFFER];
 
-    if (config == 0 || !make_temp_path(path, temp)) return CF_PERSIST_BAD_DATA;
-    if ((int)config->device < (int)CF_AUDIO_DEVICE_AUTO ||
-        (int)config->device > (int)CF_AUDIO_DEVICE_NONE ||
-        (int)config->sfx_level < (int)CF_AUDIO_LEVEL_OFF ||
-        (int)config->sfx_level > (int)CF_AUDIO_LEVEL_HIGH ||
-        (int)config->music_level < (int)CF_AUDIO_LEVEL_OFF ||
-        (int)config->music_level > (int)CF_AUDIO_LEVEL_HIGH)
+    if (!valid_audio_config(config) || !valid_theme_value((int)theme) ||
+        !make_temp_path(path, temp))
         return CF_PERSIST_BAD_DATA;
 
     fp = fopen(temp, "wt");
@@ -346,6 +358,7 @@ CfPersistenceResult persistence_save_config(const char *path,
                 (int)config->device,
                 (int)config->sfx_level,
                 (int)config->music_level) < 0 ||
+        fprintf(fp, "THEME %d\n", (int)theme) < 0 ||
         fprintf(fp, "END\n") < 0) {
         fclose(fp);
         (void)remove(temp);
@@ -358,8 +371,8 @@ CfPersistenceResult persistence_save_config(const char *path,
     return replace_with_temp(path, temp);
 }
 
-CfPersistenceResult persistence_load_config(const char *path,
-                                            CfAudioConfig *config)
+CfPersistenceResult persistence_load_config_theme(
+    const char *path, CfAudioConfig *config, CfUiTheme *theme)
 {
     FILE *fp;
     char magic[32];
@@ -368,9 +381,11 @@ CfPersistenceResult persistence_load_config(const char *path,
     int device;
     int sfx;
     int music;
+    int theme_value;
     CfAudioConfig loaded;
+    CfUiTheme loaded_theme;
 
-    if (path == 0 || config == 0) return CF_PERSIST_BAD_DATA;
+    if (path == 0 || config == 0 || theme == 0) return CF_PERSIST_BAD_DATA;
     fp = fopen(path, "rt");
     if (fp == 0) return CF_PERSIST_NOT_FOUND;
 
@@ -379,7 +394,8 @@ CfPersistenceResult persistence_load_config(const char *path,
         fclose(fp);
         return CF_PERSIST_BAD_MAGIC;
     }
-    if (version != CF_CONFIG_VERSION) {
+    if (version != CF_CONFIG_VERSION &&
+        version != CF_CONFIG_VERSION_LEGACY) {
         fclose(fp);
         return CF_PERSIST_BAD_VERSION;
     }
@@ -390,9 +406,23 @@ CfPersistenceResult persistence_load_config(const char *path,
         sfx < (int)CF_AUDIO_LEVEL_OFF ||
         sfx > (int)CF_AUDIO_LEVEL_HIGH ||
         music < (int)CF_AUDIO_LEVEL_OFF ||
-        music > (int)CF_AUDIO_LEVEL_HIGH ||
-        fscanf(fp, "%31s", word) != 1 ||
-        strcmp(word, "END") != 0) {
+        music > (int)CF_AUDIO_LEVEL_HIGH) {
+        fclose(fp);
+        return CF_PERSIST_BAD_DATA;
+    }
+
+    loaded_theme = CF_UI_THEME_ROYAL_BASEMENT;
+    if (version == CF_CONFIG_VERSION) {
+        if (fscanf(fp, "%31s %d", word, &theme_value) != 2 ||
+            strcmp(word, "THEME") != 0 ||
+            !valid_theme_value(theme_value)) {
+            fclose(fp);
+            return CF_PERSIST_BAD_DATA;
+        }
+        loaded_theme = (CfUiTheme)theme_value;
+    }
+
+    if (fscanf(fp, "%31s", word) != 1 || strcmp(word, "END") != 0) {
         fclose(fp);
         return CF_PERSIST_BAD_DATA;
     }
@@ -402,5 +432,20 @@ CfPersistenceResult persistence_load_config(const char *path,
     loaded.sfx_level = (CfAudioLevel)sfx;
     loaded.music_level = (CfAudioLevel)music;
     *config = loaded;
+    *theme = loaded_theme;
     return CF_PERSIST_OK;
+}
+
+CfPersistenceResult persistence_save_config(const char *path,
+                                            const CfAudioConfig *config)
+{
+    return persistence_save_config_theme(path, config,
+                                         CF_UI_THEME_ROYAL_BASEMENT);
+}
+
+CfPersistenceResult persistence_load_config(const char *path,
+                                            CfAudioConfig *config)
+{
+    CfUiTheme ignored_theme = CF_UI_THEME_ROYAL_BASEMENT;
+    return persistence_load_config_theme(path, config, &ignored_theme);
 }
