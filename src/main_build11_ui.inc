@@ -1286,6 +1286,7 @@ int ux_title_screen(const char *config_path)
             (void)ui_theme_set(ui_theme_next(ui_theme_get()));
             ++frame;
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
+            (void)ux_save_config(config_path, audio_get_config());
         } else if (key == CF5_KEY_HELP) {
             ux_draw_help_page(0); vga_present(); ux_wait_for_close(1); ++frame;
         } else if (key == CF5_KEY_CREDITS) {
