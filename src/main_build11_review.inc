@@ -102,6 +102,11 @@ EMSCRIPTEN_KEEPALIVE int cf_review_ui_theme(void)
     return (int)ui_theme_get();
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_ui_board_surface(void)
+{
+    return (int)ui_theme_board_surface(ui_theme_get());
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_set_ui_theme(int theme)
 {
     int cpu_message_pending;
