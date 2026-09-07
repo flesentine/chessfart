@@ -24,6 +24,20 @@ class Build13AssetTests(unittest.TestCase):
         self.assertEqual(build_assets.render_include(generated),
                          build_assets.render_include(generated))
 
+    def test_piece_sheets_retain_theme_accent_classes(self):
+        generated, _sheets = build_assets.build_assets()
+        white_pixels = set()
+        black_pixels = set()
+        for name, _w, _h, packing, pixels in generated:
+            if packing != "nibble":
+                continue
+            if name.startswith("cf_asset_white_"):
+                white_pixels.update(pixels)
+            elif name.startswith("cf_asset_black_"):
+                black_pixels.update(pixels)
+        self.assertIn(2, white_pixels)
+        self.assertIn(4, black_pixels)
+
     def test_manifest_integer_validation_rejects_non_integers(self):
         for value in ("16", 16.0, True, None):
             with self.assertRaises(build_assets.AssetError):

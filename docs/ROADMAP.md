@@ -130,7 +130,7 @@ Build 16 closes the remaining master-plan required item: Undo in practice/debug 
 Practice is a session policy rather than a new persisted match-mode value, so the version-2 game-save contract remains unchanged. See `docs/BUILD_16.md`.
 
 ## Build 17 — Alternate presentation themes
-**Status: 17.0–17.3 complete; 17.4 in progress**
+**Status: complete — 17.5 closeout**
 
 Build 17 begins the optional alternate boards/pieces roadmap without changing gameplay contracts.
 
@@ -139,9 +139,9 @@ Build 17 begins the optional alternate boards/pieces roadmap without changing ga
 - 17.2 backward-compatible config v2 persistence for the selected theme
 - 17.3 theme-specific authored board surfaces: exact Royal stone grain + Crimson cellar brick treatment
 - 17.4 theme-specific piece materials: exact Royal gilt mapping + Crimson copper accents on the same sprite masks
-- later slices may add additional presentation assets or close out the theme milestone after the board/piece pairing is certified
+- 17.5 hardening/closeout: exact semantic accent roles, source-asset class coverage, pinned native signatures, and release-document consistency
 
-See `docs/BUILD_17.md`.
+Build 17 closes with Royal Basement as the exact default/fallback presentation and Crimson Cellar as a persisted, authored alternate board/piece treatment. Config v2 persists the theme while game-save v2 and replay-file v1 remain unchanged. See `docs/BUILD_17.md`.
 
 ## Post-v1 ideas
 

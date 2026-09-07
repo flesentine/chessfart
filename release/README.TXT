@@ -70,6 +70,9 @@ unverified where listed in KNOWNISS.TXT.
 
 THEMES
 Press T on the title screen to switch Royal Basement / Crimson Cellar.
+Royal Basement is the default/fallback stone-and-gilt presentation.
+Crimson Cellar uses a cellar-brick board treatment and copper-accented
+pieces while keeping the same rules and piece silhouettes.
 Theme choice is stored in CHESSFRT.CFG version 2 and survives restart.
 Legacy config version 1 remains loadable. Game-save/replay formats do not
 change.

@@ -4,7 +4,7 @@ Build 17 starts the first optional post-v1 roadmap item: **alternate boards/piec
 
 The implementation stays deliberately conservative. Themes are presentation policy only. They must never alter chess state, Gas, CPU behavior, persistence, replay content, Practice semantics, or package version.
 
-**17.0–17.3 complete. Current slice: 17.4 theme-specific piece materials.**
+**Build 17 complete — 17.5 hardening / closeout certified.**
 
 ## Frozen contracts
 
@@ -166,3 +166,38 @@ This keeps 17.0 focused on architecture and visual proof. Its exact-head certifi
 - Crimson game/checkmate frames change while board/Gas/history/replay hashes remain invariant
 - Open Watcom 16-bit DOS, DOSBox/package and Web/WASM gates remain green
 - canonical visual suite remains 36 native 320x200 states
+
+
+## 17.5 — Hardening / closeout
+
+17.5 freezes the completed Royal Basement / Crimson Cellar presentation contract rather than adding another theme.
+
+- exact piece-accent role selection is centralized in the theme layer and consumed by the sprite renderer
+- strict C89 tests pin Royal white accent to GOLD, Royal black accent to MUTED, and both Crimson accent classes to COPPER
+- the indexed source-asset gate requires the white and black sprite sheets to retain the semantic accent classes consumed by the theme renderer
+- Chromium review exposes the active board surface, piece material, and exact white/black accent roles
+- certified native-canvas signatures are pinned for the Royal checkmate baseline and the Crimson title/checkmate/opening states
+- the CI step name is updated from the historical 17.1 label to the current Build 17 visual gate
+- release checklist/audit text now includes the completed theme/config contract
+- no new theme, asset bank, gameplay behavior, persistence format, or package version is introduced
+
+### 17.5 certified visual signatures
+
+- Royal Basement checkmate: `825377442`
+- Crimson Cellar checkmate: `3048219000`
+- Crimson Cellar title: `685477904`
+- Crimson Cellar opening: `1615732062`
+
+### Build 17 closeout contract
+
+Build 17 closes only if all of these remain true on the exact closeout head:
+
+- Royal Basement is startup/fallback theme 0 with stone-grain board and classic-gilt piece material
+- Crimson Cellar is theme 1 with cellar-brick board and copper piece accents
+- title `T` selection wraps correctly and persists through config v2/restart
+- config v1 remains loadable and migrates to v2; malformed v2 data fails closed
+- gameplay, board/Gas state, repetition history, replay accounting, CPU/local/practice behavior, save v2, and replay-file v1 remain unchanged
+- all 36 native 320x200 visual states pass with the certified Build 17 signatures
+- strict host tests, asset freshness, Web/WASM, Chromium playtest, Open Watcom 16-bit DOS, DOSBox smoke, and packaging all pass
+
+Build 17 therefore completes the optional alternate boards/pieces roadmap item with one fully certified alternate presentation and no gameplay-format churn.

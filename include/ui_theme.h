@@ -63,6 +63,7 @@ CfUiTheme ui_theme_next(CfUiTheme theme);
 const char *ui_theme_name(CfUiTheme theme);
 CfUiBoardSurface ui_theme_board_surface(CfUiTheme theme);
 CfUiPieceMaterial ui_theme_piece_material(CfUiTheme theme);
+cf_u8 ui_theme_piece_accent(CfUiTheme theme, int black_piece);
 void ui_theme_build_palette(cf_u8 *palette, int flash);
 
 #endif
