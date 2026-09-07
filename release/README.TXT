@@ -49,8 +49,9 @@ SAVE / REPLAY FILES
 -------------------
 The game writes CHESSFRT.SAV and CHESSFRT.CFG in the current directory.
 New game saves use format version 2 so CPU/local match mode is preserved.
-Legacy version-1 game saves remain loadable and restore CPU mode. The config
-format remains version 1.
+Legacy version-1 game saves remain loadable and restore CPU mode. New config
+files use version 2 so the selected presentation theme is preserved. Legacy
+version-1 audio-only configs remain loadable and default to Royal Basement.
 
 CHESSFRT.RPL is created only when the player exports from Replay. It is a
 separate version-1 replay file and is not included as a pre-made file in the
@@ -69,4 +70,6 @@ unverified where listed in KNOWNISS.TXT.
 
 THEMES
 Press T on the title screen to switch Royal Basement / Crimson Cellar.
-Theme choice is session-only and does not change save/replay formats.
+Theme choice is stored in CHESSFRT.CFG version 2 and survives restart.
+Legacy config version 1 remains loadable. Game-save/replay formats do not
+change.
