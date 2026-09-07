@@ -1091,6 +1091,42 @@ async function verifyMatchModes(browser) {
   if (await call(theme,'cf_review_ui_theme') !== 1)
     throw new Error('T did not select Crimson Cellar on title');
   await canvasShot(theme,'title-theme-crimson');
+
+  /* Title-side modals must not steal or mutate the selected theme. */
+  await theme.keyboard.press('h');
+  await sleep(140);
+  await theme.keyboard.press('t');
+  await sleep(80);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('T inside Help changed title theme');
+  await theme.keyboard.press('Enter');
+  await sleep(120);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('Help round-trip reset Crimson Cellar');
+
+  await theme.keyboard.press('c');
+  await sleep(140);
+  await theme.keyboard.press('t');
+  await sleep(80);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('T inside Credits changed title theme');
+  await theme.keyboard.press('Enter');
+  await sleep(120);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('Credits round-trip reset Crimson Cellar');
+
+  /* Explicit ATTRACT DEMO round-trip also keeps the title theme. */
+  await theme.keyboard.press('ArrowDown');
+  await theme.keyboard.press('ArrowDown');
+  await theme.keyboard.press('ArrowDown');
+  await theme.keyboard.press('Enter');
+  await sleep(450);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('Attract demo reset Crimson Cellar');
+  await theme.keyboard.press('ArrowUp');
+  await theme.keyboard.press('ArrowUp');
+  await theme.keyboard.press('ArrowUp');
+
   await theme.keyboard.press('t');
   await sleep(120);
   if (await call(theme,'cf_review_ui_theme') !== 0)
@@ -1108,6 +1144,23 @@ async function verifyMatchModes(browser) {
   await sleep(120);
   if (await call(theme,'cf_review_ui_theme') !== 1)
     throw new Error('in-game T unexpectedly changed session theme');
+
+  /* Replay consumes T as an unknown modal key without changing theme. */
+  await theme.keyboard.press('r');
+  await theme.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===1,
+    {timeout:3000}
+  );
+  await theme.keyboard.press('t');
+  await sleep(100);
+  if (await call(theme,'cf_review_ui_theme') !== 1)
+    throw new Error('T inside replay changed session theme');
+  await theme.keyboard.press('r');
+  await theme.waitForFunction(
+    ()=>Module._cf_review_replay_viewer_active()===0,
+    {timeout:3000}
+  );
+
   await theme.keyboard.press('s');
   await sleep(160);
   await theme.keyboard.press('l');
@@ -1116,8 +1169,40 @@ async function verifyMatchModes(browser) {
     throw new Error('save/load changed session-only theme');
   if (themeErrors.length)
     throw new Error(`title-theme: ${themeErrors.join(' | ')}`);
-  summary.push('TITLE_THEME=PASS T=royal/crimson wrap=royal session=crimson game-T=noop save-load=preserved');
+  summary.push('TITLE_THEME=PASS T=royal/crimson wrap=royal help+credits+attract=preserved session=crimson game+replay-T=noop save-load=preserved');
   await theme.close();
+
+  /* Fresh runtimes must always reset the session-only theme to Royal. */
+  for (const [item,label,mode,practice] of [
+    [1,'LOCAL',1,0],
+    [2,'PRACTICE',1,1]
+  ]) {
+    const p = await browser.newPage();
+    await p.setViewport({width:1100,height:850,deviceScaleFactor:1});
+    await p.goto(`http://127.0.0.1:8127/?hardening=theme-${label.toLowerCase()}`,
+                 {waitUntil:'domcontentloaded',timeout:15000});
+    await p.waitForFunction(
+      ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+      {timeout:15000}
+    );
+    await p.waitForFunction(
+      ()=>typeof Module._cf_review_ui_theme==='function',
+      {timeout:15000}
+    );
+    if (await call(p,'cf_review_ui_theme') !== 0)
+      throw new Error(`${label} fresh runtime did not reset Royal Basement`);
+    await p.keyboard.press('t');
+    for (let i=0;i<item;i++) await p.keyboard.press('ArrowDown');
+    await p.keyboard.press('Enter');
+    await sleep(450);
+    await waitForMatchState(p,1,1);
+    if (await call(p,'cf_review_ui_theme') !== 1 ||
+        await call(p,'cf_review_match_mode') !== mode ||
+        await call(p,'cf_review_practice_mode') !== practice)
+      throw new Error(`Crimson Cellar did not carry into ${label}`);
+    await p.close();
+  }
+  summary.push('THEME_MATCH_MODES=PASS CPU+LOCAL+PRACTICE crimson-carry fresh=royal');
 
   const keyboard = await browser.newPage();
   await keyboard.setViewport({width:1100,height:850,deviceScaleFactor:1});
