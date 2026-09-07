@@ -118,6 +118,13 @@ const char *ui_theme_name(CfUiTheme theme)
     }
 }
 
+CfUiBoardSurface ui_theme_board_surface(CfUiTheme theme)
+{
+    if (theme == CF_UI_THEME_CRIMSON_CELLAR)
+        return CF_UI_BOARD_SURFACE_CELLAR_BRICK;
+    return CF_UI_BOARD_SURFACE_STONE_GRAIN;
+}
+
 void ui_theme_build_palette(cf_u8 *palette, int flash)
 {
     int i;
