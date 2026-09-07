@@ -25,7 +25,10 @@
 - [x] Opera Game replay lifecycle across save/load reset through terminal CHECKMATE
 - [x] EASY/MED/HARD full-game terminal replay frame/status matches
 - [x] replay memory profile: 118-byte snapshot, 30,232-byte timeline, 60,464-byte live+transient-import peak
-- [x] 32 deterministic native 320x200 visual-review states
+- [x] 36 deterministic native 320x200 visual-review states
+- [x] Build 17 Royal Basement default/fallback plus persisted Crimson Cellar config-v2 theme
+- [x] exact Royal stone/gilt and Crimson brick/copper semantic presentation checks
+- [x] pinned Build 17 native signatures for Royal checkmate and Crimson title/checkmate/opening
 - [x] deterministic full Chromium games at EASY/MED/HARD, each reaching a terminal result with zero browser errors and exercising live Fart mechanics
 - [x] Build 12 release audit
 - [x] Build 12 host CPU/memory profile report
