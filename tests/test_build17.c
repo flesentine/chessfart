@@ -45,6 +45,15 @@ static void test_theme_identity(void)
           CF_UI_BOARD_SURFACE_CELLAR_BRICK);
     CHECK(ui_theme_board_surface((CfUiTheme)99) ==
           CF_UI_BOARD_SURFACE_STONE_GRAIN);
+    CHECK(CF_UI_PIECE_MATERIAL_CLASSIC_GILT == 0);
+    CHECK(CF_UI_PIECE_MATERIAL_CELLAR_COPPER == 1);
+    CHECK(CF_UI_PIECE_MATERIAL_COUNT == 2);
+    CHECK(ui_theme_piece_material(CF_UI_THEME_ROYAL_BASEMENT) ==
+          CF_UI_PIECE_MATERIAL_CLASSIC_GILT);
+    CHECK(ui_theme_piece_material(CF_UI_THEME_CRIMSON_CELLAR) ==
+          CF_UI_PIECE_MATERIAL_CELLAR_COPPER);
+    CHECK(ui_theme_piece_material((CfUiTheme)99) ==
+          CF_UI_PIECE_MATERIAL_CLASSIC_GILT);
 }
 
 static void test_palette_switch(void)

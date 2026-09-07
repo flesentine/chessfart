@@ -50,12 +50,19 @@ typedef enum CfUiBoardSurface {
     CF_UI_BOARD_SURFACE_COUNT
 } CfUiBoardSurface;
 
+typedef enum CfUiPieceMaterial {
+    CF_UI_PIECE_MATERIAL_CLASSIC_GILT = 0,
+    CF_UI_PIECE_MATERIAL_CELLAR_COPPER,
+    CF_UI_PIECE_MATERIAL_COUNT
+} CfUiPieceMaterial;
+
 int ui_theme_valid(CfUiTheme theme);
 int ui_theme_set(CfUiTheme theme);
 CfUiTheme ui_theme_get(void);
 CfUiTheme ui_theme_next(CfUiTheme theme);
 const char *ui_theme_name(CfUiTheme theme);
 CfUiBoardSurface ui_theme_board_surface(CfUiTheme theme);
+CfUiPieceMaterial ui_theme_piece_material(CfUiTheme theme);
 void ui_theme_build_palette(cf_u8 *palette, int flash);
 
 #endif

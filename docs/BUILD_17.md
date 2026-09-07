@@ -4,7 +4,7 @@ Build 17 starts the first optional post-v1 roadmap item: **alternate boards/piec
 
 The implementation stays deliberately conservative. Themes are presentation policy only. They must never alter chess state, Gas, CPU behavior, persistence, replay content, Practice semantics, or package version.
 
-**17.0–17.2 complete. Current slice: 17.3 authored board surfaces.**
+**17.0–17.3 complete. Current slice: 17.4 theme-specific piece materials.**
 
 ## Frozen contracts
 
@@ -140,5 +140,29 @@ This keeps 17.0 focused on architecture and visual proof. Its exact-head certifi
 - real Chromium review proves the active surface follows the title-selected theme
 - Crimson title/game/checkmate states render through the authored brick surface
 - board/Gas/history/replay hashes remain unchanged by presentation switching
+- Open Watcom 16-bit DOS, DOSBox/package and Web/WASM gates remain green
+- canonical visual suite remains 36 native 320x200 states
+
+
+## 17.4 — Theme-specific piece materials
+
+17.4 completes the first board/piece visual pairing without introducing a second sprite bank.
+
+- Royal Basement keeps the existing classic gilt/neutral semantic piece mapping exactly
+- Crimson Cellar remaps only the authored accent class to copper for both armies
+- white ivory/base/highlight and black charcoal/base/highlight roles remain distinct
+- all packed 16x16 piece masks remain byte-identical
+- the shared theme API owns the piece-material selection; the asset renderer consumes it
+- invalid theme values fail closed to the Royal classic-gilt material
+- no new config/theme IDs are added and config v2 remains unchanged
+- board geometry, Gas/Fart presentation, gameplay, CPU, save v2 and replay v1 remain unchanged
+
+### 17.4 validation target
+
+- strict C89 theme tests certify Royal -> classic gilt and Crimson -> cellar copper
+- invalid theme values map to Royal classic gilt
+- Chromium review exposes and checks the active piece material alongside the board surface
+- Royal Basement retains its exact established native visual signature after Crimson switch/restore
+- Crimson game/checkmate frames change while board/Gas/history/replay hashes remain invariant
 - Open Watcom 16-bit DOS, DOSBox/package and Web/WASM gates remain green
 - canonical visual suite remains 36 native 320x200 states

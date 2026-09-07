@@ -355,12 +355,14 @@ try {
   const themeReplayCount = await call(page, 'cf_review_replay_count');
   const themeReplayTotal = await call(page, 'cf_review_replay_total');
   if (await call(page, 'cf_review_ui_theme') !== 0 ||
-      await call(page, 'cf_review_ui_board_surface') !== 0)
-    throw new Error('Royal Basement was not the default stone surface');
+      await call(page, 'cf_review_ui_board_surface') !== 0 ||
+      await call(page, 'cf_review_ui_piece_material') !== 0)
+    throw new Error('Royal Basement was not the default stone/gilt presentation');
   if (await call(page, 'cf_review_set_ui_theme', 1) !== 1 ||
       await call(page, 'cf_review_ui_theme') !== 1 ||
-      await call(page, 'cf_review_ui_board_surface') !== 1)
-    throw new Error('Crimson Cellar brick surface switch failed');
+      await call(page, 'cf_review_ui_board_surface') !== 1 ||
+      await call(page, 'cf_review_ui_piece_material') !== 1)
+    throw new Error('Crimson Cellar brick/copper presentation switch failed');
   const crimsonSig =
     await nativeShot(page, '33-theme-crimson-cellar-checkmate',
                      'theme-fixture', states);
@@ -376,8 +378,9 @@ try {
 
   if (await call(page, 'cf_review_set_ui_theme', 0) !== 1 ||
       await call(page, 'cf_review_ui_theme') !== 0 ||
-      await call(page, 'cf_review_ui_board_surface') !== 0)
-    throw new Error('Royal Basement stone surface restore failed');
+      await call(page, 'cf_review_ui_board_surface') !== 0 ||
+      await call(page, 'cf_review_ui_piece_material') !== 0)
+    throw new Error('Royal Basement stone/gilt restore failed');
   const royalRestoredSig =
     await nativeShot(page, '34-theme-royal-restored-checkmate',
                      'theme-fixture', states);
@@ -395,8 +398,8 @@ try {
     throw new Error('theme redraw consumed pending CPU message');
   await call(page, 'cf_review_clear_cpu_message_pending');
 
-  /* Build 17.1/17.3: real player-facing selector, session carry, and
-   * authored Crimson board surface. */
+  /* Build 17.1/17.3/17.4: real selector, authored board surface, and
+   * theme-specific piece material. */
   await page.goto('http://127.0.0.1:8128/?visual=theme-selector',
                   { waitUntil: 'domcontentloaded', timeout: 15000 });
   await page.waitForFunction(
@@ -407,8 +410,9 @@ try {
     throw new Error('17.1 visual selector did not start Royal Basement');
   await press(page, 't', 220);
   if (await call(page, 'cf_review_ui_theme') !== 1 ||
-      await call(page, 'cf_review_ui_board_surface') !== 1)
-    throw new Error('17.3 visual T did not select Crimson brick surface');
+      await call(page, 'cf_review_ui_board_surface') !== 1 ||
+      await call(page, 'cf_review_ui_piece_material') !== 1)
+    throw new Error('17.4 visual T did not select Crimson brick/copper treatment');
   await nativeShot(page, '35-title-crimson-cellar-selected', 'real', states);
   await press(page, 'Enter', 450);
   if (await call(page, 'cf_review_ui_theme') !== 1 ||
