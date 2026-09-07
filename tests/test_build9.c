@@ -237,14 +237,29 @@ static void test_config_round_trip(void)
 {
     CfAudioConfig config;
     CfAudioConfig loaded;
+    CfUiTheme theme;
     FILE *fp;
     const char *path = "build/host/build9_test.cfg";
 
     config.device = CF_AUDIO_DEVICE_PC_SPEAKER;
     config.sfx_level = CF_AUDIO_LEVEL_HIGH;
     config.music_level = CF_AUDIO_LEVEL_LOW;
-    CHECK(persistence_save_config(path, &config) == CF_PERSIST_OK);
+    CHECK(persistence_save_config_theme(path, &config,
+                                        CF_UI_THEME_CRIMSON_CELLAR) ==
+          CF_PERSIST_OK);
 
+    loaded.device = CF_AUDIO_DEVICE_NONE;
+    loaded.sfx_level = CF_AUDIO_LEVEL_OFF;
+    loaded.music_level = CF_AUDIO_LEVEL_OFF;
+    theme = CF_UI_THEME_ROYAL_BASEMENT;
+    CHECK(persistence_load_config_theme(path, &loaded, &theme) ==
+          CF_PERSIST_OK);
+    CHECK(loaded.device == config.device);
+    CHECK(loaded.sfx_level == config.sfx_level);
+    CHECK(loaded.music_level == config.music_level);
+    CHECK(theme == CF_UI_THEME_CRIMSON_CELLAR);
+
+    /* The legacy audio-only API remains source-compatible. */
     loaded.device = CF_AUDIO_DEVICE_NONE;
     loaded.sfx_level = CF_AUDIO_LEVEL_OFF;
     loaded.music_level = CF_AUDIO_LEVEL_OFF;
@@ -253,13 +268,58 @@ static void test_config_round_trip(void)
     CHECK(loaded.sfx_level == config.sfx_level);
     CHECK(loaded.music_level == config.music_level);
 
+    CHECK(persistence_save_config(path, &config) == CF_PERSIST_OK);
+    theme = CF_UI_THEME_CRIMSON_CELLAR;
+    CHECK(persistence_load_config_theme(path, &loaded, &theme) ==
+          CF_PERSIST_OK);
+    CHECK(theme == CF_UI_THEME_ROYAL_BASEMENT);
+
+    /* A real version-1 audio-only config remains loadable as Royal. */
     fp = fopen(path, "wt");
     CHECK(fp != 0);
     if (fp != 0) {
-        fprintf(fp, "CHESSFART_CONFIG 2\nAUDIO 0 2 0\nEND\n");
+        fprintf(fp, "CHESSFART_CONFIG 1\n");
+        fprintf(fp, "AUDIO %d %d %d\n",
+                (int)CF_AUDIO_DEVICE_SOUND_BLASTER,
+                (int)CF_AUDIO_LEVEL_MEDIUM,
+                (int)CF_AUDIO_LEVEL_OFF);
+        fprintf(fp, "END\n");
         fclose(fp);
     }
-    CHECK(persistence_load_config(path, &loaded) ==
+    theme = CF_UI_THEME_CRIMSON_CELLAR;
+    CHECK(persistence_load_config_theme(path, &loaded, &theme) ==
+          CF_PERSIST_OK);
+    CHECK(loaded.device == CF_AUDIO_DEVICE_SOUND_BLASTER);
+    CHECK(loaded.sfx_level == CF_AUDIO_LEVEL_MEDIUM);
+    CHECK(loaded.music_level == CF_AUDIO_LEVEL_OFF);
+    CHECK(theme == CF_UI_THEME_ROYAL_BASEMENT);
+
+    /* Invalid v2 theme data must not partially mutate either output. */
+    loaded = config;
+    theme = CF_UI_THEME_CRIMSON_CELLAR;
+    fp = fopen(path, "wt");
+    CHECK(fp != 0);
+    if (fp != 0) {
+        fprintf(fp, "CHESSFART_CONFIG 2\n");
+        fprintf(fp, "AUDIO 0 2 0\n");
+        fprintf(fp, "THEME 99\n");
+        fprintf(fp, "END\n");
+        fclose(fp);
+    }
+    CHECK(persistence_load_config_theme(path, &loaded, &theme) ==
+          CF_PERSIST_BAD_DATA);
+    CHECK(loaded.device == config.device);
+    CHECK(loaded.sfx_level == config.sfx_level);
+    CHECK(loaded.music_level == config.music_level);
+    CHECK(theme == CF_UI_THEME_CRIMSON_CELLAR);
+
+    fp = fopen(path, "wt");
+    CHECK(fp != 0);
+    if (fp != 0) {
+        fprintf(fp, "CHESSFART_CONFIG 3\nAUDIO 0 2 0\nTHEME 0\nEND\n");
+        fclose(fp);
+    }
+    CHECK(persistence_load_config_theme(path, &loaded, &theme) ==
           CF_PERSIST_BAD_VERSION);
     (void)remove(path);
 }
