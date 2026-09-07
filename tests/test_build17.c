@@ -54,6 +54,18 @@ static void test_theme_identity(void)
           CF_UI_PIECE_MATERIAL_CELLAR_COPPER);
     CHECK(ui_theme_piece_material((CfUiTheme)99) ==
           CF_UI_PIECE_MATERIAL_CLASSIC_GILT);
+    CHECK(ui_theme_piece_accent(CF_UI_THEME_ROYAL_BASEMENT, 0) ==
+          CF_UI_COL_GOLD);
+    CHECK(ui_theme_piece_accent(CF_UI_THEME_ROYAL_BASEMENT, 1) ==
+          CF_UI_COL_MUTED);
+    CHECK(ui_theme_piece_accent(CF_UI_THEME_CRIMSON_CELLAR, 0) ==
+          CF_UI_COL_COPPER);
+    CHECK(ui_theme_piece_accent(CF_UI_THEME_CRIMSON_CELLAR, 1) ==
+          CF_UI_COL_COPPER);
+    CHECK(ui_theme_piece_accent((CfUiTheme)99, 0) ==
+          CF_UI_COL_GOLD);
+    CHECK(ui_theme_piece_accent((CfUiTheme)99, 1) ==
+          CF_UI_COL_MUTED);
 }
 
 static void test_palette_switch(void)
