@@ -75,6 +75,8 @@ White pieces: ivory, tan shadow, gold accent.
 
 Black pieces: charcoal, blue-purple midtone, steel highlight.
 
+Royal Basement keeps that classic gilt/neutral mapping. Crimson Cellar reuses the exact same sprite masks but maps the authored accent class to copper, giving both armies a cellar-metal trim without changing their base/highlight contrast or silhouettes.
+
 Both sides receive the same green gas colors; ownership is communicated by the originating piece and UI.
 
 ## 5. Gas meter
