@@ -1,7 +1,7 @@
 #include <emscripten.h>
-#include "input_build5.h"
+#include "input.h"
 
-void input5_init(void)
+void input_init(void)
 {
     EM_ASM({
         if (!Module.cfKeyQueue) Module.cfKeyQueue = [];
@@ -46,7 +46,7 @@ void input5_init(void)
     });
 }
 
-CfInputKey5 input5_poll_key(void)
+CfInputKey input_poll_key(void)
 {
     int code;
     code = EM_ASM_INT({
@@ -55,7 +55,7 @@ CfInputKey5 input5_poll_key(void)
     });
     if (code == 0) {
         emscripten_sleep(8);
-        return CF5_KEY_NONE;
+        return CF_KEY_NONE;
     }
-    return (CfInputKey5)code;
+    return (CfInputKey)code;
 }

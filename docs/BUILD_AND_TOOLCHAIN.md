@@ -1,184 +1,72 @@
-# Chess Fart — Build & Toolchain Plan
+# Chess Fart — Build & Toolchain
 
-## 1. Primary target
+## Supported targets
 
-Authentic DOS-style executable with VGA Mode 13h.
+Chess Fart has three maintained build paths:
 
-Recommended compiler: **Open Watcom C/C++**.
+- **Host / regression:** `make test`
+- **WebAssembly:** `make -f Makefile.web web`
+- **16-bit DOS:** `sh scripts/build_dos_ci.sh` with Open Watcom configured
 
-Language policy: C89/C90-compatible C for portability and period-appropriate simplicity.
+Release packaging uses `sh scripts/package_release.sh`.
 
-## 2. Proposed repository layout
+Historical per-build DOS makefiles and batch scripts were retired after the game was consolidated; Git history and the Build documents preserve them.
 
-```text
-chessfart/
-  README.md
-  CONTRIBUTING.md
-  docs/
-  src/
-    core/
-    ai/
-    game/
-    platform/
-      dos/
-  include/
-  tests/
-  assets/
-    source/
-    runtime/
-  tools/
-  scripts/
-  build/
-```
+## Language and compiler
 
-Generated build output should not be committed unless it is a deliberate release artifact.
+- C89/C90-compatible source
+- high warning levels on the host build
+- Open Watcom 2.0 for the automated DOS target
+- Emscripten for the browser edition
 
-## 3. DOS build concept
+The DOS CI command uses a 16-bit large-memory-model target and writes `build/dos/CHESSFRT.EXE`.
 
-Initial output:
+## Repository layout
 
 ```text
-build/dos/CHESSFRT.EXE
+src/main.c               current runtime entry
+src/main_*.inc           current flow/UI/review pieces
+src/game/                rules, CPU, presentation, persistence, replay
+src/platform/dos/        DOS hardware backends
+src/platform/host/       deterministic test/capture backends
+src/platform/web/        browser backends
+include/                 shared interfaces
+tests/                   C/Python regressions and DOS smoke
+assets_src/              authored indexed source assets
+tools/                   deterministic asset/font converters
+scripts/                 supported DOS build, audit, package, browser harnesses
 ```
 
-Potential make targets:
+Generated output lives under `build/` and is not committed.
 
-- `make dos`
-- `make host-tests`
-- `make assets`
-- `make clean`
-- `make release`
+## Host gate
 
-Exact Open Watcom make syntax can be chosen in Build 1.
+`make test` compiles with strict C89 warnings-as-errors, runs the permanent rules/CPU/persistence/replay/undo/theme tests, executes the scripted host game, validates capture/audio/save artifacts, records CPU/memory/size diagnostics, and runs the release-source audit.
 
-## 4. Development environments
+## DOS gate
 
-### Modern host
+With `WATCOM` pointing at the Open Watcom installation:
 
-Use host compiler for pure rules tests.
-
-Benefits:
-
-- fast iteration
-- sanitizers/static analysis where available
-- easy CI
-
-### DOSBox
-
-Primary runtime integration environment.
-
-Test:
-
-- graphics
-- timer
-- keyboard
-- mouse
-- Sound Blaster
-- packaged launch flow
-
-### Real DOS / PCem / 86Box
-
-Compatibility stretch target after core game is stable.
-
-## 5. VGA plan
-
-Mode 13h:
-
-- BIOS set mode 0x13
-- 320x200
-- 256 indexed colors
-- framebuffer at A000:0000
-
-On exit:
-
-- restore text mode 0x03
-
-All exits should pass through platform cleanup.
-
-## 6. Asset pipeline
-
-Author source assets in indexed PNG or other reproducible source formats.
-
-Build tools convert them into runtime arrays/files:
-
-- palette conversion
-- sprite packing
-- font packing
-- PCM normalization
-
-Tool source belongs in `tools/` and generated asset rules in the build system.
-
-## 7. Host test build
-
-`src/core` should compile with minimal/no platform defines.
-
-A host test executable can load text fixtures and print pass/fail without VGA.
-
-Suggested fixture notation can use FEN plus an extension for Gas, or a project-specific board text format.
-
-Do not distort runtime design purely to support standard FEN; FEN does not represent Gas.
-
-## 8. CI idea
-
-GitHub Actions can run host-side unit tests even though the primary game is DOS.
-
-Future workflow:
-
-1. compile core tests with GCC/Clang
-2. run regression suite
-3. optionally build DOS target if Open Watcom environment is practical in CI
-4. attach DOS binary only for tagged/release builds
-
-## 9. Compiler discipline
-
-- warning level high
-- no implicit function declarations
-- fixed-width assumptions documented
-- avoid undefined signed overflow
-- central typedefs for byte/word/dword if compiler headers vary
-- avoid compiler-specific extensions in core logic
-
-## 10. Debug build
-
-Useful debug-only options:
-
-- square coordinates
-- Gas values on every piece
-- legal action count
-- current position hash
-- FPS/tick counter
-- AI nodes/second
-- save state dump
-- instant undo
-
-Release builds hide these overlays.
-
-## 11. Configuration file
-
-Proposed `CHESSFRT.CFG` text format so users can edit it manually:
-
-```ini
-sound=auto
-sfx_volume=3
-music_volume=2
-mouse=on
-animations=on
-ai_level=2
+```sh
+sh scripts/build_dos_ci.sh
 ```
 
-Unknown keys should be ignored safely.
+This builds both `CHESSFRT.EXE` and `DOSSMOKE.EXE`. CI then runs the smoke executable in DOSBox and requires `DOSSMOKE.OK`.
 
-## 12. Release package
+## Web gate
 
-Target ZIP contents:
-
-```text
-CHESSFRT.EXE
-CHESSFRT.CFG
-DATA/...
-README.TXT
-LICENSE.TXT (once a license is chosen)
-DOSBOX.CONF (optional)
+```sh
+make -f Makefile.web web
 ```
 
-Do not choose a source-code license implicitly. Add one only after the repository owner decides.
+The browser bundle uses the same game sources, an Emscripten platform layer, Asyncify for the polling runtime, Canvas for the indexed framebuffer, Web Audio, and IDBFS persistence.
+
+## Assets
+
+`tools/build_assets.py` and `tools/build_font.py` convert authored indexed PNG sources into deterministic generated C data. CI runs both converters in `--check` mode and executes their Python regression tests.
+
+## Release package
+
+`scripts/package_release.sh` packages the already-built DOS executable with DOSBox configuration and release text, verifies the ZIP, and emits SHA-256 metadata.
+
+Do not introduce a second build system for maintenance work unless the existing supported paths cannot express a demonstrated requirement.

@@ -296,40 +296,40 @@ CfPersistenceResult ux_load_game(const char *path, CfBoard *board,
     return result;
 }
 
-static CfInputKey5 ux_mouse_direction(int dx, int dy)
+static CfInputKey ux_mouse_direction(int dx, int dy)
 {
-    if (dx > 0 && dy > 0) return CF5_KEY_UP_RIGHT;
-    if (dx > 0 && dy < 0) return CF5_KEY_DOWN_RIGHT;
-    if (dx < 0 && dy > 0) return CF5_KEY_UP_LEFT;
-    if (dx < 0 && dy < 0) return CF5_KEY_DOWN_LEFT;
-    if (dx > 0) return CF5_KEY_RIGHT;
-    if (dx < 0) return CF5_KEY_LEFT;
-    if (dy > 0) return CF5_KEY_UP;
-    if (dy < 0) return CF5_KEY_DOWN;
-    return CF5_KEY_NONE;
+    if (dx > 0 && dy > 0) return CF_KEY_UP_RIGHT;
+    if (dx > 0 && dy < 0) return CF_KEY_DOWN_RIGHT;
+    if (dx < 0 && dy > 0) return CF_KEY_UP_LEFT;
+    if (dx < 0 && dy < 0) return CF_KEY_DOWN_LEFT;
+    if (dx > 0) return CF_KEY_RIGHT;
+    if (dx < 0) return CF_KEY_LEFT;
+    if (dy > 0) return CF_KEY_UP;
+    if (dy < 0) return CF_KEY_DOWN;
+    return CF_KEY_NONE;
 }
 
-static CfInputKey5 ux_begin_mouse_target(int file, int rank, int fart_after_select)
+static CfInputKey ux_begin_mouse_target(int file, int rank, int fart_after_select)
 {
     int dx;
     int dy;
-    if (!g_ux_cache.valid) return CF5_KEY_NONE;
+    if (!g_ux_cache.valid) return CF_KEY_NONE;
     g_ux_mouse_target_file = file;
     g_ux_mouse_target_rank = rank;
     g_ux_mouse_target_active = 1;
     g_ux_mouse_fart_pending = fart_after_select ? 1 : 0;
     dx = file - g_ux_cache.cursor_file;
     dy = rank - g_ux_cache.cursor_rank;
-    if (dx != 0) return dx > 0 ? CF5_KEY_RIGHT : CF5_KEY_LEFT;
-    if (dy != 0) return dy > 0 ? CF5_KEY_UP : CF5_KEY_DOWN;
+    if (dx != 0) return dx > 0 ? CF_KEY_RIGHT : CF_KEY_LEFT;
+    if (dy != 0) return dy > 0 ? CF_KEY_UP : CF_KEY_DOWN;
     g_ux_mouse_target_active = 0;
     if (g_ux_mouse_fart_pending == 1) g_ux_mouse_fart_pending = 2;
-    return CF5_KEY_ENTER;
+    return CF_KEY_ENTER;
 }
 
-CfInputKey5 ux_poll_key(void)
+CfInputKey ux_poll_key(void)
 {
-    CfInputKey5 key;
+    CfInputKey key;
     CfMouseState mouse;
     unsigned pressed;
     int file;
@@ -338,20 +338,20 @@ CfInputKey5 ux_poll_key(void)
     int dy;
     if (g_ux_mouse_confirm_pending) {
         g_ux_mouse_confirm_pending = 0;
-        return CF5_KEY_ENTER;
+        return CF_KEY_ENTER;
     }
     if (g_ux_mouse_fart_pending == 2) {
         g_ux_mouse_fart_pending = 0;
-        return CF5_KEY_FART;
+        return CF_KEY_FART;
     }
     if (g_ux_mouse_target_active && g_ux_cache.valid) {
         dx = g_ux_mouse_target_file - g_ux_cache.cursor_file;
         dy = g_ux_mouse_target_rank - g_ux_cache.cursor_rank;
-        if (dx != 0) return dx > 0 ? CF5_KEY_RIGHT : CF5_KEY_LEFT;
-        if (dy != 0) return dy > 0 ? CF5_KEY_UP : CF5_KEY_DOWN;
+        if (dx != 0) return dx > 0 ? CF_KEY_RIGHT : CF_KEY_LEFT;
+        if (dy != 0) return dy > 0 ? CF_KEY_UP : CF_KEY_DOWN;
         g_ux_mouse_target_active = 0;
         if (g_ux_mouse_fart_pending == 1) g_ux_mouse_fart_pending = 2;
-        return CF5_KEY_ENTER;
+        return CF_KEY_ENTER;
     }
     if (mouse_poll(&mouse) && mouse.present) {
         pressed = mouse.buttons & ~g_ux_mouse_buttons;
@@ -365,7 +365,7 @@ CfInputKey5 ux_poll_key(void)
             mouse.x >= CF_UI_PRACTICE_UNDO_HIT_X &&
             mouse.x < CF_UI_PRACTICE_UNDO_HIT_X +
                       CF_UI_PRACTICE_UNDO_HIT_W) {
-            return CF5_KEY_UNDO;
+            return CF_KEY_UNDO;
         }
         if ((pressed & 2U) != 0U &&
             ux_board_hit_test(mouse.x, mouse.y, &file, &rank) &&
@@ -385,7 +385,7 @@ CfInputKey5 ux_poll_key(void)
                 if (dx >= -1 && dx <= 1 && dy >= -1 && dy <= 1 &&
                     !(dx == 0 && dy == 0)) {
                     key = ux_mouse_direction(dx, dy);
-                    if (key != CF5_KEY_NONE) {
+                    if (key != CF_KEY_NONE) {
                         g_ux_mouse_confirm_pending = 1;
                         return key;
                     }
@@ -395,22 +395,22 @@ CfInputKey5 ux_poll_key(void)
             }
         }
     }
-    key = input5_poll_key();
-    if (key == CF5_KEY_HELP) {
+    key = input_poll_key();
+    if (key == CF_KEY_HELP) {
         ux_show_help_modal();
-        return CF5_KEY_NONE;
+        return CF_KEY_NONE;
     }
-    if (key == CF5_KEY_HISTORY) {
+    if (key == CF_KEY_HISTORY) {
         ux_show_history_modal();
-        return CF5_KEY_NONE;
+        return CF_KEY_NONE;
     }
-    if (key == CF5_KEY_CREDITS) {
+    if (key == CF_KEY_CREDITS) {
         ux_show_credits_modal();
-        return CF5_KEY_NONE;
+        return CF_KEY_NONE;
     }
-    if (key == CF5_KEY_REPLAY) {
+    if (key == CF_KEY_REPLAY) {
         ux_show_replay_modal();
-        return CF5_KEY_NONE;
+        return CF_KEY_NONE;
     }
     return key;
 }

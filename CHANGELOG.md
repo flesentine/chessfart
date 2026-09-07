@@ -2,6 +2,24 @@
 
 All notable project milestones are recorded here.
 
+## Maintenance consolidation
+
+- collapsed the active Build 9/11 macro-and-include trampoline into the canonical `src/main.c` + `main_loop.inc` runtime
+- canonicalized current input, board-view, host, and DOS backend names while preserving input enum values and behavior
+- removed the obsolete Build 7/8/9 presentation overlays from the active rendering path
+- removed the unused persistence UI compatibility layer and old standalone build entrypoints/backends
+- retired historical DOS makefiles and batch build scripts; the supported paths are now the root Makefile, `Makefile.web`, and `scripts/build_dos_ci.sh`
+- normalized host artifact names and CI labels
+- preserved gameplay rules, game-save v2, replay-file v1, config v2, CPU policy, and theme semantics
+
+## Build 17 — Alternate presentation themes
+
+Build 17 completes the optional alternate-presentation work with Royal Basement as the exact default/fallback and Crimson Cellar as a persisted authored alternate. The closeout pins board-surface, piece-material, accent-role, and native visual-signature contracts without changing game-save v2 or replay-file v1.
+
+## Build 16 — Practice / Undo
+
+Build 16 adds a bounded 32-action Practice undo journal with exact rollback of move/Fart state, repetition history, action log, and replay history. Practice remains a session policy rather than a persisted match mode.
+
 ## Build 15 — Replay / postgame review
 
 - 15.0 introduces a compact, bounded 256-frame in-memory replay timeline. The initial state and every committed human/CPU move or Fart are captured separately; passive UI activity creates no frames. Successful Load intentionally starts a new replay baseline because save format v2 does not contain prior replay history. The snapshot packing and host tests enforce a sub-32 KiB timeline budget, and Chromium verifies CPU/local frame boundaries without changing the existing 32 visual states.
@@ -35,7 +53,7 @@ Build 13 refreshes the 320x200 VGA presentation without changing the 1.0 rules, 
 - 13.7 unified the title, Help, History, Credits, terminal overlays, and save/load notices; the visual suite now covers 19 canonical states.
 - 13.8 closes the pass with canonical title-menu hit testing, regression coverage for every title row/boundary, defensive centered-text clipping, and documentation cleanup.
 
-The historical `main_build11*` source/capture names remain implementation-lineage names; renaming them would add churn without changing the shipped interface.
+Historical build-lineage source names were retired during the maintenance consolidation; the detailed Build 13 record remains preserved here for provenance.
 
 ## 1.0.0 — Final release
 

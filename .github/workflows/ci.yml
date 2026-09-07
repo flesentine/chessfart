@@ -2,7 +2,7 @@ name: Release CI
 
 on:
   push:
-    branches: [ main, build12-rc ]
+    branches: [ main ]
   pull_request:
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify Build 13 assets
+      - name: Verify generated assets
         run: |
           python3 tools/build_assets.py --check
           python3 tools/build_font.py --check
@@ -20,7 +20,7 @@ jobs:
           cat build/assets/FONT_REPORT.txt
 
       - name: Build and test host release
-        run: make test-build12
+        run: make test
 
       - name: Set up Open Watcom 2.0 for DOS
         uses: open-watcom/setup-watcom@v1
@@ -69,14 +69,14 @@ jobs:
             build/assets/FONT_REPORT.txt
             build/host/PROFILE.txt
             build/host/SIZE.txt
-            build/host/chessfart_build11.ppm
-            build/host/chessfart_build11_title.ppm
-            build/host/chessfart_build11_attract.ppm
-            build/host/chessfart_build11_help.ppm
-            build/host/chessfart_build11_history.ppm
-            build/host/chessfart_build11_credits.ppm
-            build/host/chessfart_build11_terminal.ppm
-            build/host/chessfart_build11_audio.log
-            build/host/chessfart_build11_fart.wav
+            build/host/chessfart.ppm
+            build/host/chessfart_title.ppm
+            build/host/chessfart_attract.ppm
+            build/host/chessfart_help.ppm
+            build/host/chessfart_history.ppm
+            build/host/chessfart_credits.ppm
+            build/host/chessfart_terminal.ppm
+            build/host/chessfart_audio.log
+            build/host/chessfart_fart.wav
             build/host/CHESSFRT.SAV
             build/host/CHESSFRT.CFG

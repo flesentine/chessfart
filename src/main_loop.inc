@@ -1,21 +1,9 @@
-#include <stdio.h>
-#include <string.h>
-
-#include "audio.h"
-#include "audio_game.h"
-#include "board.h"
-#include "gas.h"
-#include "input_build5.h"
-#include "persistence.h"
-#include "persistence_ui.h"
-#include "vga.h"
-
 #ifdef CF_HOST_BUILD
-#define BUILD9_SAVE_PATH "build/host/CHESSFRT.SAV"
-#define BUILD9_CONFIG_PATH "build/host/CHESSFRT.CFG"
+#define CF_GAME_SAVE_PATH "build/host/CHESSFRT.SAV"
+#define CF_GAME_CONFIG_PATH "build/host/CHESSFRT.CFG"
 #else
-#define BUILD9_SAVE_PATH CF_DEFAULT_SAVE_PATH
-#define BUILD9_CONFIG_PATH CF_DEFAULT_CONFIG_PATH
+#define CF_GAME_SAVE_PATH CF_DEFAULT_SAVE_PATH
+#define CF_GAME_CONFIG_PATH CF_DEFAULT_CONFIG_PATH
 #endif
 
 static CfBoard g_board;
@@ -55,18 +43,18 @@ static CfPieceType cycle_promotion(CfPieceType current, int direction)
     return CF_PIECE_QUEEN;
 }
 
-static CfFartDirection key_to_direction(CfInputKey5 key,
+static CfFartDirection key_to_direction(CfInputKey key,
                                         CfFartDirection current)
 {
     switch (key) {
-    case CF5_KEY_UP: return CF_FART_N;
-    case CF5_KEY_UP_RIGHT: return CF_FART_NE;
-    case CF5_KEY_RIGHT: return CF_FART_E;
-    case CF5_KEY_DOWN_RIGHT: return CF_FART_SE;
-    case CF5_KEY_DOWN: return CF_FART_S;
-    case CF5_KEY_DOWN_LEFT: return CF_FART_SW;
-    case CF5_KEY_LEFT: return CF_FART_W;
-    case CF5_KEY_UP_LEFT: return CF_FART_NW;
+    case CF_KEY_UP: return CF_FART_N;
+    case CF_KEY_UP_RIGHT: return CF_FART_NE;
+    case CF_KEY_RIGHT: return CF_FART_E;
+    case CF_KEY_DOWN_RIGHT: return CF_FART_SE;
+    case CF_KEY_DOWN: return CF_FART_S;
+    case CF_KEY_DOWN_LEFT: return CF_FART_SW;
+    case CF_KEY_LEFT: return CF_FART_W;
+    case CF_KEY_UP_LEFT: return CF_FART_NW;
     default: return current;
     }
 }
@@ -118,7 +106,7 @@ static void set_fart_message(char *message, const CfFartAction *action,
 
 static void init_game(int *cursor_file, int *cursor_rank)
 {
-#ifdef CF_BUILD6_DEMO
+#ifdef CF_HOST_DEMO_FIXTURE
     board_clear(&g_board);
     gas_init(&g_gas);
     board_set_piece(&g_board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
@@ -138,28 +126,28 @@ static void init_game(int *cursor_file, int *cursor_rank)
     gas_history_init(&g_history, &g_board, &g_gas);
 }
 
-static void play_key_sound(CfInputKey5 key)
+static void play_key_sound(CfInputKey key)
 {
     switch (key) {
-    case CF5_KEY_UP:
-    case CF5_KEY_DOWN:
-    case CF5_KEY_LEFT:
-    case CF5_KEY_RIGHT:
-    case CF5_KEY_UP_LEFT:
-    case CF5_KEY_UP_RIGHT:
-    case CF5_KEY_DOWN_LEFT:
-    case CF5_KEY_DOWN_RIGHT:
+    case CF_KEY_UP:
+    case CF_KEY_DOWN:
+    case CF_KEY_LEFT:
+    case CF_KEY_RIGHT:
+    case CF_KEY_UP_LEFT:
+    case CF_KEY_UP_RIGHT:
+    case CF_KEY_DOWN_LEFT:
+    case CF_KEY_DOWN_RIGHT:
         audio_play_event(CF_AUDIO_CURSOR);
         break;
-    case CF5_KEY_ENTER:
+    case CF_KEY_ENTER:
         audio_play_event(CF_AUDIO_SELECT);
         break;
-    case CF5_KEY_FART:
+    case CF_KEY_FART:
         audio_play_event(CF_AUDIO_FART_READY);
         break;
-    case CF5_KEY_SAVE:
-    case CF5_KEY_LOAD:
-    case CF5_KEY_UNDO:
+    case CF_KEY_SAVE:
+    case CF_KEY_LOAD:
+    case CF_KEY_UNDO:
         audio_play_event(CF_AUDIO_MENU_CONFIRM);
         break;
     default:
@@ -192,7 +180,7 @@ static void render(int cursor_file, int cursor_rank,
                    CfPieceType fart_promotion_choice,
                    const char *message)
 {
-    persistence_render_game(&g_board, &g_gas,
+    ux_render_game(&g_board, &g_gas,
                             cursor_file, cursor_rank,
                             has_selection, selected_file, selected_rank,
                             legal_moves, status,
@@ -203,11 +191,11 @@ static void render(int cursor_file, int cursor_rank,
     vga_present();
 }
 
-int main(void)
+static int game_loop(void)
 {
     CfAudioConfig config;
     CfPersistenceResult persist_result;
-    CfInputKey5 key;
+    CfInputKey key;
     CfMoveList legal_moves;
     const CfPiece *piece;
     CfGasMove made_move;
@@ -230,14 +218,14 @@ int main(void)
     char message[24];
 
     audio_default_config(&config);
-    persist_result = persistence_load_config(BUILD9_CONFIG_PATH, &config);
+    persist_result = ux_load_config(CF_GAME_CONFIG_PATH, &config);
     if (persist_result != CF_PERSIST_OK &&
         persist_result != CF_PERSIST_NOT_FOUND)
         audio_default_config(&config);
 
     (void)audio_init(&config);
-    if (!persistence_title_screen(BUILD9_CONFIG_PATH)) {
-        (void)persistence_save_config(BUILD9_CONFIG_PATH,
+    if (!ux_title_screen(CF_GAME_CONFIG_PATH)) {
+        (void)ux_save_config(CF_GAME_CONFIG_PATH,
                                       audio_get_config());
         audio_shutdown();
         return 0;
@@ -252,7 +240,7 @@ int main(void)
         audio_shutdown();
         return 1;
     }
-    input5_init();
+    input_init();
     render(cursor_file, cursor_rank, has_selection,
            selected_file, selected_rank, &legal_moves, status,
            promotion_pending, promotion_choice,
@@ -260,11 +248,11 @@ int main(void)
            fart_promotion_pending, fart_promotion_choice, message);
 
     while (running) {
-        key = input5_poll_key();
+        key = ux_poll_key();
         changed = 0;
         play_key_sound(key);
 
-        if (key == CF5_KEY_ESCAPE) {
+        if (key == CF_KEY_ESCAPE) {
             if (fart_mode) {
                 fart_mode = 0;
                 fart_promotion_pending = 0;
@@ -281,8 +269,8 @@ int main(void)
             }
         }
 
-        if (key == CF5_KEY_SAVE) {
-            persist_result = persistence_save_game(BUILD9_SAVE_PATH,
+        if (key == CF_KEY_SAVE) {
+            persist_result = ux_save_game(CF_GAME_SAVE_PATH,
                                                    &g_board, &g_gas,
                                                    &g_history);
             sprintf(message, "SAVE %s",
@@ -290,8 +278,8 @@ int main(void)
             if (persist_result != CF_PERSIST_OK)
                 audio_play_event(CF_AUDIO_INVALID);
             changed = 1;
-        } else if (key == CF5_KEY_LOAD) {
-            persist_result = persistence_load_game(BUILD9_SAVE_PATH,
+        } else if (key == CF_KEY_LOAD) {
+            persist_result = ux_load_game(CF_GAME_SAVE_PATH,
                                                    &g_board, &g_gas,
                                                    &g_history);
             sprintf(message, "LOAD %s",
@@ -308,8 +296,7 @@ int main(void)
                 audio_play_event(CF_AUDIO_INVALID);
             }
             changed = 1;
-#ifdef CF_BUILD16_UNDO
-        } else if (key == CF5_KEY_UNDO) {
+        } else if (key == CF_KEY_UNDO) {
             int undo_result = ux_practice_undo_game(&g_board, &g_gas,
                                                     &g_history);
             if (undo_result > 0) {
@@ -329,28 +316,27 @@ int main(void)
                 audio_play_event(CF_AUDIO_INVALID);
             }
             changed = 1;
-#endif
         } else if (fart_promotion_pending) {
             switch (key) {
-            case CF5_KEY_LEFT:
-            case CF5_KEY_DOWN:
+            case CF_KEY_LEFT:
+            case CF_KEY_DOWN:
                 fart_promotion_choice =
                     cycle_promotion(fart_promotion_choice, -1);
                 changed = 1;
                 break;
-            case CF5_KEY_RIGHT:
-            case CF5_KEY_UP:
+            case CF_KEY_RIGHT:
+            case CF_KEY_UP:
                 fart_promotion_choice =
                     cycle_promotion(fart_promotion_choice, 1);
                 changed = 1;
                 break;
-            case CF5_KEY_FART:
+            case CF_KEY_FART:
                 fart_promotion_pending = 0;
                 strcpy(message, "AIM FART");
                 changed = 1;
                 break;
-            case CF5_KEY_ENTER:
-                if (audio_game_make_fart(&g_board, &g_gas,
+            case CF_KEY_ENTER:
+                if (ux_human_make_fart(&g_board, &g_gas,
                                          selected_file, selected_rank,
                                          fart_direction,
                                          fart_promotion_choice,
@@ -369,18 +355,18 @@ int main(void)
             }
         } else if (promotion_pending) {
             switch (key) {
-            case CF5_KEY_LEFT:
-            case CF5_KEY_DOWN:
+            case CF_KEY_LEFT:
+            case CF_KEY_DOWN:
                 promotion_choice = cycle_promotion(promotion_choice, -1);
                 changed = 1;
                 break;
-            case CF5_KEY_RIGHT:
-            case CF5_KEY_UP:
+            case CF_KEY_RIGHT:
+            case CF_KEY_UP:
                 promotion_choice = cycle_promotion(promotion_choice, 1);
                 changed = 1;
                 break;
-            case CF5_KEY_ENTER:
-                if (audio_game_make_move_ex(&g_board, &g_gas,
+            case CF_KEY_ENTER:
+                if (ux_human_make_move_ex(&g_board, &g_gas,
                                             selected_file, selected_rank,
                                             cursor_file, cursor_rank,
                                             promotion_choice, &made_move)) {
@@ -398,27 +384,27 @@ int main(void)
             }
         } else if (fart_mode) {
             switch (key) {
-            case CF5_KEY_FART:
+            case CF_KEY_FART:
                 fart_mode = 0;
                 fart_preview = CF_FART_INVALID;
                 strcpy(message, "FART CANCELLED");
                 changed = 1;
                 break;
-            case CF5_KEY_UP:
-            case CF5_KEY_DOWN:
-            case CF5_KEY_LEFT:
-            case CF5_KEY_RIGHT:
-            case CF5_KEY_UP_LEFT:
-            case CF5_KEY_UP_RIGHT:
-            case CF5_KEY_DOWN_LEFT:
-            case CF5_KEY_DOWN_RIGHT:
+            case CF_KEY_UP:
+            case CF_KEY_DOWN:
+            case CF_KEY_LEFT:
+            case CF_KEY_RIGHT:
+            case CF_KEY_UP_LEFT:
+            case CF_KEY_UP_RIGHT:
+            case CF_KEY_DOWN_LEFT:
+            case CF_KEY_DOWN_RIGHT:
                 fart_direction = key_to_direction(key, fart_direction);
                 fart_preview = gas_preview_fart(&g_board, &g_gas,
                                                 selected_file, selected_rank,
                                                 fart_direction);
                 changed = 1;
                 break;
-            case CF5_KEY_ENTER:
+            case CF_KEY_ENTER:
                 fart_preview = gas_preview_fart(&g_board, &g_gas,
                                                 selected_file, selected_rank,
                                                 fart_direction);
@@ -427,7 +413,7 @@ int main(void)
                     fart_promotion_choice = CF_PIECE_QUEEN;
                     strcpy(message, "CHOOSE PUSH PROMO");
                 } else if (fart_preview != CF_FART_INVALID &&
-                           audio_game_make_fart(&g_board, &g_gas,
+                           ux_human_make_fart(&g_board, &g_gas,
                                                 selected_file, selected_rank,
                                                 fart_direction,
                                                 CF_PIECE_QUEEN,
@@ -446,19 +432,19 @@ int main(void)
             }
         } else {
             switch (key) {
-            case CF5_KEY_UP:
+            case CF_KEY_UP:
                 if (cursor_rank < 7) { ++cursor_rank; changed = 1; }
                 break;
-            case CF5_KEY_DOWN:
+            case CF_KEY_DOWN:
                 if (cursor_rank > 0) { --cursor_rank; changed = 1; }
                 break;
-            case CF5_KEY_LEFT:
+            case CF_KEY_LEFT:
                 if (cursor_file > 0) { --cursor_file; changed = 1; }
                 break;
-            case CF5_KEY_RIGHT:
+            case CF_KEY_RIGHT:
                 if (cursor_file < 7) { ++cursor_file; changed = 1; }
                 break;
-            case CF5_KEY_FART:
+            case CF_KEY_FART:
                 if (status_is_terminal(status)) {
                     strcpy(message, board_game_status_name(status));
                 } else if (!has_selection) {
@@ -477,7 +463,7 @@ int main(void)
                 }
                 changed = 1;
                 break;
-            case CF5_KEY_ENTER:
+            case CF_KEY_ENTER:
                 if (status_is_terminal(status)) {
                     strcpy(message, board_game_status_name(status));
                     changed = 1;
@@ -516,7 +502,7 @@ int main(void)
                         promotion_pending = 1;
                         promotion_choice = CF_PIECE_QUEEN;
                         strcpy(message, "CHOOSE PROMO");
-                    } else if (audio_game_make_move(&g_board, &g_gas,
+                    } else if (ux_human_make_move(&g_board, &g_gas,
                                                     selected_file,
                                                     selected_rank,
                                                     cursor_file,
@@ -564,7 +550,7 @@ int main(void)
         }
     }
 
-    (void)persistence_save_config(BUILD9_CONFIG_PATH, audio_get_config());
+    (void)ux_save_config(CF_GAME_CONFIG_PATH, audio_get_config());
     vga_shutdown();
     audio_shutdown();
     return 0;

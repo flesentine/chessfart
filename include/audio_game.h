@@ -4,10 +4,6 @@
 #include "audio.h"
 #include "board.h"
 #include "gas.h"
-#include "input_build5.h"
-
-int audio_title_screen(void);
-CfInputKey5 audio_game_poll_key(void);
 
 int audio_game_make_move(CfBoard *board, CfGasState *gas,
                          int from_file, int from_rank,

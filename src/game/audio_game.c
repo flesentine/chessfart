@@ -1,11 +1,7 @@
-#include <stdio.h>
 #include <string.h>
 
 #include "audio_game.h"
-#include "board_view_build7.h"
-#include "font.h"
 #include "presentation.h"
-#include "vga.h"
 
 static CfGameStatus g_last_status = CF_GAME_ONGOING;
 static int g_have_status;
@@ -25,101 +21,6 @@ static int invalid_message(const char *message)
            text_has(message, "NEED") ||
            text_has(message, "INVALID") ||
            text_has(message, "SELECT FIRST");
-}
-
-static void draw_audio_title_overlay(void)
-{
-    char line[32];
-    const CfAudioConfig *config = audio_get_config();
-    const CfAudioStats *stats = audio_get_stats();
-
-    vga_fill_rect(0, 158, 320, 11, 0);
-    sprintf(line, "AUDIO %s  SFX %s",
-            audio_device_name(stats->actual_device),
-            audio_level_name(config->sfx_level));
-    font_draw_text(91, 160, line, 8, 1);
-    vga_fill_rect(0, 192, 320, 8, 0);
-    font_draw_text(10, 193, "BUILD 8  LEFT RIGHT DEVICE  F SFX", 6, 1);
-}
-
-static void render_title(int menu, int frame)
-{
-    board_view_render_title7(menu, frame);
-    draw_audio_title_overlay();
-    vga_present();
-}
-
-int audio_title_screen(void)
-{
-    int menu = 0;
-    int frame = 0;
-#ifndef CF_HOST_BUILD
-    CfInputKey5 key;
-#endif
-
-    if (vga_init() != 0) return 0;
-    render_title(menu, frame);
-
-#ifdef CF_HOST_BUILD
-    audio_play_event(CF_AUDIO_MENU_CONFIRM);
-    vga_shutdown();
-    return 1;
-#else
-    input5_init();
-    for (;;) {
-        key = input5_poll_key();
-        if (key == CF5_KEY_ESCAPE) {
-            vga_shutdown();
-            return 0;
-        }
-        if (key == CF5_KEY_UP || key == CF5_KEY_DOWN) {
-            menu = menu == 0 ? 1 : 0;
-            ++frame;
-            audio_play_event(CF_AUDIO_CURSOR);
-            render_title(menu, frame);
-        } else if (key == CF5_KEY_LEFT || key == CF5_KEY_RIGHT) {
-            audio_cycle_device();
-            ++frame;
-            audio_play_event(CF_AUDIO_MENU_CONFIRM);
-            render_title(menu, frame);
-        } else if (key == CF5_KEY_FART) {
-            audio_cycle_sfx_level();
-            ++frame;
-            audio_play_event(CF_AUDIO_MENU_CONFIRM);
-            render_title(menu, frame);
-        } else if (key == CF5_KEY_ENTER) {
-            audio_play_event(CF_AUDIO_MENU_CONFIRM);
-            vga_shutdown();
-            return menu == 0;
-        }
-    }
-#endif
-}
-
-CfInputKey5 audio_game_poll_key(void)
-{
-    CfInputKey5 key = input5_poll_key();
-    switch (key) {
-    case CF5_KEY_UP:
-    case CF5_KEY_DOWN:
-    case CF5_KEY_LEFT:
-    case CF5_KEY_RIGHT:
-    case CF5_KEY_UP_LEFT:
-    case CF5_KEY_UP_RIGHT:
-    case CF5_KEY_DOWN_LEFT:
-    case CF5_KEY_DOWN_RIGHT:
-        audio_play_event(CF_AUDIO_CURSOR);
-        break;
-    case CF5_KEY_ENTER:
-        audio_play_event(CF_AUDIO_SELECT);
-        break;
-    case CF5_KEY_FART:
-        audio_play_event(CF_AUDIO_FART_READY);
-        break;
-    default:
-        break;
-    }
-    return key;
 }
 
 static void sound_for_move(const CfGasMove *move)
@@ -227,27 +128,12 @@ void audio_game_render(const CfBoard *board,
                        CfPieceType fart_promotion_choice,
                        const char *message)
 {
-    char line[24];
-    const CfAudioConfig *config;
-    const CfAudioStats *stats;
-
     presentation_render_game(board, gas, cursor_file, cursor_rank,
                              has_selection, selected_file, selected_rank,
                              legal_moves, status, promotion_pending,
                              promotion_choice, fart_mode, fart_direction,
                              fart_preview, fart_promotion_pending,
                              fart_promotion_choice, message);
-
-    vga_fill_rect(188, 27, 116, 10, 1);
-    font_draw_text(190, 29, "BUILD 8", 4, 1);
-    config = audio_get_config();
-    stats = audio_get_stats();
-    vga_fill_rect(188, 129, 116, 9, 1);
-    sprintf(line, "AUDIO %s %s", audio_device_name(stats->actual_device),
-            audio_level_name(config->sfx_level));
-    font_draw_text(190, 130, line, 8, 1);
-    vga_fill_rect(0, 188, 320, 12, 0);
-    font_draw_text(10, 190, "BUILD 8  DIGITAL AUDIO ONLINE", 6, 1);
 
     maybe_play_status(status);
     maybe_play_message(message);

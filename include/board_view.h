@@ -2,8 +2,16 @@
 #define CF_BOARD_VIEW_H
 
 #include "board.h"
+#include "gas.h"
 
-void board_view_render_build4(const CfBoard *board,
+typedef struct CfPresentationFx {
+    int active;
+    int frame;
+    CfFartAction action;
+} CfPresentationFx;
+
+void board_view_render_game(const CfBoard *board,
+                              const CfGasState *gas,
                               int cursor_file,
                               int cursor_rank,
                               int has_selection,
@@ -13,6 +21,32 @@ void board_view_render_build4(const CfBoard *board,
                               CfGameStatus status,
                               int promotion_pending,
                               CfPieceType promotion_choice,
+                              int fart_mode,
+                              CfFartDirection fart_direction,
+                              CfFartPreview fart_preview,
+                              int fart_promotion_pending,
+                              CfPieceType fart_promotion_choice,
                               const char *message);
+
+void board_view_render_game_fx(const CfBoard *board,
+                                 const CfGasState *gas,
+                                 int cursor_file,
+                                 int cursor_rank,
+                                 int has_selection,
+                                 int selected_file,
+                                 int selected_rank,
+                                 const CfMoveList *legal_moves,
+                                 CfGameStatus status,
+                                 int promotion_pending,
+                                 CfPieceType promotion_choice,
+                                 int fart_mode,
+                                 CfFartDirection fart_direction,
+                                 CfFartPreview fart_preview,
+                                 int fart_promotion_pending,
+                                 CfPieceType fart_promotion_choice,
+                                 const char *message,
+                                 const CfPresentationFx *fx);
+
+void board_view_render_title(int menu_index, int frame);
 
 #endif

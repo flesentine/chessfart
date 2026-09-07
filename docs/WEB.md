@@ -1,6 +1,6 @@
 # Chess Fart — Browser / WebAssembly Edition
 
-The browser edition compiles the same Build 12 C game to WebAssembly with Emscripten. It is a platform port, not a JavaScript rewrite.
+The browser edition compiles the same current C runtime to WebAssembly with Emscripten. It is a platform port, not a JavaScript rewrite.
 
 ## What is shared with DOS
 
@@ -11,7 +11,7 @@ The browser edition compiles the same Build 12 C game to WebAssembly with Emscri
 - presentation/Fart animation
 - procedural sound generation
 - save/config file formats
-- Build 11 help, history, credits and terminal UI
+- current help, history, credits, replay, Practice, themes and terminal UI
 
 ## Web platform backends
 
@@ -20,7 +20,7 @@ The browser edition compiles the same Build 12 C game to WebAssembly with Emscri
 - DOS mouse -> Pointer Events
 - Sound Blaster PCM -> Web Audio PCM buffers
 - PC speaker -> Web Audio square oscillator
-- `CHESSFRT.SAV` / `CHESSFRT.CFG` -> Emscripten IDBFS backed by IndexedDB
+- `CHESSFRT.SAV` / `CHESSFRT.CFG` / `CHESSFRT.RPL` -> Emscripten IDBFS backed by IndexedDB
 
 The original 320x200 framebuffer is scaled with nearest-neighbor/pixelated rendering.
 

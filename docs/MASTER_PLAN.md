@@ -1,5 +1,8 @@
 # Chess Fart — Master Plan
 
+> **Status:** implemented and feature-frozen. This document preserves the original product plan. The current source layout and supported build paths are documented in `TECHNICAL_ARCHITECTURE.md` and `BUILD_AND_TOOLCHAIN.md`.
+
+
 ## 1. Vision
 
 Chess Fart should feel like a forgotten 1992 DOS shareware game that somehow contains a genuinely good strategy game.
@@ -102,7 +105,7 @@ Reference implementation:
 
 - C89/C90
 - Open Watcom C/C++
-- DOS 32-bit protected mode target
+- real 16-bit DOS target (large memory model in the maintained Open Watcom build)
 - VGA Mode 13h framebuffer
 - software backbuffer
 - fixed-timestep simulation
@@ -114,7 +117,7 @@ Rules code must not depend on VGA or DOS APIs. That separation lets us compile a
 
 ## 8. Architecture layers
 
-### `core/`
+### Rules/state — `src/game/board.c` + `src/game/gas.c`
 Pure rules and state:
 
 - board representation
@@ -127,7 +130,7 @@ Pure rules and state:
 - history and repetition state
 - serialization-friendly game state
 
-### `ai/`
+### CPU — `src/game/cpu_*.c`
 
 - legal action enumeration
 - alpha-beta / negamax
@@ -136,7 +139,7 @@ Pure rules and state:
 - move ordering
 - difficulty limits
 
-### `platform/dos/`
+### DOS platform — `src/platform/dos/`
 
 - Mode 13h enter/leave
 - VGA palette
@@ -147,7 +150,7 @@ Pure rules and state:
 - PC speaker
 - file I/O wrappers
 
-### `game/`
+### Game/UI services — `src/game/` + `src/main*.c` / `src/main_*.inc`
 
 - screens
 - UI state
@@ -156,8 +159,8 @@ Pure rules and state:
 - menu/config
 - save/load
 
-### `assets/`
-Source and packed runtime data.
+### Assets — `assets_src/`, `src/generated/`, and `tools/`
+Authored source, generated runtime data, and deterministic converters.
 
 ## 9. Production order
 

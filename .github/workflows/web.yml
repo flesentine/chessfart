@@ -2,7 +2,7 @@ name: Web Build
 
 on:
   push:
-    branches: [ main, web-playable ]
+    branches: [ main ]
   pull_request:
 
 permissions:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Verify Build 13 assets
+      - name: Verify generated assets
         run: |
           python3 tools/build_assets.py --check
           python3 tools/build_font.py --check
@@ -69,7 +69,7 @@ jobs:
           grep -q '^LOCAL_FULL_GAME=PASS opera-game plies=33 rollback=exact-persisted-state replay=2 castling=O-O-O result=CHECKMATE winner=WHITE terminal-lock$' build/web-playtest/hardening/hardening.txt
           cat build/web-playtest/playtest.txt
           cat build/web-playtest/hardening/hardening.txt
-      - name: Build 17 visual review states
+      - name: Visual regression review
         run: |
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_visual_review.mjs
           test -s build/web-visual-review/manifest.json

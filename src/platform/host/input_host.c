@@ -2,17 +2,23 @@
 
 static int g_index;
 
-void input_init(void)
-{
-    g_index = 0;
-}
+void input_init(void) { g_index = 0; }
 
 CfInputKey input_poll_key(void)
 {
     static const CfInputKey script[] = {
+        CF_KEY_SAVE,
         CF_KEY_ENTER,
-        CF_KEY_UP,
-        CF_KEY_UP,
+        CF_KEY_FART,
+        CF_KEY_UP_RIGHT,
+        CF_KEY_ENTER,
+        CF_KEY_HISTORY,
+        CF_KEY_HELP,
+        CF_KEY_CREDITS,
+        CF_KEY_LOAD,
+        CF_KEY_ENTER,
+        CF_KEY_FART,
+        CF_KEY_UP_RIGHT,
         CF_KEY_ENTER,
         CF_KEY_ESCAPE
     };
