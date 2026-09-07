@@ -1,3 +1,20 @@
+CfPersistenceResult ux_load_config(const char *path,
+                                   CfAudioConfig *config)
+{
+    CfUiTheme loaded_theme = CF_UI_THEME_ROYAL_BASEMENT;
+    CfPersistenceResult result;
+    result = persistence_load_config_theme(path, config, &loaded_theme);
+    if (result == CF_PERSIST_OK)
+        (void)ui_theme_set(loaded_theme);
+    return result;
+}
+
+CfPersistenceResult ux_save_config(const char *path,
+                                   const CfAudioConfig *config)
+{
+    return persistence_save_config_theme(path, config, ui_theme_get());
+}
+
 static void ux_practice_presentation_init(void)
 {
     memset(&g_practice_presentation_undo, 0,
