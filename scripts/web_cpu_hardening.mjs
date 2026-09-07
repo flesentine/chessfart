@@ -74,6 +74,19 @@ async function rewriteSaveAsLegacyV1(page) {
   await sleep(100);
 }
 
+async function syncPersist(page) {
+  await page.evaluate(() => new Promise((resolve, reject) => {
+    Module.FS.syncfs(false, (err) => err ? reject(err) : resolve());
+  }));
+}
+
+async function removePersistedConfig(page) {
+  await page.evaluate(() => {
+    try { Module.FS.unlink('/persist/CHESSFRT.CFG'); } catch (_) {}
+  });
+  await syncPersist(page);
+}
+
 async function clickTitleItem(page, item) {
   const canvas = await page.$('#canvas');
   const box = await canvas.boundingBox();
@@ -1066,6 +1079,93 @@ async function verifyPracticeLongSession(browser) {
   return 'PRACTICE_RING_STRESS=PASS review-commit-actions=300 undo=32 boundary=locked history=128 replay=256/269 truncated=1 exact=board+gas+history+log+replay';
 }
 
+async function verifyThemeConfigPersistence(browser) {
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror',e=>errors.push(`PAGE ${String(e)}`));
+  page.on('console',m=>{ if(m.type()==='error') errors.push(`CONSOLE ${m.text()}`); });
+  await page.setViewport({width:1100,height:850,deviceScaleFactor:1});
+
+  /* Use localhost rather than 127.0.0.1 so this persistence exercise has
+   * its own IndexedDB origin and cannot contaminate the gameplay matrix. */
+  const url = 'http://localhost:8127/?hardening=theme-config';
+  await page.goto(url,{waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  await page.waitForFunction(
+    ()=>typeof Module._cf_review_ui_theme==='function',
+    {timeout:15000}
+  );
+  if (await call(page,'cf_review_ui_theme') !== 0)
+    throw new Error('clean config origin did not start Royal Basement');
+
+  await page.keyboard.press('t');
+  await sleep(180);
+  if (await call(page,'cf_review_ui_theme') !== 1)
+    throw new Error('theme config setup did not select Crimson Cellar');
+  let cfg = await page.evaluate(
+    ()=>Module.FS.readFile('/persist/CHESSFRT.CFG',{encoding:'utf8'})
+  );
+  if (!/^CHESSFART_CONFIG 2$/m.test(cfg) ||
+      !/^THEME 1$/m.test(cfg))
+    throw new Error(`theme config v2 file mismatch: ${cfg}`);
+  await syncPersist(page);
+
+  await page.reload({waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  if (await call(page,'cf_review_ui_theme') !== 1)
+    throw new Error('Crimson Cellar did not restore after browser runtime reload');
+  await canvasShot(page,'theme-config-crimson-restored');
+
+  /* A genuine v1 audio-only config must still load and default theme Royal. */
+  await page.evaluate(() => {
+    Module.FS.writeFile('/persist/CHESSFRT.CFG',
+      'CHESSFART_CONFIG 1\nAUDIO 0 2 0\nEND\n');
+  });
+  await syncPersist(page);
+  await page.reload({waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  if (await call(page,'cf_review_ui_theme') !== 0)
+    throw new Error('legacy v1 config did not default to Royal Basement');
+
+  /* First theme change migrates the old file to current v2. */
+  await page.keyboard.press('t');
+  await sleep(180);
+  cfg = await page.evaluate(
+    ()=>Module.FS.readFile('/persist/CHESSFRT.CFG',{encoding:'utf8'})
+  );
+  if (!/^CHESSFART_CONFIG 2$/m.test(cfg) ||
+      !/^THEME 1$/m.test(cfg))
+    throw new Error('legacy config did not migrate to v2 on theme change');
+
+  /* Malformed v2 data is rejected transactionally; startup fallback is Royal. */
+  await page.evaluate(() => {
+    Module.FS.writeFile('/persist/CHESSFRT.CFG',
+      'CHESSFART_CONFIG 2\nAUDIO 0 2 0\nTHEME 99\nEND\n');
+  });
+  await syncPersist(page);
+  await page.reload({waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForFunction(
+    ()=>document.getElementById('status')?.textContent.startsWith('Ready'),
+    {timeout:15000}
+  );
+  if (await call(page,'cf_review_ui_theme') !== 0)
+    throw new Error('invalid v2 config changed startup theme');
+
+  if (errors.length)
+    throw new Error(`theme-config: ${errors.join(' | ')}`);
+  await page.close();
+  return 'THEME_CONFIG=PASS v2=crimson restart=crimson legacy-v1=royal migrate=v2 invalid=royal';
+}
+
 async function verifyMatchModes(browser) {
   const summary = [];
 
@@ -1170,6 +1270,7 @@ async function verifyMatchModes(browser) {
   if (themeErrors.length)
     throw new Error(`title-theme: ${themeErrors.join(' | ')}`);
   summary.push('TITLE_THEME=PASS T=royal/crimson wrap=royal help+credits+attract=preserved session=crimson game+replay-T=noop save-load=preserved');
+  await removePersistedConfig(theme);
   await theme.close();
 
   /* Fresh runtimes must always reset the session-only theme to Royal. */
@@ -1200,6 +1301,7 @@ async function verifyMatchModes(browser) {
         await call(p,'cf_review_match_mode') !== mode ||
         await call(p,'cf_review_practice_mode') !== practice)
       throw new Error(`Crimson Cellar did not carry into ${label}`);
+    await removePersistedConfig(p);
     await p.close();
   }
   summary.push('THEME_MATCH_MODES=PASS CPU+LOCAL+PRACTICE crimson-carry fresh=royal');
@@ -2027,6 +2129,7 @@ let browser;
 try {
   await sleep(500);
   browser = await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  const themeConfigSummary = await verifyThemeConfigPersistence(browser);
   const matchSummary = await verifyMatchModes(browser);
   const practiceSummary = await verifyPracticeUndo(browser);
   const practiceEdgeSummary = await verifyPracticeEdgeUndo(browser);
@@ -2043,7 +2146,7 @@ try {
   ];
   const results = [];
   for (const [label,difficulty,seed] of cases) results.push(await playGame(browser,label,difficulty,seed));
-  const summary = [...matchSummary, practiceSummary, practiceEdgeSummary,
+  const summary = [themeConfigSummary, ...matchSummary, practiceSummary, practiceEdgeSummary,
                    practiceDrawSummary, practiceLongSummary,
                    ...localEdgeSummary, replaySummary,
                    replayViewerSummary, localFullSummary];

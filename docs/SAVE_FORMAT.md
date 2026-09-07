@@ -1,7 +1,7 @@
 # Chess Fart Save Format
 
 Current game-save format version: **2**  
-Current config format version: **1**
+Current config format version: **2**
 
 Files are human-readable text to avoid binary struct-layout dependence.
 
@@ -42,10 +42,25 @@ The version-2 loader continues to accept these files and restores them as CPU mo
 
 ## Config grammar
 
+Current version:
+
+```text
+CHESSFART_CONFIG 2
+AUDIO <device> <sfx_level> <music_level>
+THEME <theme_id>
+END
+```
+
+`theme_id` is `0` for Royal Basement and `1` for Crimson Cellar.
+
+Legacy version-1 configs remain accepted:
+
 ```text
 CHESSFART_CONFIG 1
 AUDIO <device> <sfx_level> <music_level>
 END
 ```
+
+A legacy v1 config restores its audio settings and defaults the presentation theme to Royal Basement. Config loading is transactional: malformed or unsupported files do not partially update audio or theme state.
 
 Future incompatible changes must increment the corresponding version number rather than silently reinterpreting old files.

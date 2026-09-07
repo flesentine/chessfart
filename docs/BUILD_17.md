@@ -4,7 +4,7 @@ Build 17 starts the first optional post-v1 roadmap item: **alternate boards/piec
 
 The implementation stays deliberately conservative. Themes are presentation policy only. They must never alter chess state, Gas, CPU behavior, persistence, replay content, Practice semantics, or package version.
 
-**17.0 complete. Current slice: 17.1 title-screen theme selector.**
+**17.0–17.1 complete. Current slice: 17.2 persistent theme config.**
 
 ## Frozen contracts
 
@@ -15,7 +15,7 @@ Build 17 does not change:
 - CPU/local/Practice match semantics
 - version-2 `CHESSFRT.SAV`
 - version-1 `CHESSFRT.RPL`
-- config format
+- game-save and replay-file formats
 - replay timeline semantics
 - logical 320x200 indexed-VGA geometry
 - authored piece/puff sprite masks
@@ -91,3 +91,30 @@ This keeps 17.0 focused on architecture and visual proof. Its exact-head certifi
 - canonical native visual suite expands to 36 states:
   - real Crimson Cellar title selection
   - real Crimson Cellar game opening
+
+
+## 17.2 — Persistent theme config
+
+17.2 promotes the certified title selector from session-only state into the existing settings file while keeping game and replay persistence untouched.
+
+- config format advances from version 1 to version 2
+- v2 appends `THEME <id>` after the existing `AUDIO` record
+- Royal Basement = 0; Crimson Cellar = 1
+- legacy config v1 remains loadable and defaults theme to Royal Basement
+- malformed/unsupported config loads are transactional and leave startup defaults intact
+- changing theme on the title screen writes audio + theme atomically
+- Web IDBFS restart coverage proves Crimson survives a real browser runtime reload
+- changing a legacy v1 config rewrites it as current v2
+- `CHESSFRT.SAV` remains version 2
+- `CHESSFRT.RPL` remains version 1
+
+### 17.2 validation target
+
+- strict C89 config v2 round-trip and migration tests
+- legacy audio-only persistence API remains source-compatible
+- invalid theme data cannot partially mutate audio/theme outputs
+- real Open Watcom 16-bit DOS compile
+- DOSBox/package regression
+- Web/WASM runtime
+- Chromium config text proof, IDBFS flush/reload, v1 fallback/migration, and malformed-v2 fallback
+- existing 36-state visual suite remains unchanged

@@ -1245,7 +1245,7 @@ int ux_title_screen(const char *config_path)
     ux_draw_title(menu, ++frame);
     vga_present();
     audio_play_event(CF_AUDIO_MENU_CONFIRM);
-    (void)persistence_save_config(config_path, audio_get_config());
+    (void)ux_save_config(config_path, audio_get_config());
     vga_shutdown();
     return 1;
 #else
@@ -1262,7 +1262,7 @@ int ux_title_screen(const char *config_path)
         }
         if (key != CF5_KEY_NONE) last_input = clock();
         if (key == CF5_KEY_ESCAPE) {
-            (void)persistence_save_config(config_path, audio_get_config());
+            (void)ux_save_config(config_path, audio_get_config());
             vga_shutdown();
             return 0;
         }
@@ -1275,10 +1275,10 @@ int ux_title_screen(const char *config_path)
             ++frame; audio_play_event(CF_AUDIO_CURSOR);
         } else if (key == CF5_KEY_LEFT || key == CF5_KEY_RIGHT) {
             audio_cycle_device(); ++frame; audio_play_event(CF_AUDIO_MENU_CONFIRM);
-            (void)persistence_save_config(config_path, audio_get_config());
+            (void)ux_save_config(config_path, audio_get_config());
         } else if (key == CF5_KEY_FART) {
             audio_cycle_sfx_level(); ++frame; audio_play_event(CF_AUDIO_MENU_CONFIRM);
-            (void)persistence_save_config(config_path, audio_get_config());
+            (void)ux_save_config(config_path, audio_get_config());
         } else if (key == CF5_KEY_DIFFICULTY) {
             cpu_cycle_difficulty(&g_cpu_config); ++frame;
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
@@ -1286,6 +1286,7 @@ int ux_title_screen(const char *config_path)
             (void)ui_theme_set(ui_theme_next(ui_theme_get()));
             ++frame;
             audio_play_event(CF_AUDIO_MENU_CONFIRM);
+            (void)ux_save_config(config_path, audio_get_config());
         } else if (key == CF5_KEY_HELP) {
             ux_draw_help_page(0); vga_present(); ux_wait_for_close(1); ++frame;
         } else if (key == CF5_KEY_CREDITS) {
@@ -1302,7 +1303,7 @@ int ux_title_screen(const char *config_path)
                     CF_MATCH_CPU : CF_MATCH_LOCAL;
                 practice_undo_init(&g_practice_undo);
                 ux_practice_presentation_init();
-                (void)persistence_save_config(config_path, audio_get_config());
+                (void)ux_save_config(config_path, audio_get_config());
                 vga_shutdown();
                 return 1;
             }
@@ -1312,7 +1313,7 @@ int ux_title_screen(const char *config_path)
             } else if (menu == CF_UI_TITLE_ITEM_CREDITS) {
                 ux_draw_credits_screen(); vga_present(); ux_wait_for_close(0);
             } else if (menu == CF_UI_TITLE_ITEM_QUIT) {
-                (void)persistence_save_config(config_path, audio_get_config());
+                (void)ux_save_config(config_path, audio_get_config());
                 vga_shutdown();
                 return 0;
             }

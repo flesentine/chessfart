@@ -5,10 +5,12 @@
 #include "board.h"
 #include "gas.h"
 #include "match_mode.h"
+#include "ui_theme.h"
 
 #define CF_SAVE_VERSION 2
 #define CF_SAVE_VERSION_LEGACY 1
-#define CF_CONFIG_VERSION 1
+#define CF_CONFIG_VERSION 2
+#define CF_CONFIG_VERSION_LEGACY 1
 #ifndef CF_DEFAULT_SAVE_PATH
 #define CF_DEFAULT_SAVE_PATH "CHESSFRT.SAV"
 #endif
@@ -48,6 +50,10 @@ CfPersistenceResult persistence_save_config(const char *path,
                                             const CfAudioConfig *config);
 CfPersistenceResult persistence_load_config(const char *path,
                                             CfAudioConfig *config);
+CfPersistenceResult persistence_save_config_theme(
+    const char *path, const CfAudioConfig *config, CfUiTheme theme);
+CfPersistenceResult persistence_load_config_theme(
+    const char *path, CfAudioConfig *config, CfUiTheme *theme);
 const char *persistence_result_name(CfPersistenceResult result);
 
 #endif
