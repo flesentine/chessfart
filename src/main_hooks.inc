@@ -87,14 +87,6 @@ static int ux_practice_presentation_restore_last(void)
     return 1;
 }
 
-static int ux_terminal(CfGameStatus status)
-{
-    return status == CF_GAME_CHECKMATE || status == CF_GAME_STALEMATE ||
-           status == CF_GAME_DRAW_FIFTY_MOVE ||
-           status == CF_GAME_DRAW_THREEFOLD ||
-           status == CF_GAME_DRAW_INSUFFICIENT;
-}
-
 static CfGameStatus ux_replay_status(const CfBoard *board,
                                      const CfGasState *gas,
                                      const CfGasHistory *history)
@@ -164,7 +156,7 @@ static int ux_cpu_take_turn(CfBoard *board, CfGasState *gas,
     g_cpu_search_history = *history;
     gas_history_record(&g_cpu_search_history, board, gas);
     status = gas_game_status(board, gas, &g_cpu_search_history);
-    if (ux_terminal(status)) return 0;
+    if (status_is_terminal(status)) return 0;
     if (!cpu_choose_action(board, gas, &g_cpu_search_history,
                            &g_cpu_config, &action, &g_cpu_stats)) return 0;
     g_cpu_history_backup = *history;

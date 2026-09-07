@@ -52,6 +52,43 @@ static void kings_only(CfBoard *board)
     board_set_piece(board, 4, 7, CF_PIECE_KING, CF_COLOR_BLACK);
 }
 
+static void test_basic_board_contracts(void)
+{
+    CfBoard board;
+    CfMoveList list;
+    const CfPiece *piece;
+
+    board_init_starting_position(&board);
+    CHECK(board_piece_count(&board) == 32);
+    CHECK(board.side_to_move == CF_COLOR_WHITE);
+
+    piece = board_piece_at(&board, 0, 0);
+    CHECK(piece != 0 && piece->type == CF_PIECE_ROOK &&
+          piece->color == CF_COLOR_WHITE);
+    piece = board_piece_at(&board, 4, 7);
+    CHECK(piece != 0 && piece->type == CF_PIECE_KING &&
+          piece->color == CF_COLOR_BLACK);
+
+    CHECK(board_piece_at(&board, -1, 0) == 0);
+    CHECK(board_piece_at(&board, 8, 0) == 0);
+    CHECK(board_piece_at(&board, 0, -1) == 0);
+    CHECK(board_piece_at(&board, 0, 8) == 0);
+    CHECK(board_piece_letter(CF_PIECE_KNIGHT) == 'N');
+    CHECK(board_piece_letter(CF_PIECE_KING) == 'K');
+
+    board_clear(&board);
+    board_set_piece(&board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 4, 1, CF_PIECE_ROOK, CF_COLOR_WHITE);
+    board_set_piece(&board, 4, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    board_set_piece(&board, 0, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board.side_to_move = CF_COLOR_WHITE;
+    CHECK(board_square_is_attacked(&board, 4, 0, CF_COLOR_BLACK));
+    CHECK(board_is_in_check(&board, CF_COLOR_WHITE));
+    board_generate_legal_moves(&board, 4, 1, &list);
+    CHECK(!has_move(&list, 5, 1, 0U));
+    CHECK(has_move(&list, 4, 2, 0U));
+}
+
 static void test_start_and_perft(void)
 {
     CfBoard board;
@@ -348,6 +385,7 @@ static void test_threefold(void)
 
 int main(void)
 {
+    test_basic_board_contracts();
     test_start_and_perft();
     test_kiwipete_perft();
     test_en_passant_perft_position();

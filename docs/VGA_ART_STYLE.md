@@ -2,201 +2,96 @@
 
 ## 1. Era target
 
-Aim for a premium 1991–1994 DOS game, not a modern pixel-art game pretending to be old.
+The finished presentation aims for a premium 1991–1994 DOS game rather than modern pixel art wearing a retro skin.
 
-Reference traits:
+Core traits:
 
 - 320x200 composition
 - 256 indexed colors
-- hard-edged sprites
-- selective dithering
-- dramatic bevels and embossed panels
-- saturated highlight ramps
-- black outlines used sparingly
-- palette animation instead of alpha blending
-- exaggerated one- or two-pixel motion
+- hard-edged authored sprites
+- nearest-neighbor display
+- dramatic DOS-panel bevels
+- restrained texture and palette effects
+- no runtime alpha blending
 
-## 2. Screen layout
+## 2. Current screen layout
 
-Logical screen: **320x200**.
+Canonical geometry lives in `include/ui_layout.h`.
 
-Proposed match layout:
+- Logical screen: 320x200
+- Board origin: x=18, y=27
+- Square size: 18x18
+- Board pixels: 144x144
+- Board frame: x=14, y=23, 152x154
+- Right HUD: x=170, y=24, 143x151
+- Header: y=0..20
+- Command bar: y=181..199
 
-- Board: x=8..167, y=20..179
-- Board size: 160x160
-- Square size: 20x20
-- Right UI panel: x=176..319
-- Header/status strip: y=0..18
-- Bottom message strip: y=182..199
+Rendering and mouse hit testing use these same constants.
 
-This leaves narrow gutters for bevels and shadows.
+## 3. Board themes
 
-## 3. Board
+### Royal Basement
 
-The board is the visual anchor and must remain legible under animation.
+Royal is the default and compatibility fallback. Its sparse stone-grain pixels and semantic palette roles are pinned by the native visual regression suite.
 
-### Default theme: Royal Basement
+### Crimson Cellar
 
-- dark squares: burgundy/brown stone
-- light squares: warm parchment/ivory
-- thin gold outer frame
-- tiny noise/dither texture, never enough to obscure pieces
-- selected square: palette-ramped gold pulse
-- legal normal move: small cyan/white corner dots
-- legal fart direction: green wedge/arrow
-- check: red/orange pulse behind king
+Crimson keeps the same geometry and overlays but uses staggered cellar-brick/mortar edge texture and copper piece accents. Texture stays away from the center of each square so piece silhouettes remain dominant.
 
-### Alternate theme: Crimson Cellar
-
-- burgundy/copper palette remains the defining color language
-- squares use a sparse staggered cellar-brick/mortar treatment instead of Royal's stone grain
-- mortar/chip pixels stay near square edges and out of the piece silhouette center
-- board frame, square size, coordinates and semantic overlay colors remain shared
-- the alternate surface must never reduce legal-move, selection, Gas or check readability
+Theme changes never alter rules, piece masks, legal-move geometry, Gas, or input semantics.
 
 ## 4. Piece sprites
 
-Target footprint: about **16x18 pixels** inside each 20x20 square.
+Authored piece masks are approximately 16x18 inside the 18x18 square footprint.
 
-Each piece needs:
+- White base/highlight and Black base/highlight stay semantically stable.
+- Royal uses the classic gilt/neutral accent mapping.
+- Crimson remaps the authored accent class to copper.
+- The exact same piece masks are used by both themes.
 
-- white-side base sprite
-- black-side base sprite
-- selected/highlight mask
-- 2-frame idle option
-- 2–3 frame move/squash option
-- hit/pushed pose where useful
+Silhouette wins over detail; every piece must remain readable on both square colors.
 
-Silhouette must win over detail. At 16 pixels wide, rook/queen/bishop/king must be recognizable instantly.
+## 5. Gas and Fart presentation
 
-### Color language
+Gas uses the shared green semantic roles. The selected piece HUD shows three Gas pips.
 
-White pieces: ivory, tan shadow, gold accent.
+Fart feedback uses:
 
-Black pieces: charcoal, blue-purple midtone, steel highlight.
+- directional aim/preview geometry
+- short five-frame animation
+- PUFF/PUSH/BLOCKED/promotion-specific presentation
+- bounded effects that never obscure critical board state for long
 
-Royal Basement keeps that classic gilt/neutral mapping. Crimson Cellar reuses the exact same sprite masks but maps the authored accent class to copper, giving both armies a cellar-metal trim without changing their base/highlight contrast or silhouettes.
+No gameplay result is inferred from animation; presentation receives already-resolved state.
 
-Both sides receive the same green gas colors; ownership is communicated by the originating piece and UI.
+## 6. Title and modal language
 
-## 5. Gas meter
+The title uses the `CHESS FART` identity, `CHECK. MATE. VENTILATE.` tagline, and the current seven-row menu: Play CPU, 2 Players, Practice, Attract Demo, Help / Rules, Credits, Quit to DOS.
 
-Each selected piece shows three small pips in the side panel:
+Help, History, Credits, Replay, save/load notices, and terminal overlays use the same panel, typography, and semantic color system.
 
-- empty pip: dark inset
-- full pip: sickly lime-to-yellow ramp
-- 2+ Gas: subtle animated bubble pixel every few frames
+## 7. Typography and assets
 
-Do not place permanent gas bars over every board piece; it would make the board noisy. For at-a-glance opponent planning, charged pieces can receive a tiny 1-pixel green glint at their base.
+The UI uses an authored bitmap font and generated indexed runtime data.
 
-## 6. Fart animation
-
-The animation should be funny in under half a second.
-
-Suggested 5-frame sequence:
-
-1. piece squashes down 1 pixel
-2. rear green spark appears
-3. directional cloud expands into neighboring square
-4. target piece shifts/pops to destination
-5. cloud breaks into 2–4 pixels and disappears
-
-Use palette cycling within two dedicated gas ramps to create motion without extra sprite memory.
-
-No transparency blending; use color-keyed sprites and ordered dithering if translucency is absolutely needed.
-
-## 7. Screen effects
-
-Use sparingly:
-
-- 1–2 pixel screen shake for strong fart/capture
-- palette flash for check/checkmate
-- horizontal wipe or checker dissolve between screens
-- palette fade to black for loading/quit
-- subtle title-logo shimmer via palette cycling
-
-Avoid modern particles, blur, bloom and smooth vector scaling.
-
-## 8. Palette budget
-
-Suggested allocation of the 256 entries:
-
-- 0: transparent/key black
-- 1–15: UI grayscale
-- 16–47: board light-square ramp/textures
-- 48–79: board dark-square ramp/textures
-- 80–111: white piece ramp + gold accents
-- 112–143: black piece ramp + cool highlights
-- 144–175: green/yellow gas ramps
-- 176–199: red/orange danger/check
-- 200–223: cyan/blue selection/info
-- 224–239: portraits/logo/special UI
-- 240–255: reserved animation/effect entries
-
-This is a planning allocation, not a hard file format. Final palette should be authored globally so screens share indexes where possible.
-
-## 9. Typography
-
-Use a custom bitmap font.
-
-Recommended sizes:
-
-- 5x7 small UI font
-- 8x8 normal text font
-- 8x12 or hand-drawn title/subtitle letters
-
-Text should remain uppercase-heavy in true DOS style but not sacrifice readability.
-
-Example status strings:
-
-- `WHITE TO MOVE`
-- `GAS: **.`
-- `FART READY`
-- `CHECK!`
-- `PUFF — NO TARGET`
-- `BLAST BLOCKED`
-
-## 10. Title screen
-
-Composition:
-
-- huge `CHESS FART` stone/gold logo
-- king and queen facing each other
-- a suspicious green cloud drifting between them
-- menu: PLAY / VS CPU / OPTIONS / CREDITS / QUIT
-- tagline: `CHECK. MATE. VENTILATE.`
-
-Add a delayed attract animation if the player does nothing.
-
-## 11. Menus
-
-DOS panel language:
-
-- beveled rectangles
-- bright top/left edge, dark bottom/right edge
-- keyboard hotkeys underlined or color-coded
-- moving glove/crown cursor or highlight bar
-- instant response; no long easing animations
-
-## 12. Asset source format
-
-Authoring may use PNG, but runtime assets must be converted to indexed binary/sprite data during the build.
+Source assets live under `assets_src/`; deterministic converters in `tools/` generate the committed runtime includes. Asset checks reject stale generated output.
 
 Rules:
 
 - nearest-neighbor only
-- no anti-aliased edges
-- preserve explicit palette indexes where palette cycling matters
+- no anti-aliased sprite edges
+- preserve semantic palette indexes
 - no true-color runtime dependency
-- keep source PNGs and conversion scripts in repo
+- source PNGs and converters remain reproducible
 
-## 13. Art acceptance checklist
+## 8. Acceptance contract
 
-An asset is ready when:
+Presentation maintenance is acceptable only when:
 
-- it reads at native 320x200 with no zoom,
-- it stays inside the approved palette,
-- no accidental anti-alias colors exist,
-- animation is readable in 2–5 frames,
-- white/black pieces are distinguishable on both square colors,
-- gas effects never hide critical board state for more than a few frames.
+- native 320x200 readability remains strong
+- all pixels stay in bounds
+- selection/legal/check/Fart overlays remain distinguishable
+- both sides remain readable on both square colors
+- the 36-state Chromium visual suite passes
+- pinned Royal/Crimson signatures remain unchanged unless a deliberate visual contract change is approved

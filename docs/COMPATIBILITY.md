@@ -4,7 +4,7 @@ This document distinguishes automated evidence from targets that still require p
 
 | Environment / subsystem | 1.0 status | Evidence / scope |
 | --- | --- | --- |
-| Ubuntu GitHub Actions + strict C89 host build | VERIFIED | `make test-build12`; warnings are errors |
+| Ubuntu GitHub Actions + strict C89 host build | VERIFIED | `make test`; warnings are errors |
 | Standard chess / perft regressions | VERIFIED | Permanent Build 4 suite |
 | Gas and Fart rules | VERIFIED | Permanent Build 5/6 suites |
 | Audio generation / host hooks | VERIFIED | Permanent Build 8 suite |
@@ -19,7 +19,7 @@ This document distinguishes automated evidence from targets that still require p
 | Replay timeline / terminal integrity | VERIFIED | Opera Game proves 17→19→1→18 frame lifecycle across Save/Load; deterministic EASY/MED/HARD games end with newest replay frame/status matching live terminal state |
 | Replay file v1 | VERIFIED | Transactional CHESSFRT.RPL host corruption tests, 600-frame ring round-trip, and Chromium export/import transient-view restore |
 | Replay memory budget | VERIFIED | Host profile: 118-byte snapshot, 30,232-byte live timeline, 60,464-byte live+temporary-import peak |
-| Native 320x200 visual review | VERIFIED | 32 deterministic states covering CPU/local title/HUD/help/history, Fart, promotion, save/load and terminal presentations |
+| Native 320x200 visual review | VERIFIED | 36 deterministic states covering CPU/local/Practice presentation, Fart, promotion, save/load, terminal states, and both certified themes |
 | Open Watcom 2.0 16-bit DOS compile | VERIFIED | CI builds `CHESSFRT.EXE` with `-bt=dos -ml -3` |
 | DOSBox VGA Mode 13h smoke | VERIFIED | DOS-resident smoke initializes/draws/presents VGA |
 | DOSBox INT 33h mouse probe | VERIFIED (probe) | DOS-resident smoke calls mouse init/shutdown; full interactive pointer flow is manual |
