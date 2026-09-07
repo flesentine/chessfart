@@ -43,10 +43,14 @@ typedef struct CfCpuActionList {
     int count;
 } CfCpuActionList;
 
-typedef struct CfCpuUndo {
-    CfCpuActionType type;
+typedef union CfCpuUndoPayload {
     CfGasMove move;
     CfFartAction fart;
+} CfCpuUndoPayload;
+
+typedef struct CfCpuUndo {
+    CfCpuActionType type;
+    CfCpuUndoPayload action;
 } CfCpuUndo;
 
 typedef struct CfCpuStats {

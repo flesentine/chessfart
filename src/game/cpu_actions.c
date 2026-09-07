@@ -188,10 +188,10 @@ int cpu_apply_action(CfBoard *board, CfGasState *gas,
     if (action->type == CF_CPU_ACTION_MOVE)
         ok = gas_make_move_ex(board, gas, action->from_file, action->from_rank,
                               action->to_file, action->to_rank,
-                              action->promotion, &local.move);
+                              action->promotion, &local.action.move);
     else if (action->type == CF_CPU_ACTION_FART)
         ok = gas_make_fart(board, gas, action->from_file, action->from_rank,
-                           action->direction, action->promotion, &local.fart);
+                           action->direction, action->promotion, &local.action.fart);
     else return 0;
     if (!ok) return 0;
     if (undo != 0) *undo = local;
@@ -201,6 +201,6 @@ int cpu_apply_action(CfBoard *board, CfGasState *gas,
 void cpu_unapply_action(CfBoard *board, CfGasState *gas, const CfCpuUndo *undo)
 {
     if (board == 0 || gas == 0 || undo == 0) return;
-    if (undo->type == CF_CPU_ACTION_MOVE) gas_unmake_move(board, gas, &undo->move);
-    else if (undo->type == CF_CPU_ACTION_FART) gas_unmake_fart(board, gas, &undo->fart);
+    if (undo->type == CF_CPU_ACTION_MOVE) gas_unmake_move(board, gas, &undo->action.move);
+    else if (undo->type == CF_CPU_ACTION_FART) gas_unmake_fart(board, gas, &undo->action.fart);
 }

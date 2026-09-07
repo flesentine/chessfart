@@ -2,6 +2,7 @@
 #include <time.h>
 
 #include "cpu.h"
+#include "practice_undo.h"
 #include "replay.h"
 #include "version.h"
 
@@ -75,6 +76,10 @@ int main(void)
     printf("sizeof_board=%lu sizeof_gas=%lu sizeof_history=%lu sizeof_actions=%lu\n",
            (unsigned long)sizeof(CfBoard), (unsigned long)sizeof(CfGasState),
            (unsigned long)sizeof(CfGasHistory), (unsigned long)sizeof(CfCpuActionList));
+    printf("sizeof_gas_move=%lu sizeof_cpu_undo=%lu sizeof_practice_undo=%lu\n",
+           (unsigned long)sizeof(CfGasMove),
+           (unsigned long)sizeof(CfCpuUndo),
+           (unsigned long)sizeof(CfPracticeUndoJournal));
     printf("sizeof_replay_snapshot=%lu sizeof_replay_timeline=%lu transient_import_peak=%lu\n",
            (unsigned long)sizeof(CfReplaySnapshot),
            (unsigned long)sizeof(CfReplayTimeline),

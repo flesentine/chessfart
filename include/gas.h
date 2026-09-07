@@ -14,7 +14,11 @@ typedef struct CfGasState {
 
 typedef struct CfGasMove {
     CfMove chess_move;
-    CfGasState previous_gas;
+    cf_u8 previous_from_gas;
+    cf_u8 previous_to_gas;
+    cf_u8 previous_captured_gas;
+    cf_u8 previous_rook_from_gas;
+    cf_u8 previous_rook_to_gas;
 } CfGasMove;
 
 typedef enum CfFartDirection {

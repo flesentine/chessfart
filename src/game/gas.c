@@ -44,35 +44,68 @@ void gas_set(CfGasState *gas, int file, int rank, cf_u8 value)
     gas->squares[rank][file] = clamp_gas(value);
 }
 
-static void apply_move_gas(CfGasState *gas, const CfGasState *before,
-                           const CfMove *move)
+static void castle_rook_files(const CfMove *move,
+                              int *rook_from, int *rook_to)
 {
+    if ((move->flags & CF_MOVE_CASTLE_KING) != 0U) {
+        *rook_from = 7;
+        *rook_to = 5;
+    } else {
+        *rook_from = 0;
+        *rook_to = 3;
+    }
+}
+
+static void capture_move_gas_delta(const CfGasState *gas, CfGasMove *move)
+{
+    int rook_from;
+    int rook_to;
+    int rank;
+
+    move->previous_from_gas =
+        gas->squares[move->chess_move.from_rank][move->chess_move.from_file];
+    move->previous_to_gas =
+        gas->squares[move->chess_move.to_rank][move->chess_move.to_file];
+    move->previous_captured_gas = 0U;
+    move->previous_rook_from_gas = 0U;
+    move->previous_rook_to_gas = 0U;
+
+    if ((move->chess_move.flags & CF_MOVE_EN_PASSANT) != 0U)
+        move->previous_captured_gas =
+            gas->squares[move->chess_move.captured_rank]
+                        [move->chess_move.captured_file];
+
+    if ((move->chess_move.flags & (CF_MOVE_CASTLE_KING |
+                                    CF_MOVE_CASTLE_QUEEN)) != 0U) {
+        rank = move->chess_move.from_rank;
+        castle_rook_files(&move->chess_move, &rook_from, &rook_to);
+        move->previous_rook_from_gas = gas->squares[rank][rook_from];
+        move->previous_rook_to_gas = gas->squares[rank][rook_to];
+    }
+}
+
+static void apply_move_gas(CfGasState *gas, const CfGasMove *move)
+{
+    const CfMove *chess_move = &move->chess_move;
     unsigned gain;
     int rank;
     int rook_from;
     int rook_to;
 
-    *gas = *before;
-    gas->squares[move->from_rank][move->from_file] = 0;
-    if ((move->flags & CF_MOVE_EN_PASSANT) != 0U)
-        gas->squares[move->captured_rank][move->captured_file] = 0;
+    gas->squares[chess_move->from_rank][chess_move->from_file] = 0;
+    if ((chess_move->flags & CF_MOVE_EN_PASSANT) != 0U)
+        gas->squares[chess_move->captured_rank][chess_move->captured_file] = 0;
 
-    gain = move->captured.type == CF_PIECE_NONE ? 1U : 2U;
-    gas->squares[move->to_rank][move->to_file] =
-        clamp_gas((unsigned)before->squares[move->from_rank][move->from_file] + gain);
+    gain = chess_move->captured.type == CF_PIECE_NONE ? 1U : 2U;
+    gas->squares[chess_move->to_rank][chess_move->to_file] =
+        clamp_gas((unsigned)move->previous_from_gas + gain);
 
-    if ((move->flags & CF_MOVE_CASTLE_KING) != 0U ||
-        (move->flags & CF_MOVE_CASTLE_QUEEN) != 0U) {
-        rank = move->from_rank;
-        if ((move->flags & CF_MOVE_CASTLE_KING) != 0U) {
-            rook_from = 7;
-            rook_to = 5;
-        } else {
-            rook_from = 0;
-            rook_to = 3;
-        }
+    if ((chess_move->flags & (CF_MOVE_CASTLE_KING |
+                              CF_MOVE_CASTLE_QUEEN)) != 0U) {
+        rank = chess_move->from_rank;
+        castle_rook_files(chess_move, &rook_from, &rook_to);
         gas->squares[rank][rook_to] =
-            clamp_gas((unsigned)before->squares[rank][rook_from] + 1U);
+            clamp_gas((unsigned)move->previous_rook_from_gas + 1U);
         gas->squares[rank][rook_from] = 0;
     }
 }
@@ -83,10 +116,11 @@ int gas_make_move_ex(CfBoard *board, CfGasState *gas,
 {
     CfGasMove local;
     if (board == 0 || gas == 0) return 0;
-    local.previous_gas = *gas;
+    memset(&local, 0, sizeof(local));
     if (!board_make_move_ex(board, from_file, from_rank, to_file, to_rank,
                             promotion, &local.chess_move)) return 0;
-    apply_move_gas(gas, &local.previous_gas, &local.chess_move);
+    capture_move_gas_delta(gas, &local);
+    apply_move_gas(gas, &local);
     if (made_move != 0) *made_move = local;
     return 1;
 }
@@ -101,9 +135,31 @@ int gas_make_move(CfBoard *board, CfGasState *gas,
 
 void gas_unmake_move(CfBoard *board, CfGasState *gas, const CfGasMove *move)
 {
+    const CfMove *chess_move;
+    int rank;
+    int rook_from;
+    int rook_to;
+
     if (board == 0 || gas == 0 || move == 0) return;
-    board_unmake_move(board, &move->chess_move);
-    *gas = move->previous_gas;
+    chess_move = &move->chess_move;
+    board_unmake_move(board, chess_move);
+
+    gas->squares[chess_move->from_rank][chess_move->from_file] =
+        move->previous_from_gas;
+    gas->squares[chess_move->to_rank][chess_move->to_file] =
+        move->previous_to_gas;
+
+    if ((chess_move->flags & CF_MOVE_EN_PASSANT) != 0U)
+        gas->squares[chess_move->captured_rank][chess_move->captured_file] =
+            move->previous_captured_gas;
+
+    if ((chess_move->flags & (CF_MOVE_CASTLE_KING |
+                              CF_MOVE_CASTLE_QUEEN)) != 0U) {
+        rank = chess_move->from_rank;
+        castle_rook_files(chess_move, &rook_from, &rook_to);
+        gas->squares[rank][rook_from] = move->previous_rook_from_gas;
+        gas->squares[rank][rook_to] = move->previous_rook_to_gas;
+    }
 }
 
 static void direction_delta(CfFartDirection direction, int *df, int *dr)
