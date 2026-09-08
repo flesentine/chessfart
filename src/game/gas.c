@@ -116,7 +116,6 @@ int gas_make_move_ex(CfBoard *board, CfGasState *gas,
 {
     CfGasMove local;
     if (board == 0 || gas == 0) return 0;
-    memset(&local, 0, sizeof(local));
     if (!board_make_move_ex(board, from_file, from_rank, to_file, to_rank,
                             promotion, &local.chess_move)) return 0;
     capture_move_gas_delta(gas, &local);
@@ -443,7 +442,6 @@ static int apply_fart_with_preview(CfBoard *board, CfGasState *gas,
         !in_bounds(df, dr))
         return 0;
 
-    memset(&local, 0, sizeof(local));
     local.actor_file = file;
     local.actor_rank = rank;
     local.direction = direction;
@@ -462,6 +460,8 @@ static int apply_fart_with_preview(CfBoard *board, CfGasState *gas,
     local.promotion = CF_PIECE_NONE;
     local.previous_target_piece = board->squares[tr][tf];
     local.previous_target_gas = gas->squares[tr][tf];
+    local.previous_destination_piece = empty_piece();
+    local.previous_destination_gas = 0U;
 
     if (in_bounds(df, dr)) {
         local.destination_file = df;
@@ -540,6 +540,34 @@ void gas_unmake_fart(CfBoard *board, CfGasState *gas,
             action->previous_target_gas;
     }
     if (action->destination_file >= 0 && action->destination_rank >= 0) {
+        board->squares[action->destination_rank][action->destination_file] =
+            action->previous_destination_piece;
+        gas->squares[action->destination_rank][action->destination_file] =
+            action->previous_destination_gas;
+    }
+
+    board->side_to_move = action->previous_side;
+    board->castling_rights = action->previous_castling_rights;
+    board->en_passant_file = action->previous_ep_file;
+    board->en_passant_rank = action->previous_ep_rank;
+    board->halfmove_clock = action->previous_halfmove;
+    board->fullmove_number = action->previous_fullmove;
+}
+
+void gas_unmake_fart_prevalidated(CfBoard *board, CfGasState *gas,
+                                  const CfFartAction *action)
+{
+    if (board == 0 || gas == 0 || action == 0) return;
+
+    gas->squares[action->actor_rank][action->actor_file] =
+        action->previous_actor_gas;
+
+    if (action->result == CF_FART_PUSH ||
+        action->result == CF_FART_PROMOTION) {
+        board->squares[action->target_rank][action->target_file] =
+            action->previous_target_piece;
+        gas->squares[action->target_rank][action->target_file] =
+            action->previous_target_gas;
         board->squares[action->destination_rank][action->destination_file] =
             action->previous_destination_piece;
         gas->squares[action->destination_rank][action->destination_file] =
@@ -673,15 +701,19 @@ int gas_history_repetition_count(const CfGasHistory *history,
 
 static int has_legal_fart(const CfBoard *board, const CfGasState *gas)
 {
+    CfFartScan scan;
     int file;
     int rank;
     int direction;
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
-            if (!gas_piece_can_fart(board, gas, file, rank)) continue;
+            if (gas->squares[rank][file] < CF_GAS_FART_COST ||
+                board->squares[rank][file].type == CF_PIECE_NONE ||
+                board->squares[rank][file].color != board->side_to_move)
+                continue;
+            gas_scan_farts(board, gas, file, rank, &scan);
             for (direction = 0; direction < 8; ++direction)
-                if (gas_preview_fart(board, gas, file, rank,
-                                     (CfFartDirection)direction) != CF_FART_INVALID)
+                if ((CfFartPreview)scan.preview[direction] != CF_FART_INVALID)
                     return 1;
         }
     }

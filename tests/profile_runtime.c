@@ -190,6 +190,55 @@ static void run_fart_apply_profile(void)
            fast_ms, public_ms, fart_apply_profile_sink);
 }
 
+static volatile int fart_unmake_profile_sink;
+
+static void run_fart_unmake_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfFartAction action;
+    CfFartPreview preview;
+    clock_t start;
+    clock_t end;
+    unsigned long fast_ms;
+    unsigned long public_ms;
+    int repeat;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    preview = gas_preview_fart(&board, &gas, 2, 2, CF_FART_N);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat) {
+        if (!gas_make_fart_prevalidated(&board, &gas, 2, 2, CF_FART_N,
+                                        preview, CF_PIECE_NONE, &action))
+            break;
+        fart_unmake_profile_sink += board.side_to_move;
+        gas_unmake_fart_prevalidated(&board, &gas, &action);
+    }
+    end = clock();
+    fast_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat) {
+        if (!gas_make_fart_prevalidated(&board, &gas, 2, 2, CF_FART_N,
+                                        preview, CF_PIECE_NONE, &action))
+            break;
+        fart_unmake_profile_sink += board.side_to_move;
+        gas_unmake_fart(&board, &gas, &action);
+    }
+    end = clock();
+    public_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("FART_UNMAKE prevalidated_ms=%lu public_ms=%lu sink=%d\n",
+           fast_ms, public_ms, fart_unmake_profile_sink);
+}
+
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
     CfMoveList list;
@@ -319,6 +368,7 @@ int main(void)
     run_sort_profile();
     run_fart_scan_profile();
     run_fart_apply_profile();
+    run_fart_unmake_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);

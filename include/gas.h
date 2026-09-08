@@ -116,6 +116,12 @@ int gas_make_fart_prevalidated(CfBoard *board, CfGasState *gas,
                                CfFartAction *action);
 void gas_unmake_fart(CfBoard *board, CfGasState *gas,
                      const CfFartAction *action);
+/*
+ * Search fast path: caller must pass an action returned by a successful
+ * Fart apply in the current position.
+ */
+void gas_unmake_fart_prevalidated(CfBoard *board, CfGasState *gas,
+                                  const CfFartAction *action);
 
 /* Build 5 compatibility wrappers. */
 int gas_make_puff(CfBoard *board, CfGasState *gas,
