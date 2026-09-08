@@ -109,6 +109,7 @@ CfPieceColor board_other_color(CfPieceColor color);
 int board_square_is_attacked(const CfBoard *board, int file, int rank, CfPieceColor by_color);
 int board_is_in_check(const CfBoard *board, CfPieceColor color);
 void board_generate_legal_moves(const CfBoard *board, int file, int rank, CfMoveList *list);
+int board_has_legal_move(const CfBoard *board);
 int board_move_is_legal(const CfBoard *board, int from_file, int from_rank, int to_file, int to_rank);
 int board_make_move(CfBoard *board, int from_file, int from_rank, int to_file, int to_rank, CfMove *made_move);
 int board_make_move_ex(CfBoard *board, int from_file, int from_rank, int to_file, int to_rank,

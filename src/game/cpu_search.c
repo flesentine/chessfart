@@ -133,7 +133,6 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     CfCpuUndo undo;
     CfCpuAction best_action;
     CfCpuAction iteration_best;
-    CfGameStatus status;
     int best_score = -CPU_INF;
     int iteration_score;
     int score;
@@ -151,14 +150,14 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     if (stats == 0) stats = &local_stats;
     else memset(stats, 0, sizeof(*stats));
 
-    status = gas_game_status(b, g, history);
-    if (status == CF_GAME_CHECKMATE || status == CF_GAME_STALEMATE ||
-        status == CF_GAME_DRAW_FIFTY_MOVE || status == CF_GAME_DRAW_THREEFOLD ||
-        status == CF_GAME_DRAW_INSUFFICIENT) return 0;
-
     root = &g_lists[0];
     cpu_generate_actions(b, g, root);
     if (root->count == 0) return 0;
+    if (board_is_insufficient_material(b)) return 0;
+    if (history != 0 &&
+        gas_history_repetition_count(history, b, g) >= 3)
+        return 0;
+    if (b->halfmove_clock >= 100U) return 0;
     cpu_internal_sort_actions(root, &g_lists[1]);
     best_action = root->actions[0];
 

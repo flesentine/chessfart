@@ -596,6 +596,57 @@ void board_generate_legal_moves(const CfBoard *board, int file, int rank, CfMove
     }
 }
 
+int board_has_legal_move(const CfBoard *board)
+{
+    CfMoveList pseudo;
+    CfBoard scratch;
+    CfPiece piece;
+    CfPieceColor enemy;
+    int king_file;
+    int king_rank;
+    int check_file;
+    int check_rank;
+    int moving_first_king;
+    int file;
+    int rank;
+    int i;
+
+    if (board == 0) return 0;
+    if (!find_king_square(board, board->side_to_move,
+                          &king_file, &king_rank))
+        return 0;
+    enemy = board_other_color(board->side_to_move);
+    scratch = *board;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            piece = board->squares[rank][file];
+            if (piece.type == CF_PIECE_NONE ||
+                piece.color != board->side_to_move)
+                continue;
+            moving_first_king = piece.type == CF_PIECE_KING &&
+                                file == king_file && rank == king_rank;
+            generate_pseudo_moves(board, file, rank, &pseudo);
+            for (i = 0; i < pseudo.count; ++i) {
+                apply_position_only(&scratch, &pseudo.moves[i]);
+                check_file = moving_first_king ?
+                             pseudo.moves[i].to_file : king_file;
+                check_rank = moving_first_king ?
+                             pseudo.moves[i].to_rank : king_rank;
+                if (!board_square_is_attacked(&scratch,
+                                              check_file, check_rank,
+                                              enemy)) {
+                    unapply_position_only(&scratch, &pseudo.moves[i]);
+                    return 1;
+                }
+                unapply_position_only(&scratch, &pseudo.moves[i]);
+            }
+        }
+    }
+    return 0;
+}
+
+
 int board_move_is_legal(const CfBoard *board, int from_file, int from_rank,
                         int to_file, int to_rank)
 {
@@ -884,12 +935,12 @@ int board_is_insufficient_material(const CfBoard *board)
 
 CfGameStatus board_game_status(const CfBoard *board, const CfHistory *history)
 {
-    int moves;
+    int has_move;
     int check;
     if (board == 0) return CF_GAME_ONGOING;
-    moves = board_count_legal_moves(board, board->side_to_move);
+    has_move = board_has_legal_move(board);
     check = board_is_in_check(board, board->side_to_move);
-    if (moves == 0) return check ? CF_GAME_CHECKMATE : CF_GAME_STALEMATE;
+    if (!has_move) return check ? CF_GAME_CHECKMATE : CF_GAME_STALEMATE;
     if (board_is_insufficient_material(board)) return CF_GAME_DRAW_INSUFFICIENT;
     if (history != 0 && board_history_repetition_count(history, board) >= 3)
         return CF_GAME_DRAW_THREEFOLD;

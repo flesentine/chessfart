@@ -187,6 +187,50 @@ static void test_attack_lookup_matches_reference(void)
     }
 }
 
+static unsigned long legal_probe_rng_next(unsigned long *state)
+{
+    *state = *state * 1664525UL + 1013904223UL;
+    return *state;
+}
+
+static void test_has_legal_move_matches_full_count(void)
+{
+    CfBoard board;
+    unsigned long rng = 0x1EAFC0DEUL;
+    int sample;
+    int square;
+    int code;
+    int expected;
+    CfPieceType type;
+    CfPieceColor color;
+
+    CHECK(board_has_legal_move(0) == 0);
+
+    for (sample = 0; sample < 128; ++sample) {
+        board_clear(&board);
+        board_set_piece(&board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 4, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+        for (square = 0; square < 64; ++square) {
+            if (square == 4 || square == 60) continue;
+            code = (int)((legal_probe_rng_next(&rng) >> 16) % 17UL);
+            if (code > 5) continue;
+            type = (CfPieceType)(1 + (code % 5));
+            color = ((legal_probe_rng_next(&rng) >> 16) & 1UL) != 0UL ?
+                    CF_COLOR_WHITE : CF_COLOR_BLACK;
+            board.squares[square / 8][square % 8].type = type;
+            board.squares[square / 8][square % 8].color = color;
+        }
+        board.side_to_move = (sample & 1) != 0 ?
+                             CF_COLOR_BLACK : CF_COLOR_WHITE;
+        board.castling_rights = 0U;
+        board.en_passant_file = -1;
+        board.en_passant_rank = -1;
+        expected = board_count_legal_moves(&board,
+                                           board.side_to_move) > 0;
+        CHECK(board_has_legal_move(&board) == expected);
+    }
+}
+
 static void test_basic_board_contracts(void)
 {
     CfBoard board;
@@ -533,6 +577,7 @@ static void test_threefold(void)
 int main(void)
 {
     test_attack_lookup_matches_reference();
+    test_has_legal_move_matches_full_count();
     test_basic_board_contracts();
     test_start_and_perft();
     test_kiwipete_perft();
