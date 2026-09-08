@@ -6,6 +6,51 @@
 #include "replay.h"
 #include "version.h"
 
+static unsigned long profile_perft(CfBoard *board, int depth)
+{
+    CfMoveList list;
+    CfMove made;
+    unsigned long nodes = 0UL;
+    int file;
+    int rank;
+    int i;
+
+    if (depth == 0) return 1UL;
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            if (board->squares[rank][file].color != board->side_to_move)
+                continue;
+            board_generate_legal_moves(board, file, rank, &list);
+            for (i = 0; i < list.count; ++i) {
+                if (!board_make_move_ex(board, file, rank,
+                                        list.moves[i].to_file,
+                                        list.moves[i].to_rank,
+                                        list.moves[i].promotion, &made))
+                    continue;
+                nodes += profile_perft(board, depth - 1);
+                board_unmake_move(board, &made);
+            }
+        }
+    }
+    return nodes;
+}
+
+static void run_perft_profile(void)
+{
+    CfBoard board;
+    clock_t start;
+    clock_t end;
+    unsigned long nodes;
+    unsigned long elapsed_ms;
+
+    board_init_starting_position(&board);
+    start = clock();
+    nodes = profile_perft(&board, 4);
+    end = clock();
+    elapsed_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+    printf("PERFT4 nodes=%lu elapsed_ms=%lu\n", nodes, elapsed_ms);
+}
+
 static void run_profile(const char *name, CfCpuDifficulty difficulty)
 {
     CfBoard board;
@@ -87,6 +132,7 @@ int main(void)
            (unsigned long)sizeof(CfReplaySnapshot),
            (unsigned long)sizeof(CfReplayTimeline),
            (unsigned long)sizeof(CfReplayTimeline) * 2UL);
+    run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);
     run_profile("HARD_START", CF_CPU_HARD);

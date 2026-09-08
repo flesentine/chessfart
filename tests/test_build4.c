@@ -52,6 +52,141 @@ static void kings_only(CfBoard *board)
     board_set_piece(board, 4, 7, CF_PIECE_KING, CF_COLOR_BLACK);
 }
 
+static int ref_in_bounds(int file, int rank)
+{
+    return file >= 0 && file < 8 && rank >= 0 && rank < 8;
+}
+
+static int ref_ray_attacks(const CfBoard *board,
+                           int from_file, int from_rank,
+                           int target_file, int target_rank,
+                           int df, int dr)
+{
+    int file = from_file + df;
+    int rank = from_rank + dr;
+    while (ref_in_bounds(file, rank)) {
+        if (file == target_file && rank == target_rank) return 1;
+        if (board->squares[rank][file].type != CF_PIECE_NONE) return 0;
+        file += df;
+        rank += dr;
+    }
+    return 0;
+}
+
+static int reference_square_is_attacked(const CfBoard *board,
+                                        int file, int rank,
+                                        CfPieceColor by_color)
+{
+    static const int knight_offsets[8][2] = {
+        {1,2},{2,1},{2,-1},{1,-2},{-1,-2},{-2,-1},{-2,1},{-1,2}
+    };
+    int f;
+    int r;
+    int i;
+    int df;
+    int dr;
+    const CfPiece *piece;
+
+    if (board == 0 || !ref_in_bounds(file, rank)) return 0;
+    for (r = 0; r < 8; ++r) {
+        for (f = 0; f < 8; ++f) {
+            piece = &board->squares[r][f];
+            if (piece->color != by_color) continue;
+            df = file - f;
+            dr = rank - r;
+            switch (piece->type) {
+            case CF_PIECE_PAWN:
+                if (by_color == CF_COLOR_WHITE && dr == 1 &&
+                    (df == 1 || df == -1)) return 1;
+                if (by_color == CF_COLOR_BLACK && dr == -1 &&
+                    (df == 1 || df == -1)) return 1;
+                break;
+            case CF_PIECE_KNIGHT:
+                for (i = 0; i < 8; ++i)
+                    if (df == knight_offsets[i][0] &&
+                        dr == knight_offsets[i][1]) return 1;
+                break;
+            case CF_PIECE_BISHOP:
+                if (df != 0 && (df == dr || df == -dr) &&
+                    ref_ray_attacks(board, f, r, file, rank,
+                                    df > 0 ? 1 : -1,
+                                    dr > 0 ? 1 : -1))
+                    return 1;
+                break;
+            case CF_PIECE_ROOK:
+                if ((df == 0) != (dr == 0) &&
+                    ref_ray_attacks(board, f, r, file, rank,
+                                    df == 0 ? 0 : (df > 0 ? 1 : -1),
+                                    dr == 0 ? 0 : (dr > 0 ? 1 : -1)))
+                    return 1;
+                break;
+            case CF_PIECE_QUEEN:
+                if ((df == 0 || dr == 0 || df == dr || df == -dr) &&
+                    !(df == 0 && dr == 0) &&
+                    ref_ray_attacks(board, f, r, file, rank,
+                                    df == 0 ? 0 : (df > 0 ? 1 : -1),
+                                    dr == 0 ? 0 : (dr > 0 ? 1 : -1)))
+                    return 1;
+                break;
+            case CF_PIECE_KING:
+                if (df >= -1 && df <= 1 && dr >= -1 && dr <= 1 &&
+                    !(df == 0 && dr == 0))
+                    return 1;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    return 0;
+}
+
+static unsigned long attack_rng_next(unsigned long *state)
+{
+    *state = *state * 1664525UL + 1013904223UL;
+    return *state;
+}
+
+static void test_attack_lookup_matches_reference(void)
+{
+    CfBoard board;
+    unsigned long rng = 0xC0FFEEUL;
+    int sample;
+    int square;
+    int file;
+    int rank;
+    int code;
+    CfPieceType type;
+    CfPieceColor color;
+
+    CHECK(!board_square_is_attacked(0, 0, 0, CF_COLOR_WHITE));
+
+    for (sample = 0; sample < 128; ++sample) {
+        board_clear(&board);
+        for (square = 0; square < 64; ++square) {
+            code = (int)(attack_rng_next(&rng) % 13UL);
+            if (code == 0) continue;
+            type = (CfPieceType)(1 + (code - 1) % 6);
+            color = ((code & 1) != 0) ? CF_COLOR_WHITE : CF_COLOR_BLACK;
+            board.squares[square / 8][square % 8].type = type;
+            board.squares[square / 8][square % 8].color = color;
+        }
+
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                CHECK(board_square_is_attacked(&board, file, rank,
+                                               CF_COLOR_WHITE) ==
+                      reference_square_is_attacked(&board, file, rank,
+                                                   CF_COLOR_WHITE));
+                CHECK(board_square_is_attacked(&board, file, rank,
+                                               CF_COLOR_BLACK) ==
+                      reference_square_is_attacked(&board, file, rank,
+                                                   CF_COLOR_BLACK));
+            }
+        }
+    }
+}
+
 static void test_basic_board_contracts(void)
 {
     CfBoard board;
@@ -387,6 +522,7 @@ static void test_threefold(void)
 
 int main(void)
 {
+    test_attack_lookup_matches_reference();
     test_basic_board_contracts();
     test_start_and_perft();
     test_kiwipete_perft();
