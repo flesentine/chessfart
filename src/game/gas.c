@@ -415,12 +415,14 @@ static void lose_castling_rights_for_displacement(CfBoard *board,
     }
 }
 
-int gas_make_fart(CfBoard *board, CfGasState *gas,
-                  int file, int rank, CfFartDirection direction,
-                  CfPieceType promotion, CfFartAction *action)
+static int apply_fart_with_preview(CfBoard *board, CfGasState *gas,
+                                   int file, int rank,
+                                   CfFartDirection direction,
+                                   CfFartPreview preview,
+                                   CfPieceType promotion,
+                                   CfFartAction *action)
 {
     CfFartAction local;
-    CfFartPreview preview;
     int tf;
     int tr;
     int df;
@@ -428,22 +430,29 @@ int gas_make_fart(CfBoard *board, CfGasState *gas,
     CfPiece pushed;
 
     if (board == 0 || gas == 0) return 0;
-    preview = gas_preview_fart(board, gas, file, rank, direction);
-    if (preview == CF_FART_INVALID) return 0;
-    if (preview == CF_FART_PROMOTION &&
-        !gas_fart_promotion_choice_legal(board, gas, file, rank,
-                                         direction, promotion)) return 0;
+    if (!in_bounds(file, rank)) return 0;
+    if (preview != CF_FART_PUFF && preview != CF_FART_PUSH &&
+        preview != CF_FART_BLOCKED && preview != CF_FART_PROMOTION)
+        return 0;
+    if (gas->squares[rank][file] < CF_GAS_FART_COST) return 0;
+    if (preview == CF_FART_PROMOTION && !is_promotion_choice(promotion))
+        return 0;
+    if (!fart_geometry(file, rank, direction, &tf, &tr, &df, &dr))
+        return 0;
+    if ((preview == CF_FART_PUSH || preview == CF_FART_PROMOTION) &&
+        !in_bounds(df, dr))
+        return 0;
 
     memset(&local, 0, sizeof(local));
     local.actor_file = file;
     local.actor_rank = rank;
     local.direction = direction;
     local.result = preview;
-    local.target_file = -1;
-    local.target_rank = -1;
+    local.target_file = tf;
+    local.target_rank = tr;
     local.destination_file = -1;
     local.destination_rank = -1;
-    local.previous_actor_gas = gas_at(gas, file, rank);
+    local.previous_actor_gas = gas->squares[rank][file];
     local.previous_side = board->side_to_move;
     local.previous_castling_rights = board->castling_rights;
     local.previous_ep_file = board->en_passant_file;
@@ -451,19 +460,14 @@ int gas_make_fart(CfBoard *board, CfGasState *gas,
     local.previous_halfmove = board->halfmove_clock;
     local.previous_fullmove = board->fullmove_number;
     local.promotion = CF_PIECE_NONE;
-
-    if (!fart_geometry(file, rank, direction, &tf, &tr, &df, &dr))
-        return 0;
-    local.target_file = tf;
-    local.target_rank = tr;
     local.previous_target_piece = board->squares[tr][tf];
-    local.previous_target_gas = gas_at(gas, tf, tr);
+    local.previous_target_gas = gas->squares[tr][tf];
 
     if (in_bounds(df, dr)) {
         local.destination_file = df;
         local.destination_rank = dr;
         local.previous_destination_piece = board->squares[dr][df];
-        local.previous_destination_gas = gas_at(gas, df, dr);
+        local.previous_destination_gas = gas->squares[dr][df];
     }
 
     gas->squares[rank][file] =
@@ -490,6 +494,35 @@ int gas_make_fart(CfBoard *board, CfGasState *gas,
 
     if (action != 0) *action = local;
     return 1;
+}
+
+int gas_make_fart_prevalidated(CfBoard *board, CfGasState *gas,
+                               int file, int rank,
+                               CfFartDirection direction,
+                               CfFartPreview preview,
+                               CfPieceType promotion,
+                               CfFartAction *action)
+{
+    return apply_fart_with_preview(board, gas, file, rank, direction,
+                                   preview, promotion, action);
+}
+
+int gas_make_fart(CfBoard *board, CfGasState *gas,
+                  int file, int rank, CfFartDirection direction,
+                  CfPieceType promotion, CfFartAction *action)
+{
+    CfFartPreview preview;
+
+    if (board == 0 || gas == 0) return 0;
+    preview = gas_preview_fart(board, gas, file, rank, direction);
+    if (preview == CF_FART_INVALID) return 0;
+    if (preview == CF_FART_PROMOTION &&
+        !gas_fart_promotion_choice_legal(board, gas, file, rank,
+                                         direction, promotion))
+        return 0;
+
+    return apply_fart_with_preview(board, gas, file, rank, direction,
+                                   preview, promotion, action);
 }
 
 void gas_unmake_fart(CfBoard *board, CfGasState *gas,

@@ -269,8 +269,11 @@ int cpu_apply_action(CfBoard *board, CfGasState *gas,
                               action->to_file, action->to_rank,
                               action->promotion, &local.action.move);
     else if (action->type == CF_CPU_ACTION_FART)
-        ok = gas_make_fart(board, gas, action->from_file, action->from_rank,
-                           action->direction, action->promotion, &local.action.fart);
+        ok = gas_make_fart_prevalidated(
+            board, gas, action->from_file, action->from_rank,
+            (CfFartDirection)action->direction,
+            (CfFartPreview)action->fart_result,
+            (CfPieceType)action->promotion, &local.action.fart);
     else return 0;
     if (!ok) return 0;
     if (undo != 0) *undo = local;
