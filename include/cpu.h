@@ -27,15 +27,15 @@ typedef struct CfCpuConfig {
 } CfCpuConfig;
 
 typedef struct CfCpuAction {
-    CfCpuActionType type;
-    int from_file;
-    int from_rank;
-    int to_file;
-    int to_rank;
-    CfPieceType promotion;
-    CfFartDirection direction;
-    CfFartPreview fart_result;
-    int order_score;
+    cf_i8 from_file;
+    cf_i8 from_rank;
+    cf_i8 to_file;
+    cf_i8 to_rank;
+    cf_u8 type;
+    cf_u8 promotion;
+    cf_u8 direction;
+    cf_u8 fart_result;
+    cf_i16 order_score;
 } CfCpuAction;
 
 typedef struct CfCpuActionList {

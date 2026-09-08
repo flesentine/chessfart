@@ -39,6 +39,66 @@ static void tactical_hard_config(CfCpuConfig *config)
     config->time_limit_ms = 0UL;
 }
 
+static void test_action_storage_contract(void)
+{
+    CfCpuAction action;
+    memset(&action, 0, sizeof(action));
+    action.type = CF_CPU_ACTION_FART;
+    action.from_file = 7;
+    action.from_rank = 0;
+    action.to_file = -1;
+    action.to_rank = -1;
+    action.promotion = CF_PIECE_QUEEN;
+    action.direction = CF_FART_NW;
+    action.fart_result = CF_FART_PROMOTION;
+    action.order_score = -32000;
+
+    CHECK(sizeof(CfCpuAction) <= 12U);
+    CHECK(sizeof(CfCpuActionList) < 7000U);
+    CHECK(action.type == CF_CPU_ACTION_FART);
+    CHECK(action.from_file == 7 && action.from_rank == 0);
+    CHECK(action.to_file == -1 && action.to_rank == -1);
+    CHECK(action.promotion == CF_PIECE_QUEEN);
+    CHECK(action.direction == CF_FART_NW);
+    CHECK(action.fart_result == CF_FART_PROMOTION);
+    CHECK(action.order_score == -32000);
+}
+
+static void test_legal_action_probe_matches_generator(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfCpuActionList list;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    cpu_generate_actions(&board, &gas, &list);
+    CHECK(list.count > 0);
+    CHECK(cpu_internal_has_legal_action(&board, &gas));
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 2, 1, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 1, 1, CF_PIECE_QUEEN, CF_COLOR_BLACK);
+    board.side_to_move = CF_COLOR_WHITE;
+    cpu_generate_actions(&board, &gas, &list);
+    CHECK(list.count == 0);
+    CHECK(!cpu_internal_has_legal_action(&board, &gas));
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_BLACK);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    cpu_generate_actions(&board, &gas, &list);
+    CHECK(list.count > 0);
+    CHECK(cpu_internal_has_legal_action(&board, &gas));
+}
+
 static void test_difficulty_config(void)
 {
     CfCpuConfig easy;
@@ -422,6 +482,8 @@ static void test_budget_cap(void)
 
 int main(void)
 {
+    test_action_storage_contract();
+    test_legal_action_probe_matches_generator();
     test_difficulty_config();
     test_starting_position_deterministic();
     test_mate_in_one();

@@ -76,6 +76,9 @@ int main(void)
     printf("sizeof_board=%lu sizeof_gas=%lu sizeof_history=%lu sizeof_actions=%lu\n",
            (unsigned long)sizeof(CfBoard), (unsigned long)sizeof(CfGasState),
            (unsigned long)sizeof(CfGasHistory), (unsigned long)sizeof(CfCpuActionList));
+    printf("sizeof_cpu_action=%lu search_action_lists=%lu\n",
+           (unsigned long)sizeof(CfCpuAction),
+           (unsigned long)sizeof(CfCpuActionList) * 5UL);
     printf("sizeof_gas_move=%lu sizeof_cpu_undo=%lu sizeof_practice_undo=%lu\n",
            (unsigned long)sizeof(CfGasMove),
            (unsigned long)sizeof(CfCpuUndo),

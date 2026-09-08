@@ -65,13 +65,21 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     if (b->halfmove_clock >= 100U || board_is_insufficient_material(b)) return 0;
     if (ply >= CPU_SEARCH_PLY) return cpu_internal_evaluate(b, g);
 
+    if (depth <= 0) {
+        if (!cpu_internal_has_legal_action(b, g)) {
+            if (board_is_in_check(b, b->side_to_move))
+                return -CPU_MATE + ply;
+            return 0;
+        }
+        return cpu_internal_evaluate(b, g);
+    }
+
     list = &g_lists[ply];
     cpu_generate_actions(b, g, list);
     if (list->count == 0) {
         if (board_is_in_check(b, b->side_to_move)) return -CPU_MATE + ply;
         return 0;
     }
-    if (depth <= 0) return cpu_internal_evaluate(b, g);
     cpu_internal_sort_actions(list);
     actor_was_in_check = board_is_in_check(b, b->side_to_move);
 
