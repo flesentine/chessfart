@@ -116,7 +116,6 @@ int gas_make_move_ex(CfBoard *board, CfGasState *gas,
 {
     CfGasMove local;
     if (board == 0 || gas == 0) return 0;
-    memset(&local, 0, sizeof(local));
     if (!board_make_move_ex(board, from_file, from_rank, to_file, to_rank,
                             promotion, &local.chess_move)) return 0;
     capture_move_gas_delta(gas, &local);
@@ -673,15 +672,19 @@ int gas_history_repetition_count(const CfGasHistory *history,
 
 static int has_legal_fart(const CfBoard *board, const CfGasState *gas)
 {
+    CfFartScan scan;
     int file;
     int rank;
     int direction;
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
-            if (!gas_piece_can_fart(board, gas, file, rank)) continue;
+            if (gas->squares[rank][file] < CF_GAS_FART_COST ||
+                board->squares[rank][file].type == CF_PIECE_NONE ||
+                board->squares[rank][file].color != board->side_to_move)
+                continue;
+            gas_scan_farts(board, gas, file, rank, &scan);
             for (direction = 0; direction < 8; ++direction)
-                if (gas_preview_fart(board, gas, file, rank,
-                                     (CfFartDirection)direction) != CF_FART_INVALID)
+                if ((CfFartPreview)scan.preview[direction] != CF_FART_INVALID)
                     return 1;
         }
     }

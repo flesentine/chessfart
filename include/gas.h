@@ -116,7 +116,6 @@ int gas_make_fart_prevalidated(CfBoard *board, CfGasState *gas,
                                CfFartAction *action);
 void gas_unmake_fart(CfBoard *board, CfGasState *gas,
                      const CfFartAction *action);
-
 /* Build 5 compatibility wrappers. */
 int gas_make_puff(CfBoard *board, CfGasState *gas,
                   int file, int rank, CfFartDirection direction,
