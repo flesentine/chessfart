@@ -90,7 +90,9 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
         if (board_is_in_check(b, b->side_to_move)) return -CPU_MATE + ply;
         return 0;
     }
-    cpu_internal_sort_actions(list);
+    cpu_internal_sort_actions(list,
+                              ply + 1 < CPU_SEARCH_PLY ?
+                              &g_lists[ply + 1] : 0);
     actor_was_in_check = board_is_in_check(b, b->side_to_move);
 
     for (i = 0; i < list->count; ++i) {
@@ -157,7 +159,7 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     root = &g_lists[0];
     cpu_generate_actions(b, g, root);
     if (root->count == 0) return 0;
-    cpu_internal_sort_actions(root);
+    cpu_internal_sort_actions(root, &g_lists[1]);
     best_action = root->actions[0];
 
     c.config = *config;

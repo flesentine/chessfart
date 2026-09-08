@@ -1,10 +1,78 @@
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
-#include "cpu.h"
+#include "cpu_internal.h"
 #include "practice_undo.h"
 #include "replay.h"
 #include "version.h"
+
+static volatile int sort_profile_sink;
+
+static void profile_reference_insertion(CfCpuActionList *list)
+{
+    CfCpuAction item;
+    int i;
+    int j;
+    for (i = 1; i < list->count; ++i) {
+        item = list->actions[i];
+        j = i - 1;
+        while (j >= 0 && list->actions[j].order_score < item.order_score) {
+            list->actions[j + 1] = list->actions[j];
+            --j;
+        }
+        list->actions[j + 1] = item;
+    }
+}
+
+static void run_sort_profile(void)
+{
+    static CfCpuActionList source;
+    static CfCpuActionList work;
+    static CfCpuActionList scratch;
+    clock_t start;
+    clock_t end;
+    unsigned long merge_ms;
+    unsigned long insertion_ms;
+    unsigned long rng = 0xC001D00DUL;
+    int repeat;
+    int i;
+
+    source.count = 256;
+    for (i = 0; i < source.count; ++i) {
+        source.actions[i].from_file = (cf_i8)(i & 7);
+        source.actions[i].from_rank = (cf_i8)((i >> 3) & 7);
+        source.actions[i].to_file = (cf_i8)((i * 3) & 7);
+        source.actions[i].to_rank = (cf_i8)((i * 5) & 7);
+        source.actions[i].type = (cf_u8)(1 + (i & 1));
+        source.actions[i].promotion = (cf_u8)(i % 7);
+        source.actions[i].direction = (cf_u8)(i & 7);
+        source.actions[i].fart_result = (cf_u8)(i % 5);
+        rng = rng * 1664525UL + 1013904223UL;
+        source.actions[i].order_score = (cf_i16)((int)(rng % 101UL) - 50);
+    }
+
+    start = clock();
+    for (repeat = 0; repeat < 200; ++repeat) {
+        memcpy(&work, &source, sizeof(source));
+        cpu_internal_sort_actions(&work, &scratch);
+        sort_profile_sink += work.actions[0].order_score;
+    }
+    end = clock();
+    merge_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 200; ++repeat) {
+        memcpy(&work, &source, sizeof(source));
+        profile_reference_insertion(&work);
+        sort_profile_sink += work.actions[0].order_score;
+    }
+    end = clock();
+    insertion_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("SORT256 merge_ms=%lu insertion_ms=%lu sink=%d\n",
+           merge_ms, insertion_ms, sort_profile_sink);
+}
 
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
@@ -132,6 +200,7 @@ int main(void)
            (unsigned long)sizeof(CfReplaySnapshot),
            (unsigned long)sizeof(CfReplayTimeline),
            (unsigned long)sizeof(CfReplayTimeline) * 2UL);
+    run_sort_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);

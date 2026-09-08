@@ -185,7 +185,7 @@ int cpu_internal_has_legal_action(const CfBoard *board,
     return 0;
 }
 
-void cpu_internal_sort_actions(CfCpuActionList *list)
+static void insertion_sort_actions(CfCpuActionList *list)
 {
     CfCpuAction item;
     int i;
@@ -199,6 +199,59 @@ void cpu_internal_sort_actions(CfCpuActionList *list)
         }
         list->actions[j + 1] = item;
     }
+}
+
+void cpu_internal_sort_actions(CfCpuActionList *list, CfCpuActionList *scratch)
+{
+    CfCpuAction *src;
+    CfCpuAction *dst;
+    CfCpuAction *swap;
+    int count;
+    int width;
+    int left;
+    int middle;
+    int right;
+    int i;
+    int j;
+    int k;
+
+    if (list == 0 || list->count < 2) return;
+    if (scratch == 0 || scratch == list) {
+        insertion_sort_actions(list);
+        return;
+    }
+
+    count = list->count;
+    src = list->actions;
+    dst = scratch->actions;
+
+    for (width = 1; width < count; width *= 2) {
+        for (left = 0; left < count; left += width * 2) {
+            middle = left + width;
+            right = left + width * 2;
+            if (middle > count) middle = count;
+            if (right > count) right = count;
+            i = left;
+            j = middle;
+            k = left;
+
+            while (i < middle && j < right) {
+                if (src[i].order_score >= src[j].order_score)
+                    dst[k++] = src[i++];
+                else
+                    dst[k++] = src[j++];
+            }
+            while (i < middle) dst[k++] = src[i++];
+            while (j < right) dst[k++] = src[j++];
+        }
+        swap = src;
+        src = dst;
+        dst = swap;
+    }
+
+    if (src != list->actions)
+        for (i = 0; i < count; ++i)
+            list->actions[i] = src[i];
 }
 
 int cpu_apply_action(CfBoard *board, CfGasState *gas,
