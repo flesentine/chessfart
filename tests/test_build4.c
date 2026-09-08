@@ -189,12 +189,11 @@ static void test_attack_lookup_matches_reference(void)
 
 static void test_basic_board_contracts(void)
 {
-    CHECK(board_is_in_check(0, CF_COLOR_WHITE) == 0);
-
     CfBoard board;
     CfMoveList list;
     const CfPiece *piece;
 
+    CHECK(board_is_in_check(0, CF_COLOR_WHITE) == 0);
     board_init_starting_position(&board);
     CHECK(board_piece_count(&board) == 32);
     CHECK(board.side_to_move == CF_COLOR_WHITE);
