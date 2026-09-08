@@ -50,6 +50,7 @@ static void test_batch_fart_scan_matches_public_api(void)
     int d;
     int p;
     int placed;
+    int square;
 
     for (sample = 0; sample < 128; ++sample) {
         board_clear(&board);
@@ -67,11 +68,13 @@ static void test_batch_fart_scan_matches_public_api(void)
 
         placed = 0;
         while (placed < 12) {
-            file = (int)(fart_scan_rng_next(&rng) % 8UL);
-            rank = (int)(fart_scan_rng_next(&rng) % 8UL);
+            square = (int)((fart_scan_rng_next(&rng) >> 16) % 64UL);
+            file = square & 7;
+            rank = square >> 3;
             if (board.squares[rank][file].type != CF_PIECE_NONE) continue;
-            type = (CfPieceType)(1 + fart_scan_rng_next(&rng) % 5UL);
-            color = (fart_scan_rng_next(&rng) & 1UL) != 0UL ?
+            type = (CfPieceType)(1 +
+                   ((fart_scan_rng_next(&rng) >> 16) % 5UL));
+            color = ((fart_scan_rng_next(&rng) >> 16) & 1UL) != 0UL ?
                     CF_COLOR_WHITE : CF_COLOR_BLACK;
             board_set_piece(&board, file, rank, type, color);
             ++placed;
