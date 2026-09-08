@@ -161,14 +161,18 @@ static void check_prevalidated_matches_public(CfBoard *board, CfGasState *gas,
                                               CfFartDirection direction,
                                               CfPieceType promotion)
 {
-    CfBoard public_board = *board;
-    CfBoard fast_board = *board;
-    CfGasState public_gas = *gas;
-    CfGasState fast_gas = *gas;
+    CfBoard public_board;
+    CfBoard fast_board;
+    CfGasState public_gas;
+    CfGasState fast_gas;
     CfFartAction public_action;
     CfFartAction fast_action;
     CfFartPreview preview;
 
+    public_board = *board;
+    fast_board = *board;
+    public_gas = *gas;
+    fast_gas = *gas;
     preview = gas_preview_fart(board, gas, file, rank, direction);
     CHECK(preview != CF_FART_INVALID);
     if (preview == CF_FART_PROMOTION)
