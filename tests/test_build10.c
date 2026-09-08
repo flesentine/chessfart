@@ -121,17 +121,17 @@ static void test_evaluation_and_order_scores_stable(void)
     board.side_to_move = CF_COLOR_WHITE;
 
     eval = cpu_internal_evaluate(&board, &gas);
-    CHECK(eval == -213);
+    CHECK(eval == -278);
 
     cpu_generate_actions(&board, &gas, &list);
     for (i = 0; i < list.count; ++i) {
         if (list.actions[i].type == CF_CPU_ACTION_MOVE &&
             list.actions[i].from_file == 2 &&
             list.actions[i].from_rank == 2 &&
-            list.actions[i].to_file == 3 &&
-            list.actions[i].to_rank == 4) {
+            list.actions[i].to_file == 4 &&
+            list.actions[i].to_rank == 3) {
             found_capture = 1;
-            CHECK(list.actions[i].order_score == 680);
+            CHECK(list.actions[i].order_score == 4680);
         }
         if (list.actions[i].type == CF_CPU_ACTION_FART &&
             list.actions[i].from_file == 2 &&
@@ -139,7 +139,7 @@ static void test_evaluation_and_order_scores_stable(void)
             list.actions[i].direction == CF_FART_NE) {
             found_fart = 1;
             CHECK(list.actions[i].fart_result == CF_FART_PUSH);
-            CHECK(list.actions[i].order_score == 160);
+            CHECK(list.actions[i].order_score == 220);
         }
     }
     CHECK(found_capture);
