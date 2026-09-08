@@ -442,6 +442,7 @@ static int apply_fart_with_preview(CfBoard *board, CfGasState *gas,
         !in_bounds(df, dr))
         return 0;
 
+    memset(&local, 0, sizeof(local));
     local.actor_file = file;
     local.actor_rank = rank;
     local.direction = direction;
@@ -460,8 +461,6 @@ static int apply_fart_with_preview(CfBoard *board, CfGasState *gas,
     local.promotion = CF_PIECE_NONE;
     local.previous_target_piece = board->squares[tr][tf];
     local.previous_target_gas = gas->squares[tr][tf];
-    local.previous_destination_piece = empty_piece();
-    local.previous_destination_gas = 0U;
 
     if (in_bounds(df, dr)) {
         local.destination_file = df;
