@@ -189,6 +189,8 @@ static void test_attack_lookup_matches_reference(void)
 
 static void test_basic_board_contracts(void)
 {
+    CHECK(board_is_in_check(0, CF_COLOR_WHITE) == 0);
+
     CfBoard board;
     CfMoveList list;
     const CfPiece *piece;
