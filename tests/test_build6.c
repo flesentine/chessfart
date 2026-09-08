@@ -22,6 +22,81 @@ static void add_actor(CfBoard *board, CfGasState *gas, int file, int rank)
     gas_set(gas, file, rank, 3U);
 }
 
+static unsigned long fart_scan_rng_next(unsigned long *state)
+{
+    *state = *state * 1664525UL + 1013904223UL;
+    return *state;
+}
+
+static void test_batch_fart_scan_matches_public_api(void)
+{
+    static const CfPieceType promotions[4] = {
+        CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
+    };
+    CfBoard board;
+    CfGasState gas;
+    CfFartScan scan;
+    CfFartPreview expected;
+    unsigned long rng = 0xF47CA11UL;
+    cf_u8 expected_mask;
+    CfPieceColor actor_color;
+    CfPieceColor color;
+    CfPieceType type;
+    int sample;
+    int file;
+    int rank;
+    int actor_file;
+    int actor_rank;
+    int d;
+    int p;
+    int placed;
+
+    for (sample = 0; sample < 128; ++sample) {
+        board_clear(&board);
+        gas_init(&gas);
+        board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+        board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+
+        actor_file = 1 + (int)(fart_scan_rng_next(&rng) % 6UL);
+        actor_rank = 1 + (int)(fart_scan_rng_next(&rng) % 6UL);
+        actor_color = (sample & 1) != 0 ? CF_COLOR_BLACK : CF_COLOR_WHITE;
+        board_set_piece(&board, actor_file, actor_rank,
+                        CF_PIECE_KNIGHT, actor_color);
+        gas_set(&gas, actor_file, actor_rank, 3U);
+        board.side_to_move = actor_color;
+
+        placed = 0;
+        while (placed < 12) {
+            file = (int)(fart_scan_rng_next(&rng) % 8UL);
+            rank = (int)(fart_scan_rng_next(&rng) % 8UL);
+            if (board.squares[rank][file].type != CF_PIECE_NONE) continue;
+            type = (CfPieceType)(1 + fart_scan_rng_next(&rng) % 5UL);
+            color = (fart_scan_rng_next(&rng) & 1UL) != 0UL ?
+                    CF_COLOR_WHITE : CF_COLOR_BLACK;
+            board_set_piece(&board, file, rank, type, color);
+            ++placed;
+        }
+
+        gas_scan_farts(&board, &gas, actor_file, actor_rank, &scan);
+        for (d = 0; d < 8; ++d) {
+            expected = gas_preview_fart(&board, &gas,
+                                        actor_file, actor_rank,
+                                        (CfFartDirection)d);
+            expected_mask = 0U;
+            if (expected == CF_FART_PROMOTION) {
+                for (p = 0; p < 4; ++p)
+                    if (gas_fart_promotion_choice_legal(
+                            &board, &gas, actor_file, actor_rank,
+                            (CfFartDirection)d, promotions[p]))
+                        expected_mask = (cf_u8)(expected_mask |
+                                                (cf_u8)(1U << p));
+            }
+            CHECK((CfFartPreview)scan.preview[d] == expected);
+            CHECK(scan.promotion_mask[d] == expected_mask);
+        }
+    }
+}
+
 static void test_push_and_unmake(void)
 {
     CfBoard board;
@@ -230,6 +305,7 @@ static void test_push_history_uses_gas_and_position(void)
 
 int main(void)
 {
+    test_batch_fart_scan_matches_public_api();
     test_push_and_unmake();
     test_friendly_push();
     test_blocked_push_spends_turn();

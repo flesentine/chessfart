@@ -74,6 +74,71 @@ static void run_sort_profile(void)
            merge_ms, insertion_ms, sort_profile_sink);
 }
 
+static volatile int fart_scan_profile_sink;
+
+static void run_fart_scan_profile(void)
+{
+    static const CfPieceType promotions[4] = {
+        CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
+    };
+    CfBoard board;
+    CfGasState gas;
+    CfFartScan scan;
+    CfFartPreview preview;
+    cf_u8 mask;
+    clock_t start;
+    clock_t end;
+    unsigned long batch_ms;
+    unsigned long reference_ms;
+    int repeat;
+    int file;
+    int d;
+    int p;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    board.side_to_move = CF_COLOR_BLACK;
+    for (file = 0; file < 8; ++file)
+        gas_set(&gas, file, 6, 3U);
+
+    start = clock();
+    for (repeat = 0; repeat < 1000; ++repeat) {
+        for (file = 0; file < 8; ++file) {
+            gas_scan_farts(&board, &gas, file, 6, &scan);
+            for (d = 0; d < 8; ++d)
+                fart_scan_profile_sink +=
+                    (int)scan.preview[d] + (int)scan.promotion_mask[d];
+        }
+    }
+    end = clock();
+    batch_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 1000; ++repeat) {
+        for (file = 0; file < 8; ++file) {
+            for (d = 0; d < 8; ++d) {
+                preview = gas_preview_fart(&board, &gas, file, 6,
+                                           (CfFartDirection)d);
+                mask = 0U;
+                if (preview == CF_FART_PROMOTION) {
+                    for (p = 0; p < 4; ++p)
+                        if (gas_fart_promotion_choice_legal(
+                                &board, &gas, file, 6,
+                                (CfFartDirection)d, promotions[p]))
+                            mask = (cf_u8)(mask | (cf_u8)(1U << p));
+                }
+                fart_scan_profile_sink += (int)preview + (int)mask;
+            }
+        }
+    }
+    end = clock();
+    reference_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("FART_SCAN batch_ms=%lu reference_ms=%lu sink=%d\n",
+           batch_ms, reference_ms, fart_scan_profile_sink);
+}
+
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
     CfMoveList list;
@@ -201,6 +266,7 @@ int main(void)
            (unsigned long)sizeof(CfReplayTimeline),
            (unsigned long)sizeof(CfReplayTimeline) * 2UL);
     run_sort_profile();
+    run_fart_scan_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);

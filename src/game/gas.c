@@ -256,6 +256,86 @@ static int push_requires_promotion(CfPiece piece, int destination_rank)
     return 0;
 }
 
+void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
+                    int file, int rank, CfFartScan *scan)
+{
+    static const CfPieceType promotions[4] = {
+        CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
+    };
+    CfBoard scratch;
+    CfPiece empty;
+    CfPiece target;
+    CfPiece destination;
+    CfPiece pushed;
+    cf_u8 mask;
+    int actor_in_check;
+    int tf;
+    int tr;
+    int df;
+    int dr;
+    int d;
+    int p;
+
+    if (scan == 0) return;
+    for (d = 0; d < 8; ++d) {
+        scan->preview[d] = (cf_u8)CF_FART_INVALID;
+        scan->promotion_mask[d] = 0U;
+    }
+    if (board == 0 || gas == 0) return;
+    if (!gas_piece_can_fart(board, gas, file, rank)) return;
+
+    actor_in_check = board_is_in_check(board, board->side_to_move);
+    scratch = *board;
+    empty = empty_piece();
+
+    for (d = 0; d < 8; ++d) {
+        if (!fart_geometry(file, rank, (CfFartDirection)d,
+                           &tf, &tr, &df, &dr))
+            continue;
+
+        target = board->squares[tr][tf];
+        if (target.type == CF_PIECE_NONE) {
+            if (!actor_in_check)
+                scan->preview[d] = (cf_u8)CF_FART_PUFF;
+            continue;
+        }
+
+        if (!in_bounds(df, dr) ||
+            board->squares[dr][df].type != CF_PIECE_NONE) {
+            if (!actor_in_check)
+                scan->preview[d] = (cf_u8)CF_FART_BLOCKED;
+            continue;
+        }
+
+        destination = board->squares[dr][df];
+        if (push_requires_promotion(target, dr)) {
+            mask = 0U;
+            for (p = 0; p < 4; ++p) {
+                pushed = target;
+                pushed.type = promotions[p];
+                scratch.squares[tr][tf] = empty;
+                scratch.squares[dr][df] = pushed;
+                if (!board_is_in_check(&scratch, board->side_to_move))
+                    mask = (cf_u8)(mask | (cf_u8)(1U << p));
+                scratch.squares[tr][tf] = target;
+                scratch.squares[dr][df] = destination;
+            }
+            if (mask != 0U) {
+                scan->preview[d] = (cf_u8)CF_FART_PROMOTION;
+                scan->promotion_mask[d] = mask;
+            }
+            continue;
+        }
+
+        scratch.squares[tr][tf] = empty;
+        scratch.squares[dr][df] = target;
+        if (!board_is_in_check(&scratch, board->side_to_move))
+            scan->preview[d] = (cf_u8)CF_FART_PUSH;
+        scratch.squares[tr][tf] = target;
+        scratch.squares[dr][df] = destination;
+    }
+}
+
 int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,
                                     int file, int rank, CfFartDirection direction,
                                     CfPieceType promotion)

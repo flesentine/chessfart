@@ -41,6 +41,11 @@ typedef enum CfFartPreview {
     CF_FART_PUSH_BUILD6 = CF_FART_PUSH
 } CfFartPreview;
 
+typedef struct CfFartScan {
+    cf_u8 preview[8];
+    cf_u8 promotion_mask[8];
+} CfFartScan;
+
 typedef struct CfFartAction {
     int actor_file;
     int actor_rank;
@@ -91,6 +96,8 @@ int gas_piece_can_fart(const CfBoard *board, const CfGasState *gas,
                        int file, int rank);
 CfFartPreview gas_preview_fart(const CfBoard *board, const CfGasState *gas,
                                int file, int rank, CfFartDirection direction);
+void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
+                    int file, int rank, CfFartScan *scan);
 int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,
                                     int file, int rank, CfFartDirection direction,
                                     CfPieceType promotion);
