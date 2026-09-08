@@ -36,6 +36,7 @@ static void test_batch_fart_scan_matches_public_api(void)
     CfBoard board;
     CfGasState gas;
     CfFartScan scan;
+    CfFartScan prechecked_scan;
     CfFartPreview expected;
     unsigned long rng = 0xF47CA11UL;
     cf_u8 expected_mask;
@@ -47,6 +48,7 @@ static void test_batch_fart_scan_matches_public_api(void)
     int rank;
     int actor_file;
     int actor_rank;
+    int actor_in_check;
     int d;
     int p;
     int placed;
@@ -81,7 +83,13 @@ static void test_batch_fart_scan_matches_public_api(void)
         }
 
         gas_scan_farts(&board, &gas, actor_file, actor_rank, &scan);
+        actor_in_check = board_is_in_check(&board, board.side_to_move);
+        gas_scan_farts_prechecked(&board, &gas, actor_file, actor_rank,
+                                  actor_in_check, &prechecked_scan);
         for (d = 0; d < 8; ++d) {
+            CHECK(prechecked_scan.preview[d] == scan.preview[d]);
+            CHECK(prechecked_scan.promotion_mask[d] ==
+                  scan.promotion_mask[d]);
             expected = gas_preview_fart(&board, &gas,
                                         actor_file, actor_rank,
                                         (CfFartDirection)d);
