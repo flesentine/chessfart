@@ -99,6 +99,78 @@ static void test_legal_action_probe_matches_generator(void)
     CHECK(cpu_internal_has_legal_action(&board, &gas));
 }
 
+static void reference_insertion_sort(CfCpuActionList *list)
+{
+    CfCpuAction item;
+    int i;
+    int j;
+    for (i = 1; i < list->count; ++i) {
+        item = list->actions[i];
+        j = i - 1;
+        while (j >= 0 && list->actions[j].order_score < item.order_score) {
+            list->actions[j + 1] = list->actions[j];
+            --j;
+        }
+        list->actions[j + 1] = item;
+    }
+}
+
+static int same_action(const CfCpuAction *a, const CfCpuAction *b)
+{
+    return a->from_file == b->from_file &&
+           a->from_rank == b->from_rank &&
+           a->to_file == b->to_file &&
+           a->to_rank == b->to_rank &&
+           a->type == b->type &&
+           a->promotion == b->promotion &&
+           a->direction == b->direction &&
+           a->fart_result == b->fart_result &&
+           a->order_score == b->order_score;
+}
+
+static unsigned long sorter_rng_next(unsigned long *state)
+{
+    *state = *state * 1664525UL + 1013904223UL;
+    return *state;
+}
+
+static void test_merge_sort_matches_stable_insertion(void)
+{
+    static CfCpuActionList expected;
+    static CfCpuActionList actual;
+    static CfCpuActionList scratch;
+    unsigned long rng = 0x51A7E5UL;
+    int sample;
+    int count;
+    int i;
+
+    for (sample = 0; sample < 128; ++sample) {
+        count = (int)(sorter_rng_next(&rng) % (CF_CPU_MAX_ACTIONS + 1UL));
+        expected.count = count;
+        actual.count = count;
+        for (i = 0; i < count; ++i) {
+            expected.actions[i].from_file = (cf_i8)(i & 7);
+            expected.actions[i].from_rank = (cf_i8)((i >> 3) & 7);
+            expected.actions[i].to_file = (cf_i8)((i * 3) & 7);
+            expected.actions[i].to_rank = (cf_i8)((i * 5) & 7);
+            expected.actions[i].type = (cf_u8)(1 + (i & 1));
+            expected.actions[i].promotion = (cf_u8)(i % 7);
+            expected.actions[i].direction = (cf_u8)(i & 7);
+            expected.actions[i].fart_result = (cf_u8)(i % 5);
+            expected.actions[i].order_score =
+                (cf_i16)((int)(sorter_rng_next(&rng) % 41UL) - 20);
+            actual.actions[i] = expected.actions[i];
+        }
+
+        reference_insertion_sort(&expected);
+        cpu_internal_sort_actions(&actual, &scratch);
+
+        CHECK(actual.count == expected.count);
+        for (i = 0; i < count; ++i)
+            CHECK(same_action(&actual.actions[i], &expected.actions[i]));
+    }
+}
+
 static void test_evaluation_and_order_scores_stable(void)
 {
     CfBoard board;
@@ -530,6 +602,7 @@ static void test_budget_cap(void)
 int main(void)
 {
     test_action_storage_contract();
+    test_merge_sort_matches_stable_insertion();
     test_evaluation_and_order_scores_stable();
     test_legal_action_probe_matches_generator();
     test_difficulty_config();
