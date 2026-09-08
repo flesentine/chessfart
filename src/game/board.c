@@ -111,75 +111,102 @@ char board_piece_letter(CfPieceType type)
     }
 }
 
-static int ray_attacks(const CfBoard *board, int from_file, int from_rank,
-                       int target_file, int target_rank, int df, int dr)
+static int ray_piece_attacks(const CfBoard *board,
+                             int file, int rank,
+                             int df, int dr,
+                             CfPieceColor by_color,
+                             CfPieceType slider)
 {
-    int file = from_file + df;
-    int rank = from_rank + dr;
+    const CfPiece *piece;
+    file += df;
+    rank += dr;
     while (in_bounds(file, rank)) {
-        if (file == target_file && rank == target_rank) return 1;
-        if (board->squares[rank][file].type != CF_PIECE_NONE) return 0;
+        piece = &board->squares[rank][file];
+        if (piece->type != CF_PIECE_NONE)
+            return piece->color == by_color &&
+                   (piece->type == slider || piece->type == CF_PIECE_QUEEN);
         file += df;
         rank += dr;
     }
     return 0;
 }
 
-int board_square_is_attacked(const CfBoard *board, int file, int rank, CfPieceColor by_color)
+int board_square_is_attacked(const CfBoard *board, int file, int rank,
+                             CfPieceColor by_color)
 {
     static const int knight_offsets[8][2] = {
         {1,2},{2,1},{2,-1},{1,-2},{-1,-2},{-2,-1},{-2,1},{-1,2}
     };
-    int f;
-    int r;
-    int i;
-    int df;
-    int dr;
+    static const int king_offsets[8][2] = {
+        {1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}
+    };
     const CfPiece *piece;
+    int source_rank;
+    int source_file;
+    int i;
+
     if (board == 0 || !in_bounds(file, rank)) return 0;
 
-    for (r = 0; r < 8; ++r) {
-        for (f = 0; f < 8; ++f) {
-            piece = &board->squares[r][f];
-            if (piece->color != by_color) continue;
-            df = file - f;
-            dr = rank - r;
-            switch (piece->type) {
-            case CF_PIECE_PAWN:
-                if (by_color == CF_COLOR_WHITE && dr == 1 && (df == 1 || df == -1)) return 1;
-                if (by_color == CF_COLOR_BLACK && dr == -1 && (df == 1 || df == -1)) return 1;
-                break;
-            case CF_PIECE_KNIGHT:
-                for (i = 0; i < 8; ++i)
-                    if (df == knight_offsets[i][0] && dr == knight_offsets[i][1]) return 1;
-                break;
-            case CF_PIECE_BISHOP:
-                if (df != 0 && (df == dr || df == -dr))
-                    if (ray_attacks(board, f, r, file, rank,
-                                    df > 0 ? 1 : -1, dr > 0 ? 1 : -1)) return 1;
-                break;
-            case CF_PIECE_ROOK:
-                if ((df == 0) != (dr == 0))
-                    if (ray_attacks(board, f, r, file, rank,
-                                    df == 0 ? 0 : (df > 0 ? 1 : -1),
-                                    dr == 0 ? 0 : (dr > 0 ? 1 : -1))) return 1;
-                break;
-            case CF_PIECE_QUEEN:
-                if (df == 0 || dr == 0 || df == dr || df == -dr)
-                    if (!(df == 0 && dr == 0) &&
-                        ray_attacks(board, f, r, file, rank,
-                                    df == 0 ? 0 : (df > 0 ? 1 : -1),
-                                    dr == 0 ? 0 : (dr > 0 ? 1 : -1))) return 1;
-                break;
-            case CF_PIECE_KING:
-                if (df >= -1 && df <= 1 && dr >= -1 && dr <= 1 &&
-                    !(df == 0 && dr == 0)) return 1;
-                break;
-            default:
-                break;
-            }
+    if (by_color == CF_COLOR_WHITE)
+        source_rank = rank - 1;
+    else if (by_color == CF_COLOR_BLACK)
+        source_rank = rank + 1;
+    else
+        source_rank = -1;
+
+    if (source_rank >= 0 && source_rank < 8) {
+        source_file = file - 1;
+        if (source_file >= 0) {
+            piece = &board->squares[source_rank][source_file];
+            if (piece->color == by_color && piece->type == CF_PIECE_PAWN)
+                return 1;
+        }
+        source_file = file + 1;
+        if (source_file < 8) {
+            piece = &board->squares[source_rank][source_file];
+            if (piece->color == by_color && piece->type == CF_PIECE_PAWN)
+                return 1;
         }
     }
+
+    for (i = 0; i < 8; ++i) {
+        source_file = file + knight_offsets[i][0];
+        source_rank = rank + knight_offsets[i][1];
+        if (!in_bounds(source_file, source_rank)) continue;
+        piece = &board->squares[source_rank][source_file];
+        if (piece->color == by_color && piece->type == CF_PIECE_KNIGHT)
+            return 1;
+    }
+
+    for (i = 0; i < 8; ++i) {
+        source_file = file + king_offsets[i][0];
+        source_rank = rank + king_offsets[i][1];
+        if (!in_bounds(source_file, source_rank)) continue;
+        piece = &board->squares[source_rank][source_file];
+        if (piece->color == by_color && piece->type == CF_PIECE_KING)
+            return 1;
+    }
+
+    if (ray_piece_attacks(board, file, rank, 1, 0,
+                          by_color, CF_PIECE_ROOK) ||
+        ray_piece_attacks(board, file, rank, -1, 0,
+                          by_color, CF_PIECE_ROOK) ||
+        ray_piece_attacks(board, file, rank, 0, 1,
+                          by_color, CF_PIECE_ROOK) ||
+        ray_piece_attacks(board, file, rank, 0, -1,
+                          by_color, CF_PIECE_ROOK))
+        return 1;
+
+    if (ray_piece_attacks(board, file, rank, 1, 1,
+                          by_color, CF_PIECE_BISHOP) ||
+        ray_piece_attacks(board, file, rank, 1, -1,
+                          by_color, CF_PIECE_BISHOP) ||
+        ray_piece_attacks(board, file, rank, -1, 1,
+                          by_color, CF_PIECE_BISHOP) ||
+        ray_piece_attacks(board, file, rank, -1, -1,
+                          by_color, CF_PIECE_BISHOP))
+        return 1;
+
     return 0;
 }
 
