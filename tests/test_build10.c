@@ -637,6 +637,7 @@ int main(void)
     test_merge_sort_matches_stable_insertion();
     test_evaluation_and_order_scores_stable();
     test_legal_action_probe_matches_generator();
+    test_root_draw_preflight_matches_status();
     test_difficulty_config();
     test_starting_position_deterministic();
     test_mate_in_one();
