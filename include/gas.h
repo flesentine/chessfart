@@ -107,6 +107,13 @@ CfFartPreview gas_preview_fart(const CfBoard *board, const CfGasState *gas,
                                int file, int rank, CfFartDirection direction);
 void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
                     int file, int rank, CfFartScan *scan);
+/*
+ * Search fast path: caller supplies board_is_in_check(board, side_to_move)
+ * for the unchanged current position.
+ */
+void gas_scan_farts_prechecked(const CfBoard *board, const CfGasState *gas,
+                               int file, int rank, int actor_in_check,
+                               CfFartScan *scan);
 int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,
                                     int file, int rank, CfFartDirection direction,
                                     CfPieceType promotion);
