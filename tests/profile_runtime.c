@@ -88,8 +88,10 @@ static void run_fart_scan_profile(void)
     cf_u8 mask;
     clock_t start;
     clock_t end;
+    unsigned long prechecked_ms;
     unsigned long batch_ms;
     unsigned long reference_ms;
+    int actor_in_check;
     int repeat;
     int file;
     int d;
@@ -102,7 +104,22 @@ static void run_fart_scan_profile(void)
         gas_set(&gas, file, 6, 3U);
 
     start = clock();
-    for (repeat = 0; repeat < 1000; ++repeat) {
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        actor_in_check = board_is_in_check(&board, board.side_to_move);
+        for (file = 0; file < 8; ++file) {
+            gas_scan_farts_prechecked(&board, &gas, file, 6,
+                                      actor_in_check, &scan);
+            for (d = 0; d < 8; ++d)
+                fart_scan_profile_sink +=
+                    (int)scan.preview[d] + (int)scan.promotion_mask[d];
+        }
+    }
+    end = clock();
+    prechecked_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
         for (file = 0; file < 8; ++file) {
             gas_scan_farts(&board, &gas, file, 6, &scan);
             for (d = 0; d < 8; ++d)
@@ -114,7 +131,7 @@ static void run_fart_scan_profile(void)
     batch_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
 
     start = clock();
-    for (repeat = 0; repeat < 1000; ++repeat) {
+    for (repeat = 0; repeat < 100000; ++repeat) {
         for (file = 0; file < 8; ++file) {
             for (d = 0; d < 8; ++d) {
                 preview = gas_preview_fart(&board, &gas, file, 6,
@@ -135,8 +152,8 @@ static void run_fart_scan_profile(void)
     reference_ms =
         (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
 
-    printf("FART_SCAN batch_ms=%lu reference_ms=%lu sink=%d\n",
-           batch_ms, reference_ms, fart_scan_profile_sink);
+    printf("FART_SCAN prechecked_ms=%lu batch_ms=%lu reference_ms=%lu sink=%d\n",
+           prechecked_ms, batch_ms, reference_ms, fart_scan_profile_sink);
 }
 
 static volatile int fart_apply_profile_sink;

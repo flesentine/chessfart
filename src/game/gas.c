@@ -273,8 +273,23 @@ static int push_requires_promotion(CfPiece piece, int destination_rank)
     return 0;
 }
 
-void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
-                    int file, int rank, CfFartScan *scan)
+static int prepare_fart_scan(const CfBoard *board, const CfGasState *gas,
+                             int file, int rank, CfFartScan *scan)
+{
+    int d;
+    if (scan == 0) return 0;
+    for (d = 0; d < 8; ++d) {
+        scan->preview[d] = (cf_u8)CF_FART_INVALID;
+        scan->promotion_mask[d] = 0U;
+    }
+    if (board == 0 || gas == 0) return 0;
+    return gas_piece_can_fart(board, gas, file, rank);
+}
+
+static void gas_scan_farts_core(const CfBoard *board,
+                                int file, int rank,
+                                int actor_in_check,
+                                CfFartScan *scan)
 {
     static const CfPieceType promotions[4] = {
         CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
@@ -285,7 +300,6 @@ void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
     CfPiece destination;
     CfPiece pushed;
     cf_u8 mask;
-    int actor_in_check;
     int tf;
     int tr;
     int df;
@@ -293,15 +307,6 @@ void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
     int d;
     int p;
 
-    if (scan == 0) return;
-    for (d = 0; d < 8; ++d) {
-        scan->preview[d] = (cf_u8)CF_FART_INVALID;
-        scan->promotion_mask[d] = 0U;
-    }
-    if (board == 0 || gas == 0) return;
-    if (!gas_piece_can_fart(board, gas, file, rank)) return;
-
-    actor_in_check = board_is_in_check(board, board->side_to_move);
     scratch = *board;
     empty = empty_piece();
 
@@ -351,6 +356,23 @@ void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
         scratch.squares[tr][tf] = target;
         scratch.squares[dr][df] = destination;
     }
+}
+
+void gas_scan_farts_prechecked(const CfBoard *board, const CfGasState *gas,
+                               int file, int rank, int actor_in_check,
+                               CfFartScan *scan)
+{
+    if (!prepare_fart_scan(board, gas, file, rank, scan)) return;
+    gas_scan_farts_core(board, file, rank, actor_in_check != 0, scan);
+}
+
+void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
+                    int file, int rank, CfFartScan *scan)
+{
+    int actor_in_check;
+    if (!prepare_fart_scan(board, gas, file, rank, scan)) return;
+    actor_in_check = board_is_in_check(board, board->side_to_move);
+    gas_scan_farts_core(board, file, rank, actor_in_check, scan);
 }
 
 int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,

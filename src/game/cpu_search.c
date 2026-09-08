@@ -85,15 +85,18 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     }
 
     list = &g_lists[ply];
-    cpu_generate_actions(b, g, list);
+    cpu_internal_generate_actions(b, g, list, &actor_was_in_check);
     if (list->count == 0) {
-        if (board_is_in_check(b, b->side_to_move)) return -CPU_MATE + ply;
+        if (actor_was_in_check < 0)
+            actor_was_in_check = board_is_in_check(b, b->side_to_move);
+        if (actor_was_in_check) return -CPU_MATE + ply;
         return 0;
     }
     cpu_internal_sort_actions(list,
                               ply + 1 < CPU_SEARCH_PLY ?
                               &g_lists[ply + 1] : 0);
-    actor_was_in_check = board_is_in_check(b, b->side_to_move);
+    if (actor_was_in_check < 0)
+        actor_was_in_check = board_is_in_check(b, b->side_to_move);
 
     for (i = 0; i < list->count; ++i) {
         if (budget_expired(c)) {
@@ -151,7 +154,7 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     else memset(stats, 0, sizeof(*stats));
 
     root = &g_lists[0];
-    cpu_generate_actions(b, g, root);
+    cpu_internal_generate_actions(b, g, root, &actor_was_in_check);
     if (root->count == 0) return 0;
     if (board_is_insufficient_material(b)) return 0;
     if (history != 0 &&
@@ -165,7 +168,8 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     c.stats = stats;
     c.start_clock = clock();
     c.aborted = 0;
-    actor_was_in_check = board_is_in_check(b, b->side_to_move);
+    if (actor_was_in_check < 0)
+        actor_was_in_check = board_is_in_check(b, b->side_to_move);
 
     for (depth = 1; depth <= config->max_depth; ++depth) {
         int completed = 1;
