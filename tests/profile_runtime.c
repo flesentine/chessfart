@@ -221,7 +221,7 @@ static void run_move_clear_profile(void)
 
     profile_move_clear_fn = profile_full_move_clear;
     start = clock();
-    for (repeat = 0; repeat < 2000000; ++repeat) {
+    for (repeat = 0; repeat < 20000000; ++repeat) {
         move.prev_fullmove_number = 1U;
         profile_move_clear_fn(&move);
         move_clear_profile_sink += move.prev_fullmove_number;
@@ -231,7 +231,7 @@ static void run_move_clear_profile(void)
 
     profile_move_clear_fn = profile_direct_move_clear;
     start = clock();
-    for (repeat = 0; repeat < 2000000; ++repeat) {
+    for (repeat = 0; repeat < 20000000; ++repeat) {
         move.prev_fullmove_number = 1U;
         profile_move_clear_fn(&move);
         move_clear_profile_sink += move.prev_fullmove_number;
