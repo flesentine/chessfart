@@ -210,7 +210,8 @@ int board_square_is_attacked(const CfBoard *board, int file, int rank,
     return 0;
 }
 
-int board_is_in_check(const CfBoard *board, CfPieceColor color)
+static int find_king_square(const CfBoard *board, CfPieceColor color,
+                            int *king_file, int *king_rank)
 {
     int file;
     int rank;
@@ -218,11 +219,24 @@ int board_is_in_check(const CfBoard *board, CfPieceColor color)
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
             if (board->squares[rank][file].type == CF_PIECE_KING &&
-                board->squares[rank][file].color == color)
-                return board_square_is_attacked(board, file, rank, board_other_color(color));
+                board->squares[rank][file].color == color) {
+                if (king_file != 0) *king_file = file;
+                if (king_rank != 0) *king_rank = rank;
+                return 1;
+            }
         }
     }
-    return 1;
+    return 0;
+}
+
+int board_is_in_check(const CfBoard *board, CfPieceColor color)
+{
+    int file;
+    int rank;
+    if (board == 0) return 0;
+    if (!find_king_square(board, color, &file, &rank)) return 1;
+    return board_square_is_attacked(board, file, rank,
+                                    board_other_color(color));
 }
 
 static void add_move(CfMoveList *list, int ff, int fr, int tf, int tr,
@@ -548,17 +562,30 @@ void board_generate_legal_moves(const CfBoard *board, int file, int rank, CfMove
     CfMoveList pseudo;
     CfBoard scratch;
     CfPiece piece;
+    CfPieceColor enemy;
+    int king_file;
+    int king_rank;
+    int check_file;
+    int check_rank;
+    int moving_first_king;
     int i;
     if (list == 0) return;
     list->count = 0;
     if (board == 0 || !in_bounds(file, rank)) return;
     piece = board->squares[rank][file];
     if (piece.type == CF_PIECE_NONE || piece.color != board->side_to_move) return;
+    if (!find_king_square(board, piece.color, &king_file, &king_rank)) return;
+    enemy = board_other_color(piece.color);
+    moving_first_king = piece.type == CF_PIECE_KING &&
+                        file == king_file && rank == king_rank;
     generate_pseudo_moves(board, file, rank, &pseudo);
     scratch = *board;
     for (i = 0; i < pseudo.count; ++i) {
         apply_position_only(&scratch, &pseudo.moves[i]);
-        if (!board_is_in_check(&scratch, piece.color) && list->count < CF_MAX_MOVES)
+        check_file = moving_first_king ? pseudo.moves[i].to_file : king_file;
+        check_rank = moving_first_king ? pseudo.moves[i].to_rank : king_rank;
+        if (!board_square_is_attacked(&scratch, check_file, check_rank, enemy) &&
+            list->count < CF_MAX_MOVES)
             list->moves[list->count++] = pseudo.moves[i];
         unapply_position_only(&scratch, &pseudo.moves[i]);
     }

@@ -193,6 +193,7 @@ static void test_basic_board_contracts(void)
     CfMoveList list;
     const CfPiece *piece;
 
+    CHECK(board_is_in_check(0, CF_COLOR_WHITE) == 0);
     board_init_starting_position(&board);
     CHECK(board_piece_count(&board) == 32);
     CHECK(board.side_to_move == CF_COLOR_WHITE);
