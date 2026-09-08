@@ -134,10 +134,23 @@ int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
 int cpu_internal_evaluate(const CfBoard *b, const CfGasState *g)
 {
     const CfPiece *p;
+    int white_king_file = -1;
+    int white_king_rank = -1;
+    int black_king_file = -1;
+    int black_king_rank = -1;
     int f, r, sign, v, gv, score = 0;
     for (r = 0; r < 8; ++r) for (f = 0; f < 8; ++f) {
         p = &b->squares[r][f];
         if (p->type == CF_PIECE_NONE) continue;
+        if (p->type == CF_PIECE_KING) {
+            if (p->color == CF_COLOR_WHITE && white_king_file < 0) {
+                white_king_file = f;
+                white_king_rank = r;
+            } else if (p->color == CF_COLOR_BLACK && black_king_file < 0) {
+                black_king_file = f;
+                black_king_rank = r;
+            }
+        }
         sign = p->color == CF_COLOR_WHITE ? 1 : -1;
         v = piece_value(p->type);
         gv = (int)g->squares[r][f];
@@ -147,8 +160,14 @@ int cpu_internal_evaluate(const CfBoard *b, const CfGasState *g)
         if (f >= 2 && f <= 5 && r >= 2 && r <= 5) score += sign * 5;
         if (p->type == CF_PIECE_PAWN) score += sign * (p->color == CF_COLOR_WHITE ? r : 7-r) * 2;
     }
-    if (board_is_in_check(b, CF_COLOR_WHITE)) score -= 35;
-    if (board_is_in_check(b, CF_COLOR_BLACK)) score += 35;
+    if (white_king_file < 0 ||
+        board_square_is_attacked(b, white_king_file, white_king_rank,
+                                 CF_COLOR_BLACK))
+        score -= 35;
+    if (black_king_file < 0 ||
+        board_square_is_attacked(b, black_king_file, black_king_rank,
+                                 CF_COLOR_WHITE))
+        score += 35;
     if ((b->castling_rights & CF_CASTLE_WHITE_KING) != 0U) score += 5;
     if ((b->castling_rights & CF_CASTLE_WHITE_QUEEN) != 0U) score += 4;
     if ((b->castling_rights & CF_CASTLE_BLACK_KING) != 0U) score -= 5;
