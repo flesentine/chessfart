@@ -99,6 +99,53 @@ static void test_legal_action_probe_matches_generator(void)
     CHECK(cpu_internal_has_legal_action(&board, &gas));
 }
 
+static void test_evaluation_and_order_scores_stable(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfCpuActionList list;
+    int i;
+    int found_capture = 0;
+    int found_fart = 0;
+    int eval;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    board_set_piece(&board, 4, 3, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_BLACK);
+    gas_set(&gas, 2, 2, 3U);
+    gas_set(&gas, 4, 3, 2U);
+    board.side_to_move = CF_COLOR_WHITE;
+
+    eval = cpu_internal_evaluate(&board, &gas);
+    CHECK(eval == -213);
+
+    cpu_generate_actions(&board, &gas, &list);
+    for (i = 0; i < list.count; ++i) {
+        if (list.actions[i].type == CF_CPU_ACTION_MOVE &&
+            list.actions[i].from_file == 2 &&
+            list.actions[i].from_rank == 2 &&
+            list.actions[i].to_file == 3 &&
+            list.actions[i].to_rank == 4) {
+            found_capture = 1;
+            CHECK(list.actions[i].order_score == 680);
+        }
+        if (list.actions[i].type == CF_CPU_ACTION_FART &&
+            list.actions[i].from_file == 2 &&
+            list.actions[i].from_rank == 2 &&
+            list.actions[i].direction == CF_FART_NE) {
+            found_fart = 1;
+            CHECK(list.actions[i].fart_result == CF_FART_PUSH);
+            CHECK(list.actions[i].order_score == 160);
+        }
+    }
+    CHECK(found_capture);
+    CHECK(found_fart);
+}
+
 static void test_difficulty_config(void)
 {
     CfCpuConfig easy;
@@ -483,6 +530,7 @@ static void test_budget_cap(void)
 int main(void)
 {
     test_action_storage_contract();
+    test_evaluation_and_order_scores_stable();
     test_legal_action_probe_matches_generator();
     test_difficulty_config();
     test_starting_position_deterministic();
