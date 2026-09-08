@@ -161,6 +161,35 @@ void cpu_generate_actions(const CfBoard *board, const CfGasState *gas,
     }
 }
 
+int cpu_internal_has_legal_action(const CfBoard *board,
+                                  const CfGasState *gas)
+{
+    CfMoveList moves;
+    const CfPiece *piece;
+    int file;
+    int rank;
+    int d;
+
+    if (board == 0 || gas == 0) return 0;
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            piece = board_piece_at(board, file, rank);
+            if (piece == 0 || piece->type == CF_PIECE_NONE ||
+                piece->color != board->side_to_move) continue;
+
+            board_generate_legal_moves(board, file, rank, &moves);
+            if (moves.count > 0) return 1;
+
+            if (!gas_piece_can_fart(board, gas, file, rank)) continue;
+            for (d = 0; d < 8; ++d)
+                if (gas_preview_fart(board, gas, file, rank,
+                                     (CfFartDirection)d) != CF_FART_INVALID)
+                    return 1;
+        }
+    }
+    return 0;
+}
+
 void cpu_internal_sort_actions(CfCpuActionList *list)
 {
     CfCpuAction item;
