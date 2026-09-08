@@ -607,6 +607,93 @@ int board_move_is_legal(const CfBoard *board, int from_file, int from_rank,
     return 0;
 }
 
+static int move_promotion_choice_valid(CfPieceType promotion)
+{
+    return promotion == CF_PIECE_QUEEN ||
+           promotion == CF_PIECE_ROOK ||
+           promotion == CF_PIECE_BISHOP ||
+           promotion == CF_PIECE_KNIGHT;
+}
+
+int board_make_move_prevalidated(CfBoard *board,
+                                 int from_file, int from_rank,
+                                 int to_file, int to_rank,
+                                 CfPieceType promotion,
+                                 CfMove *made_move)
+{
+    CfMove move;
+    CfPiece moved;
+    CfPiece captured;
+    int rank_delta;
+    int promotion_rank;
+
+    if (board == 0 ||
+        !in_bounds(from_file, from_rank) ||
+        !in_bounds(to_file, to_rank))
+        return 0;
+
+    moved = board->squares[from_rank][from_file];
+    captured = board->squares[to_rank][to_file];
+    if (moved.type == CF_PIECE_NONE ||
+        moved.color != board->side_to_move ||
+        captured.color == moved.color ||
+        captured.type == CF_PIECE_KING)
+        return 0;
+
+    move.from_file = from_file;
+    move.from_rank = from_rank;
+    move.to_file = to_file;
+    move.to_rank = to_rank;
+    move.captured_file = to_file;
+    move.captured_rank = to_rank;
+    move.moved = moved;
+    move.captured = captured;
+    move.promotion = CF_PIECE_NONE;
+    move.flags = 0U;
+
+    if (moved.type == CF_PIECE_PAWN) {
+        rank_delta = to_rank - from_rank;
+        promotion_rank = moved.color == CF_COLOR_WHITE ? 7 : 0;
+
+        if (from_file != to_file && captured.type == CF_PIECE_NONE) {
+            if (board->en_passant_file != to_file ||
+                board->en_passant_rank != to_rank)
+                return 0;
+            move.captured_file = to_file;
+            move.captured_rank = from_rank;
+            move.captured = board->squares[from_rank][to_file];
+            if (move.captured.type != CF_PIECE_PAWN ||
+                move.captured.color == moved.color)
+                return 0;
+            move.flags |= CF_MOVE_EN_PASSANT;
+        }
+
+        if ((rank_delta == 2 || rank_delta == -2) &&
+            from_file == to_file)
+            move.flags |= CF_MOVE_PAWN_DOUBLE;
+
+        if (to_rank == promotion_rank) {
+            if (promotion == CF_PIECE_NONE)
+                promotion = CF_PIECE_QUEEN;
+            if (!move_promotion_choice_valid(promotion))
+                return 0;
+            move.promotion = promotion;
+            move.flags |= CF_MOVE_PROMOTION;
+        }
+    } else if (moved.type == CF_PIECE_KING &&
+               from_rank == to_rank &&
+               from_file == 4) {
+        if (to_file == 6)
+            move.flags |= CF_MOVE_CASTLE_KING;
+        else if (to_file == 2)
+            move.flags |= CF_MOVE_CASTLE_QUEEN;
+    }
+
+    apply_stateful(board, &move);
+    if (made_move != 0) *made_move = move;
+    return 1;
+}
+
 int board_make_move_ex(CfBoard *board, int from_file, int from_rank,
                        int to_file, int to_rank, CfPieceType promotion,
                        CfMove *made_move)
