@@ -108,6 +108,55 @@ static void test_batch_fart_scan_matches_public_api(void)
     }
 }
 
+static void check_prechecked_scan_matches_public(
+    const CfBoard *board, const CfGasState *gas, int file, int rank)
+{
+    CfFartScan public_scan;
+    CfFartScan fast_scan;
+    int actor_in_check;
+    int d;
+
+    gas_scan_farts(board, gas, file, rank, &public_scan);
+    actor_in_check = board_is_in_check(board, board->side_to_move);
+    gas_scan_farts_prechecked(board, gas, file, rank,
+                              actor_in_check, &fast_scan);
+    for (d = 0; d < 8; ++d) {
+        CHECK(fast_scan.preview[d] == public_scan.preview[d]);
+        CHECK(fast_scan.promotion_mask[d] ==
+              public_scan.promotion_mask[d]);
+    }
+}
+
+static void test_prechecked_scan_king_edge_parity(void)
+{
+    CfBoard board;
+    CfGasState gas;
+
+    /* Missing actor king: public semantics treat the actor as in check. */
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    check_prechecked_scan_matches_public(&board, &gas, 2, 2);
+
+    /*
+     * Duplicate actor kings with the first king being pushed. After the
+     * displacement the other duplicate can become the first scanned king,
+     * so the optimized path must take its explicit fallback.
+     */
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 2, 3, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 0, 4, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    check_prechecked_scan_matches_public(&board, &gas, 2, 2);
+}
+
 static int same_board_state(const CfBoard *a, const CfBoard *b)
 {
     int file;
@@ -589,6 +638,7 @@ static void test_push_history_uses_gas_and_position(void)
 int main(void)
 {
     test_batch_fart_scan_matches_public_api();
+    test_prechecked_scan_king_edge_parity();
     test_prevalidated_move_matches_public_apply();
     test_prevalidated_fart_matches_public_apply();
     test_push_and_unmake();

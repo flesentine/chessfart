@@ -286,9 +286,61 @@ static int prepare_fart_scan(const CfBoard *board, const CfGasState *gas,
     return gas_piece_can_fart(board, gas, file, rank);
 }
 
+static int find_first_scan_king(const CfBoard *board,
+                                CfPieceColor color,
+                                int *king_file, int *king_rank)
+{
+    int file;
+    int rank;
+    *king_file = -1;
+    *king_rank = -1;
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            if (board->squares[rank][file].type == CF_PIECE_KING &&
+                board->squares[rank][file].color == color) {
+                *king_file = file;
+                *king_rank = rank;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int scan_push_keeps_actor_safe(const CfBoard *board,
+                                      const CfBoard *scratch,
+                                      int target_file, int target_rank,
+                                      int cache_actor_king,
+                                      int *king_lookup_done,
+                                      int *king_file, int *king_rank)
+{
+    CfPieceColor actor;
+    if (!cache_actor_king)
+        return !board_is_in_check(scratch, board->side_to_move);
+
+    actor = board->side_to_move;
+    if (!*king_lookup_done) {
+        find_first_scan_king(board, actor, king_file, king_rank);
+        *king_lookup_done = 1;
+    }
+    if (*king_file < 0) return 0;
+
+    /*
+     * If this Fart moves the exact king selected by board_is_in_check(),
+     * a duplicate king may become the first king after displacement.
+     * Fall back to the public lookup for that rare edge case.
+     */
+    if (target_file == *king_file && target_rank == *king_rank)
+        return !board_is_in_check(scratch, actor);
+
+    return !board_square_is_attacked(scratch, *king_file, *king_rank,
+                                     board_other_color(actor));
+}
+
 static void gas_scan_farts_core(const CfBoard *board,
                                 int file, int rank,
                                 int actor_in_check,
+                                int cache_actor_king,
                                 CfFartScan *scan)
 {
     static const CfPieceType promotions[4] = {
@@ -300,6 +352,9 @@ static void gas_scan_farts_core(const CfBoard *board,
     CfPiece destination;
     CfPiece pushed;
     cf_u8 mask;
+    int king_lookup_done;
+    int king_file;
+    int king_rank;
     int tf;
     int tr;
     int df;
@@ -309,6 +364,9 @@ static void gas_scan_farts_core(const CfBoard *board,
 
     scratch = *board;
     empty = empty_piece();
+    king_lookup_done = 0;
+    king_file = -1;
+    king_rank = -1;
 
     for (d = 0; d < 8; ++d) {
         if (!fart_geometry(file, rank, (CfFartDirection)d,
@@ -337,7 +395,10 @@ static void gas_scan_farts_core(const CfBoard *board,
                 pushed.type = promotions[p];
                 scratch.squares[tr][tf] = empty;
                 scratch.squares[dr][df] = pushed;
-                if (!board_is_in_check(&scratch, board->side_to_move))
+                if (scan_push_keeps_actor_safe(board, &scratch, tf, tr,
+                                               cache_actor_king,
+                                               &king_lookup_done,
+                                               &king_file, &king_rank))
                     mask = (cf_u8)(mask | (cf_u8)(1U << p));
                 scratch.squares[tr][tf] = target;
                 scratch.squares[dr][df] = destination;
@@ -351,7 +412,10 @@ static void gas_scan_farts_core(const CfBoard *board,
 
         scratch.squares[tr][tf] = empty;
         scratch.squares[dr][df] = target;
-        if (!board_is_in_check(&scratch, board->side_to_move))
+        if (scan_push_keeps_actor_safe(board, &scratch, tf, tr,
+                                       cache_actor_king,
+                                       &king_lookup_done,
+                                       &king_file, &king_rank))
             scan->preview[d] = (cf_u8)CF_FART_PUSH;
         scratch.squares[tr][tf] = target;
         scratch.squares[dr][df] = destination;
@@ -363,7 +427,7 @@ void gas_scan_farts_prechecked(const CfBoard *board, const CfGasState *gas,
                                CfFartScan *scan)
 {
     if (!prepare_fart_scan(board, gas, file, rank, scan)) return;
-    gas_scan_farts_core(board, file, rank, actor_in_check != 0, scan);
+    gas_scan_farts_core(board, file, rank, actor_in_check != 0, 1, scan);
 }
 
 void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
@@ -372,7 +436,7 @@ void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
     int actor_in_check;
     if (!prepare_fart_scan(board, gas, file, rank, scan)) return;
     actor_in_check = board_is_in_check(board, board->side_to_move);
-    gas_scan_farts_core(board, file, rank, actor_in_check, scan);
+    gas_scan_farts_core(board, file, rank, actor_in_check, 0, scan);
 }
 
 int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,
