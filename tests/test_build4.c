@@ -192,6 +192,7 @@ static void test_basic_board_contracts(void)
     CfBoard board;
     CfMoveList list;
     const CfPiece *piece;
+    int i;
 
     CHECK(board_is_in_check(0, CF_COLOR_WHITE) == 0);
     board_init_starting_position(&board);
@@ -225,6 +226,14 @@ static void test_basic_board_contracts(void)
     board_generate_legal_moves(&board, 4, 1, &list);
     CHECK(!has_move(&list, 5, 1, 0U));
     CHECK(has_move(&list, 4, 2, 0U));
+    for (i = 0; i < list.count; ++i) {
+        CHECK(list.moves[i].prev_side_to_move == CF_COLOR_NONE);
+        CHECK(list.moves[i].prev_castling_rights == 0U);
+        CHECK(list.moves[i].prev_en_passant_file == 0);
+        CHECK(list.moves[i].prev_en_passant_rank == 0);
+        CHECK(list.moves[i].prev_halfmove_clock == 0U);
+        CHECK(list.moves[i].prev_fullmove_number == 0U);
+    }
 }
 
 static void test_start_and_perft(void)

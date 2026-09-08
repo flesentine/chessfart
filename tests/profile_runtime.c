@@ -190,6 +190,60 @@ static void run_fart_apply_profile(void)
            fast_ms, public_ms, fart_apply_profile_sink);
 }
 
+typedef void (*ProfileMoveClearFn)(CfMove *);
+
+static void profile_full_move_clear(CfMove *move)
+{
+    memset(move, 0, sizeof(*move));
+}
+
+static void profile_direct_move_clear(CfMove *move)
+{
+    move->prev_side_to_move = CF_COLOR_NONE;
+    move->prev_castling_rights = 0U;
+    move->prev_en_passant_file = 0;
+    move->prev_en_passant_rank = 0;
+    move->prev_halfmove_clock = 0U;
+    move->prev_fullmove_number = 0U;
+}
+
+static ProfileMoveClearFn volatile profile_move_clear_fn;
+static volatile unsigned long move_clear_profile_sink;
+
+static void run_move_clear_profile(void)
+{
+    CfMove move;
+    clock_t start;
+    clock_t end;
+    unsigned long full_ms;
+    unsigned long direct_ms;
+    int repeat;
+
+    profile_move_clear_fn = profile_full_move_clear;
+    start = clock();
+    for (repeat = 0; repeat < 20000000; ++repeat) {
+        move.prev_fullmove_number = 1U;
+        profile_move_clear_fn(&move);
+        move_clear_profile_sink += move.prev_fullmove_number;
+    }
+    end = clock();
+    full_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    profile_move_clear_fn = profile_direct_move_clear;
+    start = clock();
+    for (repeat = 0; repeat < 20000000; ++repeat) {
+        move.prev_fullmove_number = 1U;
+        profile_move_clear_fn(&move);
+        move_clear_profile_sink += move.prev_fullmove_number;
+    }
+    end = clock();
+    direct_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("MOVE_CLEAR full_ms=%lu direct_ms=%lu full_bytes=%lu tail_fields=6 sink=%lu\n",
+           full_ms, direct_ms, (unsigned long)sizeof(move),
+           move_clear_profile_sink);
+}
+
 static volatile int check_lookup_profile_sink;
 
 static void run_check_lookup_profile(void)
@@ -353,6 +407,7 @@ int main(void)
     run_sort_profile();
     run_fart_scan_profile();
     run_fart_apply_profile();
+    run_move_clear_profile();
     run_check_lookup_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
