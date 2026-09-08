@@ -156,6 +156,120 @@ static void run_fart_scan_profile(void)
            prechecked_ms, batch_ms, reference_ms, fart_scan_profile_sink);
 }
 
+static void profile_legacy_prechecked_push_scan(
+    const CfBoard *board, const CfGasState *gas,
+    int file, int rank, int actor_in_check, CfFartScan *scan)
+{
+    static const int df[8] = {0,1,1,1,0,-1,-1,-1};
+    static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
+    CfBoard scratch;
+    CfPiece empty;
+    CfPiece target;
+    CfPiece destination;
+    int tf;
+    int tr;
+    int pf;
+    int pr;
+    int d;
+
+    for (d = 0; d < 8; ++d) {
+        scan->preview[d] = (cf_u8)CF_FART_INVALID;
+        scan->promotion_mask[d] = 0U;
+    }
+    if (!gas_piece_can_fart(board, gas, file, rank)) return;
+
+    scratch = *board;
+    empty.type = CF_PIECE_NONE;
+    empty.color = CF_COLOR_NONE;
+    for (d = 0; d < 8; ++d) {
+        tf = file + df[d];
+        tr = rank + dr[d];
+        pf = tf + df[d];
+        pr = tr + dr[d];
+        if (tf < 0 || tf >= 8 || tr < 0 || tr >= 8) continue;
+
+        target = board->squares[tr][tf];
+        if (target.type == CF_PIECE_NONE) {
+            if (!actor_in_check)
+                scan->preview[d] = (cf_u8)CF_FART_PUFF;
+            continue;
+        }
+        if (pf < 0 || pf >= 8 || pr < 0 || pr >= 8 ||
+            board->squares[pr][pf].type != CF_PIECE_NONE) {
+            if (!actor_in_check)
+                scan->preview[d] = (cf_u8)CF_FART_BLOCKED;
+            continue;
+        }
+
+        destination = board->squares[pr][pf];
+        scratch.squares[tr][tf] = empty;
+        scratch.squares[pr][pf] = target;
+        if (!board_is_in_check(&scratch, board->side_to_move))
+            scan->preview[d] = (cf_u8)CF_FART_PUSH;
+        scratch.squares[tr][tf] = target;
+        scratch.squares[pr][pf] = destination;
+    }
+}
+
+static void run_fart_push_scan_profile(void)
+{
+    static const int df[8] = {0,1,1,1,0,-1,-1,-1};
+    static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
+    CfBoard board;
+    CfGasState gas;
+    CfFartScan scan;
+    clock_t start;
+    clock_t end;
+    unsigned long cached_ms;
+    unsigned long legacy_ms;
+    int actor_in_check;
+    int repeat;
+    int d;
+    int tf;
+    int tr;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 3, 3, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    gas_set(&gas, 3, 3, 3U);
+    for (d = 0; d < 8; ++d) {
+        tf = 3 + df[d];
+        tr = 3 + dr[d];
+        board_set_piece(&board, tf, tr, CF_PIECE_KNIGHT, CF_COLOR_BLACK);
+    }
+    board.side_to_move = CF_COLOR_WHITE;
+    actor_in_check = board_is_in_check(&board, board.side_to_move);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        gas_scan_farts_prechecked(&board, &gas, 3, 3,
+                                  actor_in_check, &scan);
+        for (d = 0; d < 8; ++d)
+            fart_scan_profile_sink +=
+                (int)scan.preview[d] + (int)scan.promotion_mask[d];
+    }
+    end = clock();
+    cached_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        profile_legacy_prechecked_push_scan(&board, &gas, 3, 3,
+                                            actor_in_check, &scan);
+        for (d = 0; d < 8; ++d)
+            fart_scan_profile_sink +=
+                (int)scan.preview[d] + (int)scan.promotion_mask[d];
+    }
+    end = clock();
+    legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("FART_PUSH_SCAN cached_ms=%lu legacy_ms=%lu sink=%d\n",
+           cached_ms, legacy_ms, fart_scan_profile_sink);
+}
+
 static volatile int fart_apply_profile_sink;
 
 static void run_fart_apply_profile(void)
@@ -612,6 +726,7 @@ int main(void)
            (unsigned long)sizeof(CfReplayTimeline) * 2UL);
     run_sort_profile();
     run_fart_scan_profile();
+    run_fart_push_scan_profile();
     run_fart_apply_profile();
     run_move_clear_profile();
     run_move_apply_profile();
