@@ -165,7 +165,7 @@ static void run_fart_apply_profile(void)
     preview = gas_preview_fart(&board, &gas, 2, 2, CF_FART_NE);
 
     start = clock();
-    for (repeat = 0; repeat < 10000; ++repeat) {
+    for (repeat = 0; repeat < 200000; ++repeat) {
         if (!gas_make_fart_prevalidated(&board, &gas, 2, 2, CF_FART_NE,
                                         preview, CF_PIECE_NONE, &action))
             break;
@@ -176,7 +176,7 @@ static void run_fart_apply_profile(void)
     fast_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
 
     start = clock();
-    for (repeat = 0; repeat < 10000; ++repeat) {
+    for (repeat = 0; repeat < 200000; ++repeat) {
         if (!gas_make_fart(&board, &gas, 2, 2, CF_FART_NE,
                            CF_PIECE_NONE, &action))
             break;
