@@ -1,3 +1,7 @@
+# Prevent GNU make's built-in %.web -> % tangle rule from treating
+# Makefile.web as a source for this Makefile when checkout mtimes tie.
+Makefile: ;
+
 CC ?= cc
 CFLAGS ?= -std=c89 -pedantic -Wall -Wextra -Werror -O2 -Iinclude
 

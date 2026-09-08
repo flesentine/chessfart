@@ -3,14 +3,10 @@
 static int in_bounds(int f, int r) { return f >= 0 && f < 8 && r >= 0 && r < 8; }
 static int piece_value(CfPieceType t)
 {
-    switch (t) {
-    case CF_PIECE_PAWN: return 100;
-    case CF_PIECE_KNIGHT: return 320;
-    case CF_PIECE_BISHOP: return 330;
-    case CF_PIECE_ROOK: return 500;
-    case CF_PIECE_QUEEN: return 900;
-    default: return 0;
-    }
+    static const int values[7] = {0,100,320,330,500,900,0};
+    int index = (int)t;
+    if (index < 0 || index > 6) return 0;
+    return values[index];
 }
 
 static int square_centrality(int f, int r)
@@ -47,12 +43,13 @@ static int pressure(const CfBoard *b, const CfGasState *g, int f, int r, CfPiece
     static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
     const CfPiece *t;
     int i, tf, tr, pf, pr, s = 0;
-    if (gas_at(g, f, r) < CF_GAS_FART_COST) return 0;
+    if (g->squares[r][f] < CF_GAS_FART_COST) return 0;
     for (i = 0; i < 8; ++i) {
         tf = f + df[i]; tr = r + dr[i]; pf = tf + df[i]; pr = tr + dr[i];
         if (!in_bounds(tf,tr) || !in_bounds(pf,pr)) continue;
-        t = board_piece_at(b, tf, tr);
-        if (t == 0 || t->type == CF_PIECE_NONE || b->squares[pr][pf].type != CF_PIECE_NONE) continue;
+        t = &b->squares[tr][tf];
+        if (t->type == CF_PIECE_NONE ||
+            b->squares[pr][pf].type != CF_PIECE_NONE) continue;
         s += t->color != c ? 8 + piece_value(t->type) / 80 : 2;
     }
     return s;
@@ -139,10 +136,11 @@ int cpu_internal_evaluate(const CfBoard *b, const CfGasState *g)
     const CfPiece *p;
     int f, r, sign, v, gv, score = 0;
     for (r = 0; r < 8; ++r) for (f = 0; f < 8; ++f) {
-        p = board_piece_at(b, f, r);
-        if (p == 0 || p->type == CF_PIECE_NONE) continue;
+        p = &b->squares[r][f];
+        if (p->type == CF_PIECE_NONE) continue;
         sign = p->color == CF_COLOR_WHITE ? 1 : -1;
-        v = piece_value(p->type); gv = (int)gas_at(g, f, r);
+        v = piece_value(p->type);
+        gv = (int)g->squares[r][f];
         score += sign * v + sign * gv * 8;
         if (gv >= 2) score += sign * 10;
         score += sign * pressure(b, g, f, r, p->color);

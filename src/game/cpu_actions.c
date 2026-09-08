@@ -10,14 +10,25 @@ static int in_bounds(int file, int rank)
 
 static int piece_value(CfPieceType type)
 {
-    switch (type) {
-    case CF_PIECE_PAWN: return 100;
-    case CF_PIECE_KNIGHT: return 320;
-    case CF_PIECE_BISHOP: return 330;
-    case CF_PIECE_ROOK: return 500;
-    case CF_PIECE_QUEEN: return 900;
-    default: return 0;
-    }
+    static const int values[7] = {0,100,320,330,500,900,0};
+    int index = (int)type;
+    if (index < 0 || index > 6) return 0;
+    return values[index];
+}
+
+static int move_order_score(const CfMove *move)
+{
+    int score = 0;
+    if (move->captured.type != CF_PIECE_NONE)
+        score += piece_value(move->captured.type) * 10 -
+                 piece_value(move->moved.type);
+    if (move->promotion != CF_PIECE_NONE)
+        score += 1200 + piece_value(move->promotion);
+    if (move->moved.type == CF_PIECE_KING &&
+        move->from_file == 4 &&
+        (move->to_file == 2 || move->to_file == 6))
+        score += 60;
+    return score;
 }
 
 static int action_order_score(const CfBoard *board, const CfGasState *gas,
@@ -31,26 +42,12 @@ static int action_order_score(const CfBoard *board, const CfGasState *gas,
     int tf;
     int tr;
 
-    if (action->type == CF_CPU_ACTION_MOVE) {
-        actor = board_piece_at(board, action->from_file, action->from_rank);
-        target = board_piece_at(board, action->to_file, action->to_rank);
-        if (target != 0 && target->type != CF_PIECE_NONE)
-            score += piece_value(target->type) * 10 -
-                     (actor != 0 ? piece_value(actor->type) : 0);
-        if (action->promotion != CF_PIECE_NONE)
-            score += 1200 + piece_value(action->promotion);
-        if (actor != 0 && actor->type == CF_PIECE_KING &&
-            action->from_file == 4 &&
-            (action->to_file == 2 || action->to_file == 6)) score += 60;
-        return score;
-    }
-
     if (action->type != CF_CPU_ACTION_FART) return -CF_CPU_INF;
 
     tf = action->from_file + df[(int)action->direction];
     tr = action->from_rank + dr[(int)action->direction];
-    target = in_bounds(tf, tr) ? board_piece_at(board, tf, tr) : 0;
-    actor = board_piece_at(board, action->from_file, action->from_rank);
+    target = in_bounds(tf, tr) ? &board->squares[tr][tf] : 0;
+    actor = &board->squares[action->from_rank][action->from_file];
 
     if (action->fart_result == CF_FART_PROMOTION) {
         if (target != 0 && target->type != CF_PIECE_NONE && actor != 0) {
@@ -75,25 +72,24 @@ static int action_order_score(const CfBoard *board, const CfGasState *gas,
         score -= 80;
     }
 
-    if (gas_at(gas, action->from_file, action->from_rank) == 3U) score += 10;
+    if (gas->squares[action->from_rank][action->from_file] == 3U) score += 10;
     return score;
 }
 
-static void add_move(const CfBoard *board, const CfGasState *gas,
-                     CfCpuActionList *list, const CfMove *move)
+static void add_move(CfCpuActionList *list, const CfMove *move)
 {
     CfCpuAction *a;
     if (list->count >= CF_CPU_MAX_ACTIONS) return;
     a = &list->actions[list->count++];
-    memset(a, 0, sizeof(*a));
+    a->from_file = (cf_i8)move->from_file;
+    a->from_rank = (cf_i8)move->from_rank;
+    a->to_file = (cf_i8)move->to_file;
+    a->to_rank = (cf_i8)move->to_rank;
     a->type = CF_CPU_ACTION_MOVE;
-    a->from_file = move->from_file;
-    a->from_rank = move->from_rank;
-    a->to_file = move->to_file;
-    a->to_rank = move->to_rank;
-    a->promotion = move->promotion;
+    a->promotion = (cf_u8)move->promotion;
+    a->direction = 0U;
     a->fart_result = CF_FART_INVALID;
-    a->order_score = action_order_score(board, gas, a);
+    a->order_score = (cf_i16)move_order_score(move);
 }
 
 static void add_fart(const CfBoard *board, const CfGasState *gas,
@@ -104,16 +100,15 @@ static void add_fart(const CfBoard *board, const CfGasState *gas,
     CfCpuAction *a;
     if (list->count >= CF_CPU_MAX_ACTIONS) return;
     a = &list->actions[list->count++];
-    memset(a, 0, sizeof(*a));
-    a->type = CF_CPU_ACTION_FART;
-    a->from_file = file;
-    a->from_rank = rank;
+    a->from_file = (cf_i8)file;
+    a->from_rank = (cf_i8)rank;
     a->to_file = -1;
     a->to_rank = -1;
-    a->promotion = promotion;
-    a->direction = dir;
-    a->fart_result = result;
-    a->order_score = action_order_score(board, gas, a);
+    a->type = CF_CPU_ACTION_FART;
+    a->promotion = (cf_u8)promotion;
+    a->direction = (cf_u8)dir;
+    a->fart_result = (cf_u8)result;
+    a->order_score = (cf_i16)action_order_score(board, gas, a);
 }
 
 void cpu_generate_actions(const CfBoard *board, const CfGasState *gas,
@@ -136,12 +131,12 @@ void cpu_generate_actions(const CfBoard *board, const CfGasState *gas,
     if (board == 0 || gas == 0) return;
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
-            piece = board_piece_at(board, file, rank);
-            if (piece == 0 || piece->type == CF_PIECE_NONE ||
+            piece = &board->squares[rank][file];
+            if (piece->type == CF_PIECE_NONE ||
                 piece->color != board->side_to_move) continue;
             board_generate_legal_moves(board, file, rank, &moves);
-            for (i = 0; i < moves.count; ++i) add_move(board, gas, list, &moves.moves[i]);
-            if (!gas_piece_can_fart(board, gas, file, rank)) continue;
+            for (i = 0; i < moves.count; ++i) add_move(list, &moves.moves[i]);
+            if (gas->squares[rank][file] < CF_GAS_FART_COST) continue;
             for (d = 0; d < 8; ++d) {
                 preview = gas_preview_fart(board, gas, file, rank, (CfFartDirection)d);
                 if (preview == CF_FART_INVALID) continue;
@@ -173,14 +168,14 @@ int cpu_internal_has_legal_action(const CfBoard *board,
     if (board == 0 || gas == 0) return 0;
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
-            piece = board_piece_at(board, file, rank);
-            if (piece == 0 || piece->type == CF_PIECE_NONE ||
+            piece = &board->squares[rank][file];
+            if (piece->type == CF_PIECE_NONE ||
                 piece->color != board->side_to_move) continue;
 
             board_generate_legal_moves(board, file, rank, &moves);
             if (moves.count > 0) return 1;
 
-            if (!gas_piece_can_fart(board, gas, file, rank)) continue;
+            if (gas->squares[rank][file] < CF_GAS_FART_COST) continue;
             for (d = 0; d < 8; ++d)
                 if (gas_preview_fart(board, gas, file, rank,
                                      (CfFartDirection)d) != CF_FART_INVALID)
