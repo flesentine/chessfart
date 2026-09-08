@@ -13,7 +13,17 @@ typedef struct SearchContext {
     int aborted;
 } SearchContext;
 
+/*
+ * Open Watcom's large model can pull this now-compact array back into
+ * DGROUP because it falls below the compiler's large-data threshold.
+ * Keep the search workspace explicitly far so shrinking it does not
+ * consume the 64 KiB near-data budget.
+ */
+#ifdef __WATCOMC__
+static CfCpuActionList __far g_lists[CPU_SEARCH_PLY];
+#else
 static CfCpuActionList g_lists[CPU_SEARCH_PLY];
+#endif
 
 static int time_expired(SearchContext *c)
 {
