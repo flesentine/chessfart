@@ -284,5 +284,5 @@ void cpu_unapply_action(CfBoard *board, CfGasState *gas, const CfCpuUndo *undo)
     if (board == 0 || gas == 0 || undo == 0) return;
     if (undo->type == CF_CPU_ACTION_MOVE) gas_unmake_move(board, gas, &undo->action.move);
     else if (undo->type == CF_CPU_ACTION_FART)
-        gas_unmake_fart_prevalidated(board, gas, &undo->action.fart);
+        gas_unmake_fart(board, gas, &undo->action.fart);
 }

@@ -196,78 +196,6 @@ static void check_prevalidated_matches_public(CfBoard *board, CfGasState *gas,
     CHECK(same_gas_state(&fast_gas, gas));
 }
 
-static void check_trusted_unmake_matches_public(CfBoard *board,
-                                                CfGasState *gas,
-                                                int file, int rank,
-                                                CfFartDirection direction,
-                                                CfPieceType promotion)
-{
-    CfBoard public_board;
-    CfBoard fast_board;
-    CfGasState public_gas;
-    CfGasState fast_gas;
-    CfFartAction public_action;
-    CfFartAction fast_action;
-    CfFartPreview preview;
-
-    public_board = *board;
-    fast_board = *board;
-    public_gas = *gas;
-    fast_gas = *gas;
-    preview = gas_preview_fart(board, gas, file, rank, direction);
-    CHECK(preview != CF_FART_INVALID);
-
-    CHECK(gas_make_fart_prevalidated(&public_board, &public_gas,
-                                     file, rank, direction, preview,
-                                     promotion, &public_action));
-    fast_action = public_action;
-    fast_board = public_board;
-    fast_gas = public_gas;
-
-    gas_unmake_fart(&public_board, &public_gas, &public_action);
-    gas_unmake_fart_prevalidated(&fast_board, &fast_gas, &fast_action);
-    CHECK(same_board_state(&public_board, &fast_board));
-    CHECK(same_gas_state(&public_gas, &fast_gas));
-    CHECK(same_board_state(&public_board, board));
-    CHECK(same_gas_state(&public_gas, gas));
-}
-
-static void test_prevalidated_unmake_matches_public(void)
-{
-    CfBoard board;
-    CfGasState gas;
-
-    kings_only(&board);
-    gas_init(&gas);
-    add_actor(&board, &gas, 2, 2);
-    check_trusted_unmake_matches_public(&board, &gas, 2, 2,
-                                        CF_FART_N, CF_PIECE_NONE);
-
-    kings_only(&board);
-    gas_init(&gas);
-    add_actor(&board, &gas, 2, 2);
-    board_set_piece(&board, 3, 3, CF_PIECE_BISHOP, CF_COLOR_WHITE);
-    board_set_piece(&board, 4, 4, CF_PIECE_ROOK, CF_COLOR_BLACK);
-    check_trusted_unmake_matches_public(&board, &gas, 2, 2,
-                                        CF_FART_NE, CF_PIECE_NONE);
-
-    kings_only(&board);
-    gas_init(&gas);
-    add_actor(&board, &gas, 2, 2);
-    board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_BLACK);
-    gas_set(&gas, 3, 3, 1U);
-    check_trusted_unmake_matches_public(&board, &gas, 2, 2,
-                                        CF_FART_NE, CF_PIECE_NONE);
-
-    kings_only(&board);
-    gas_init(&gas);
-    add_actor(&board, &gas, 4, 5);
-    board_set_piece(&board, 5, 6, CF_PIECE_PAWN, CF_COLOR_WHITE);
-    gas_set(&gas, 5, 6, 2U);
-    check_trusted_unmake_matches_public(&board, &gas, 4, 5,
-                                        CF_FART_NE, CF_PIECE_KNIGHT);
-}
-
 static void test_prevalidated_fart_matches_public_apply(void)
 {
     CfBoard board;
@@ -518,7 +446,6 @@ int main(void)
 {
     test_batch_fart_scan_matches_public_api();
     test_prevalidated_fart_matches_public_apply();
-    test_prevalidated_unmake_matches_public();
     test_push_and_unmake();
     test_friendly_push();
     test_blocked_push_spends_turn();

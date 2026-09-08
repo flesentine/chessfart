@@ -554,34 +554,6 @@ void gas_unmake_fart(CfBoard *board, CfGasState *gas,
     board->fullmove_number = action->previous_fullmove;
 }
 
-void gas_unmake_fart_prevalidated(CfBoard *board, CfGasState *gas,
-                                  const CfFartAction *action)
-{
-    if (board == 0 || gas == 0 || action == 0) return;
-
-    gas->squares[action->actor_rank][action->actor_file] =
-        action->previous_actor_gas;
-
-    if (action->result == CF_FART_PUSH ||
-        action->result == CF_FART_PROMOTION) {
-        board->squares[action->target_rank][action->target_file] =
-            action->previous_target_piece;
-        gas->squares[action->target_rank][action->target_file] =
-            action->previous_target_gas;
-        board->squares[action->destination_rank][action->destination_file] =
-            action->previous_destination_piece;
-        gas->squares[action->destination_rank][action->destination_file] =
-            action->previous_destination_gas;
-    }
-
-    board->side_to_move = action->previous_side;
-    board->castling_rights = action->previous_castling_rights;
-    board->en_passant_file = action->previous_ep_file;
-    board->en_passant_rank = action->previous_ep_rank;
-    board->halfmove_clock = action->previous_halfmove;
-    board->fullmove_number = action->previous_fullmove;
-}
-
 int gas_make_puff(CfBoard *board, CfGasState *gas,
                   int file, int rank, CfFartDirection direction,
                   CfFartAction *action)
