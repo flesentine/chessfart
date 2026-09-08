@@ -445,6 +445,45 @@ static void run_check_lookup_profile(void)
            scanned_ms, cached_ms, check_lookup_profile_sink);
 }
 
+static volatile int eval_check_profile_sink;
+
+static void run_eval_check_profile(void)
+{
+    CfBoard board;
+    clock_t start;
+    clock_t end;
+    unsigned long scanned_pair_ms;
+    unsigned long folded_pair_ms;
+    int repeat;
+
+    board_init_starting_position(&board);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat) {
+        eval_check_profile_sink +=
+            board_is_in_check(&board, CF_COLOR_WHITE);
+        eval_check_profile_sink +=
+            board_is_in_check(&board, CF_COLOR_BLACK);
+    }
+    end = clock();
+    scanned_pair_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat) {
+        eval_check_profile_sink +=
+            board_square_is_attacked(&board, 4, 0, CF_COLOR_BLACK);
+        eval_check_profile_sink +=
+            board_square_is_attacked(&board, 4, 7, CF_COLOR_WHITE);
+    }
+    end = clock();
+    folded_pair_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("EVAL_CHECK scanned_pair_ms=%lu folded_pair_ms=%lu sink=%d\n",
+           scanned_pair_ms, folded_pair_ms, eval_check_profile_sink);
+}
+
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
     CfMoveList list;
@@ -579,6 +618,7 @@ int main(void)
     run_legal_probe_profile();
     run_root_preflight_profile();
     run_check_lookup_profile();
+    run_eval_check_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);
