@@ -104,6 +104,16 @@ int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,
 int gas_make_fart(CfBoard *board, CfGasState *gas,
                   int file, int rank, CfFartDirection direction,
                   CfPieceType promotion, CfFartAction *action);
+/*
+ * Search fast path: caller must pass a preview already proven legal for the
+ * current position (for promotion, the supplied promotion must also be legal).
+ */
+int gas_make_fart_prevalidated(CfBoard *board, CfGasState *gas,
+                               int file, int rank,
+                               CfFartDirection direction,
+                               CfFartPreview preview,
+                               CfPieceType promotion,
+                               CfFartAction *action);
 void gas_unmake_fart(CfBoard *board, CfGasState *gas,
                      const CfFartAction *action);
 
