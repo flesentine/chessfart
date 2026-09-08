@@ -128,6 +128,142 @@ static int same_gas_state(const CfGasState *a, const CfGasState *b)
     return 1;
 }
 
+static int same_move(const CfMove *a, const CfMove *b)
+{
+    return a->from_file == b->from_file &&
+           a->from_rank == b->from_rank &&
+           a->to_file == b->to_file &&
+           a->to_rank == b->to_rank &&
+           a->captured_file == b->captured_file &&
+           a->captured_rank == b->captured_rank &&
+           a->moved.type == b->moved.type &&
+           a->moved.color == b->moved.color &&
+           a->captured.type == b->captured.type &&
+           a->captured.color == b->captured.color &&
+           a->promotion == b->promotion &&
+           a->flags == b->flags &&
+           a->prev_side_to_move == b->prev_side_to_move &&
+           a->prev_castling_rights == b->prev_castling_rights &&
+           a->prev_en_passant_file == b->prev_en_passant_file &&
+           a->prev_en_passant_rank == b->prev_en_passant_rank &&
+           a->prev_halfmove_clock == b->prev_halfmove_clock &&
+           a->prev_fullmove_number == b->prev_fullmove_number;
+}
+
+static int same_gas_move(const CfGasMove *a, const CfGasMove *b)
+{
+    return same_move(&a->chess_move, &b->chess_move) &&
+           a->previous_from_gas == b->previous_from_gas &&
+           a->previous_to_gas == b->previous_to_gas &&
+           a->previous_captured_gas == b->previous_captured_gas &&
+           a->previous_rook_from_gas == b->previous_rook_from_gas &&
+           a->previous_rook_to_gas == b->previous_rook_to_gas;
+}
+
+static void check_prevalidated_move_matches_public(
+    CfBoard *board, CfGasState *gas,
+    int from_file, int from_rank,
+    int to_file, int to_rank,
+    CfPieceType promotion)
+{
+    CfBoard public_board;
+    CfBoard fast_board;
+    CfGasState public_gas;
+    CfGasState fast_gas;
+    CfGasMove public_move;
+    CfGasMove fast_move;
+
+    public_board = *board;
+    fast_board = *board;
+    public_gas = *gas;
+    fast_gas = *gas;
+
+    CHECK(gas_make_move_ex(&public_board, &public_gas,
+                           from_file, from_rank, to_file, to_rank,
+                           promotion, &public_move));
+    CHECK(gas_make_move_prevalidated(&fast_board, &fast_gas,
+                                     from_file, from_rank, to_file, to_rank,
+                                     promotion, &fast_move));
+    CHECK(same_board_state(&public_board, &fast_board));
+    CHECK(same_gas_state(&public_gas, &fast_gas));
+    CHECK(same_gas_move(&public_move, &fast_move));
+
+    gas_unmake_move(&public_board, &public_gas, &public_move);
+    gas_unmake_move(&fast_board, &fast_gas, &fast_move);
+    CHECK(same_board_state(&public_board, board));
+    CHECK(same_board_state(&fast_board, board));
+    CHECK(same_gas_state(&public_gas, gas));
+    CHECK(same_gas_state(&fast_gas, gas));
+}
+
+static void test_prevalidated_move_matches_public_apply(void)
+{
+    CfBoard board;
+    CfGasState gas;
+
+    /* Ordinary move. */
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    gas_set(&gas, 1, 0, 2U);
+    check_prevalidated_move_matches_public(&board, &gas,
+                                           1, 0, 2, 2,
+                                           CF_PIECE_NONE);
+
+    /* Capture. */
+    kings_only(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 1, 1, CF_PIECE_ROOK, CF_COLOR_WHITE);
+    board_set_piece(&board, 1, 4, CF_PIECE_BISHOP, CF_COLOR_BLACK);
+    gas_set(&gas, 1, 1, 2U);
+    gas_set(&gas, 1, 4, 1U);
+    check_prevalidated_move_matches_public(&board, &gas,
+                                           1, 1, 1, 4,
+                                           CF_PIECE_NONE);
+
+    /* Pawn double. */
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    gas_set(&gas, 4, 1, 1U);
+    check_prevalidated_move_matches_public(&board, &gas,
+                                           4, 1, 4, 3,
+                                           CF_PIECE_NONE);
+
+    /* En passant. */
+    kings_only(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 4, 4, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    board_set_piece(&board, 3, 4, CF_PIECE_PAWN, CF_COLOR_BLACK);
+    board.en_passant_file = 3;
+    board.en_passant_rank = 5;
+    gas_set(&gas, 4, 4, 2U);
+    gas_set(&gas, 3, 4, 1U);
+    check_prevalidated_move_matches_public(&board, &gas,
+                                           4, 4, 3, 5,
+                                           CF_PIECE_NONE);
+
+    /* King-side castle. */
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 0, CF_PIECE_ROOK, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board.castling_rights = CF_CASTLE_WHITE_KING;
+    gas_set(&gas, 4, 0, 2U);
+    gas_set(&gas, 7, 0, 1U);
+    check_prevalidated_move_matches_public(&board, &gas,
+                                           4, 0, 6, 0,
+                                           CF_PIECE_NONE);
+
+    /* Promotion. */
+    kings_only(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 1, 6, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    gas_set(&gas, 1, 6, 2U);
+    check_prevalidated_move_matches_public(&board, &gas,
+                                           1, 6, 1, 7,
+                                           CF_PIECE_KNIGHT);
+}
+
 static int same_fart_action(const CfFartAction *a, const CfFartAction *b)
 {
     return a->actor_file == b->actor_file &&
@@ -445,6 +581,7 @@ static void test_push_history_uses_gas_and_position(void)
 int main(void)
 {
     test_batch_fart_scan_matches_public_api();
+    test_prevalidated_move_matches_public_apply();
     test_prevalidated_fart_matches_public_apply();
     test_push_and_unmake();
     test_friendly_push();

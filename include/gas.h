@@ -90,6 +90,15 @@ int gas_make_move(CfBoard *board, CfGasState *gas,
 int gas_make_move_ex(CfBoard *board, CfGasState *gas,
                      int from_file, int from_rank, int to_file, int to_rank,
                      CfPieceType promotion, CfGasMove *made_move);
+/*
+ * Search fast path: caller must pass a move already proven legal in the
+ * current position.
+ */
+int gas_make_move_prevalidated(CfBoard *board, CfGasState *gas,
+                               int from_file, int from_rank,
+                               int to_file, int to_rank,
+                               CfPieceType promotion,
+                               CfGasMove *made_move);
 void gas_unmake_move(CfBoard *board, CfGasState *gas, const CfGasMove *move);
 
 int gas_piece_can_fart(const CfBoard *board, const CfGasState *gas,

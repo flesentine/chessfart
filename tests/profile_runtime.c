@@ -244,6 +244,51 @@ static void run_move_clear_profile(void)
            move_clear_profile_sink);
 }
 
+static volatile int move_apply_profile_sink;
+
+static void run_move_apply_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasMove move;
+    clock_t start;
+    clock_t end;
+    unsigned long fast_ms;
+    unsigned long public_ms;
+    int repeat;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    gas_set(&gas, 1, 0, 2U);
+
+    start = clock();
+    for (repeat = 0; repeat < 200000; ++repeat) {
+        if (!gas_make_move_prevalidated(&board, &gas,
+                                        1, 0, 2, 2,
+                                        CF_PIECE_NONE, &move))
+            break;
+        move_apply_profile_sink += board.side_to_move;
+        gas_unmake_move(&board, &gas, &move);
+    }
+    end = clock();
+    fast_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 200000; ++repeat) {
+        if (!gas_make_move_ex(&board, &gas,
+                              1, 0, 2, 2,
+                              CF_PIECE_NONE, &move))
+            break;
+        move_apply_profile_sink += board.side_to_move;
+        gas_unmake_move(&board, &gas, &move);
+    }
+    end = clock();
+    public_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("MOVE_APPLY prevalidated_ms=%lu public_ms=%lu sink=%d\n",
+           fast_ms, public_ms, move_apply_profile_sink);
+}
+
 static volatile int check_lookup_profile_sink;
 
 static void run_check_lookup_profile(void)
@@ -408,6 +453,7 @@ int main(void)
     run_fart_scan_profile();
     run_fart_apply_profile();
     run_move_clear_profile();
+    run_move_apply_profile();
     run_check_lookup_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);

@@ -264,9 +264,10 @@ int cpu_apply_action(CfBoard *board, CfGasState *gas,
     if (board == 0 || gas == 0 || action == 0) return 0;
     local.type = action->type;
     if (action->type == CF_CPU_ACTION_MOVE)
-        ok = gas_make_move_ex(board, gas, action->from_file, action->from_rank,
-                              action->to_file, action->to_rank,
-                              action->promotion, &local.action.move);
+        ok = gas_make_move_prevalidated(
+            board, gas, action->from_file, action->from_rank,
+            action->to_file, action->to_rank,
+            (CfPieceType)action->promotion, &local.action.move);
     else if (action->type == CF_CPU_ACTION_FART)
         ok = gas_make_fart_prevalidated(
             board, gas, action->from_file, action->from_rank,

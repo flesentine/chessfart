@@ -110,6 +110,24 @@ static void apply_move_gas(CfGasState *gas, const CfGasMove *move)
     }
 }
 
+int gas_make_move_prevalidated(CfBoard *board, CfGasState *gas,
+                               int from_file, int from_rank,
+                               int to_file, int to_rank,
+                               CfPieceType promotion,
+                               CfGasMove *made_move)
+{
+    CfGasMove local;
+    if (board == 0 || gas == 0) return 0;
+    if (!board_make_move_prevalidated(board, from_file, from_rank,
+                                      to_file, to_rank, promotion,
+                                      &local.chess_move))
+        return 0;
+    capture_move_gas_delta(gas, &local);
+    apply_move_gas(gas, &local);
+    if (made_move != 0) *made_move = local;
+    return 1;
+}
+
 int gas_make_move_ex(CfBoard *board, CfGasState *gas,
                      int from_file, int from_rank, int to_file, int to_rank,
                      CfPieceType promotion, CfGasMove *made_move)

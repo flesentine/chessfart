@@ -113,6 +113,15 @@ int board_move_is_legal(const CfBoard *board, int from_file, int from_rank, int 
 int board_make_move(CfBoard *board, int from_file, int from_rank, int to_file, int to_rank, CfMove *made_move);
 int board_make_move_ex(CfBoard *board, int from_file, int from_rank, int to_file, int to_rank,
                        CfPieceType promotion, CfMove *made_move);
+/*
+ * Search fast path: caller must pass a move already proven legal in the
+ * current position.
+ */
+int board_make_move_prevalidated(CfBoard *board,
+                                 int from_file, int from_rank,
+                                 int to_file, int to_rank,
+                                 CfPieceType promotion,
+                                 CfMove *made_move);
 void board_unmake_move(CfBoard *board, const CfMove *move);
 int board_count_legal_moves(const CfBoard *board, CfPieceColor color);
 
