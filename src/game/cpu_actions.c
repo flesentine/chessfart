@@ -119,6 +119,7 @@ void cpu_generate_actions(const CfBoard *board, const CfGasState *gas,
     };
     CfMoveList moves;
     const CfPiece *piece;
+    CfFartScan fart_scan;
     CfFartPreview preview;
     int file;
     int rank;
@@ -137,14 +138,14 @@ void cpu_generate_actions(const CfBoard *board, const CfGasState *gas,
             board_generate_legal_moves(board, file, rank, &moves);
             for (i = 0; i < moves.count; ++i) add_move(list, &moves.moves[i]);
             if (gas->squares[rank][file] < CF_GAS_FART_COST) continue;
+            gas_scan_farts(board, gas, file, rank, &fart_scan);
             for (d = 0; d < 8; ++d) {
-                preview = gas_preview_fart(board, gas, file, rank, (CfFartDirection)d);
+                preview = (CfFartPreview)fart_scan.preview[d];
                 if (preview == CF_FART_INVALID) continue;
                 if (preview == CF_FART_PROMOTION) {
                     for (p = 0; p < 4; ++p)
-                        if (gas_fart_promotion_choice_legal(board, gas, file, rank,
-                                                           (CfFartDirection)d,
-                                                           promotions[p]))
+                        if ((fart_scan.promotion_mask[d] &
+                             (cf_u8)(1U << p)) != 0U)
                             add_fart(board, gas, list, file, rank,
                                      (CfFartDirection)d, preview, promotions[p]);
                 } else {
@@ -161,6 +162,7 @@ int cpu_internal_has_legal_action(const CfBoard *board,
 {
     CfMoveList moves;
     const CfPiece *piece;
+    CfFartScan fart_scan;
     int file;
     int rank;
     int d;
@@ -176,9 +178,9 @@ int cpu_internal_has_legal_action(const CfBoard *board,
             if (moves.count > 0) return 1;
 
             if (gas->squares[rank][file] < CF_GAS_FART_COST) continue;
+            gas_scan_farts(board, gas, file, rank, &fart_scan);
             for (d = 0; d < 8; ++d)
-                if (gas_preview_fart(board, gas, file, rank,
-                                     (CfFartDirection)d) != CF_FART_INVALID)
+                if ((CfFartPreview)fart_scan.preview[d] != CF_FART_INVALID)
                     return 1;
         }
     }
