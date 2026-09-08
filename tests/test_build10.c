@@ -238,6 +238,38 @@ static void test_difficulty_config(void)
     CHECK(easy.difficulty == CF_CPU_HARD);
 }
 
+static void test_root_draw_preflight_matches_status(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    gas_history_init(&history, &board, &gas);
+    board.halfmove_clock = 100U;
+    CHECK(gas_game_status(&board, &gas, &history) ==
+          CF_GAME_DRAW_FIFTY_MOVE);
+    cpu_config_for_difficulty(&config, CF_CPU_EASY);
+    CHECK(!cpu_choose_action(&board, &gas, &history,
+                             &config, &action, &stats));
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 4, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 0, 0, CF_PIECE_BISHOP, CF_COLOR_WHITE);
+    board.side_to_move = CF_COLOR_WHITE;
+    gas_history_init(&history, &board, &gas);
+    CHECK(gas_game_status(&board, &gas, &history) ==
+          CF_GAME_DRAW_INSUFFICIENT);
+    CHECK(!cpu_choose_action(&board, &gas, &history,
+                             &config, &action, &stats));
+}
+
 static void test_starting_position_deterministic(void)
 {
     CfBoard board;
@@ -605,6 +637,7 @@ int main(void)
     test_merge_sort_matches_stable_insertion();
     test_evaluation_and_order_scores_stable();
     test_legal_action_probe_matches_generator();
+    test_root_draw_preflight_matches_status();
     test_difficulty_config();
     test_starting_position_deterministic();
     test_mate_in_one();

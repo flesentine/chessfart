@@ -289,6 +289,111 @@ static void run_move_apply_profile(void)
            fast_ms, public_ms, move_apply_profile_sink);
 }
 
+static volatile int legal_probe_profile_sink;
+
+static int profile_reference_has_legal_action(const CfBoard *board,
+                                              const CfGasState *gas)
+{
+    CfMoveList moves;
+    CfFartScan scan;
+    int file;
+    int rank;
+    int d;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            if (board->squares[rank][file].type == CF_PIECE_NONE ||
+                board->squares[rank][file].color != board->side_to_move)
+                continue;
+            board_generate_legal_moves(board, file, rank, &moves);
+            if (moves.count > 0) return 1;
+            if (gas->squares[rank][file] < CF_GAS_FART_COST) continue;
+            gas_scan_farts(board, gas, file, rank, &scan);
+            for (d = 0; d < 8; ++d)
+                if ((CfFartPreview)scan.preview[d] != CF_FART_INVALID)
+                    return 1;
+        }
+    }
+    return 0;
+}
+
+static void run_legal_probe_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    clock_t start;
+    clock_t end;
+    unsigned long fast_ms;
+    unsigned long reference_ms;
+    int repeat;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+
+    start = clock();
+    for (repeat = 0; repeat < 200000; ++repeat)
+        legal_probe_profile_sink +=
+            cpu_internal_has_legal_action(&board, &gas);
+    end = clock();
+    fast_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 200000; ++repeat)
+        legal_probe_profile_sink +=
+            profile_reference_has_legal_action(&board, &gas);
+    end = clock();
+    reference_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("LEGAL_PROBE fast_ms=%lu reference_ms=%lu sink=%d\n",
+           fast_ms, reference_ms, legal_probe_profile_sink);
+}
+
+static volatile int root_preflight_profile_sink;
+
+static void run_root_preflight_profile(void)
+{
+    static CfCpuActionList list;
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    clock_t start;
+    clock_t end;
+    unsigned long direct_ms;
+    unsigned long legacy_ms;
+    int repeat;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    gas_history_init(&history, &board, &gas);
+
+    start = clock();
+    for (repeat = 0; repeat < 2000; ++repeat) {
+        cpu_generate_actions(&board, &gas, &list);
+        root_preflight_profile_sink += list.count;
+        if (list.count > 0 &&
+            !board_is_insufficient_material(&board) &&
+            gas_history_repetition_count(&history, &board, &gas) < 3 &&
+            board.halfmove_clock < 100U)
+            ++root_preflight_profile_sink;
+    }
+    end = clock();
+    direct_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 2000; ++repeat) {
+        root_preflight_profile_sink +=
+            (int)gas_game_status(&board, &gas, &history);
+        cpu_generate_actions(&board, &gas, &list);
+        root_preflight_profile_sink += list.count;
+    }
+    end = clock();
+    legacy_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("ROOT_PREFLIGHT direct_ms=%lu legacy_ms=%lu sink=%d\n",
+           direct_ms, legacy_ms, root_preflight_profile_sink);
+}
+
 static volatile int check_lookup_profile_sink;
 
 static void run_check_lookup_profile(void)
@@ -454,6 +559,8 @@ int main(void)
     run_fart_apply_profile();
     run_move_clear_profile();
     run_move_apply_profile();
+    run_legal_probe_profile();
+    run_root_preflight_profile();
     run_check_lookup_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);

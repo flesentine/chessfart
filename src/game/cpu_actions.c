@@ -160,7 +160,6 @@ void cpu_generate_actions(const CfBoard *board, const CfGasState *gas,
 int cpu_internal_has_legal_action(const CfBoard *board,
                                   const CfGasState *gas)
 {
-    CfMoveList moves;
     const CfPiece *piece;
     CfFartScan fart_scan;
     int file;
@@ -168,16 +167,16 @@ int cpu_internal_has_legal_action(const CfBoard *board,
     int d;
 
     if (board == 0 || gas == 0) return 0;
+    if (board_has_legal_move(board)) return 1;
+
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
             piece = &board->squares[rank][file];
             if (piece->type == CF_PIECE_NONE ||
-                piece->color != board->side_to_move) continue;
+                piece->color != board->side_to_move ||
+                gas->squares[rank][file] < CF_GAS_FART_COST)
+                continue;
 
-            board_generate_legal_moves(board, file, rank, &moves);
-            if (moves.count > 0) return 1;
-
-            if (gas->squares[rank][file] < CF_GAS_FART_COST) continue;
             gas_scan_farts(board, gas, file, rank, &fart_scan);
             for (d = 0; d < 8; ++d)
                 if ((CfFartPreview)fart_scan.preview[d] != CF_FART_INVALID)

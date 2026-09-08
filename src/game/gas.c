@@ -712,14 +712,14 @@ static int has_legal_fart(const CfBoard *board, const CfGasState *gas)
 CfGameStatus gas_game_status(const CfBoard *board, const CfGasState *gas,
                              const CfGasHistory *history)
 {
-    int moves;
+    int has_move;
     int check;
     int fart;
     if (board == 0 || gas == 0) return CF_GAME_ONGOING;
-    moves = board_count_legal_moves(board, board->side_to_move);
+    has_move = board_has_legal_move(board);
     check = board_is_in_check(board, board->side_to_move);
     fart = has_legal_fart(board, gas);
-    if (moves == 0 && !fart)
+    if (!has_move && !fart)
         return check ? CF_GAME_CHECKMATE : CF_GAME_STALEMATE;
     if (board_is_insufficient_material(board)) return CF_GAME_DRAW_INSUFFICIENT;
     if (history != 0 && gas_history_repetition_count(history, board, gas) >= 3)
