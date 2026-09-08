@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -190,6 +191,48 @@ static void run_fart_apply_profile(void)
            fast_ms, public_ms, fart_apply_profile_sink);
 }
 
+typedef void *(*ProfileMemsetFn)(void *, int, size_t);
+
+static ProfileMemsetFn volatile profile_memset_fn = memset;
+static volatile unsigned long move_clear_profile_sink;
+
+static void run_move_clear_profile(void)
+{
+    CfMove move;
+    clock_t start;
+    clock_t end;
+    unsigned long full_ms;
+    unsigned long tail_ms;
+    size_t tail_offset;
+    int repeat;
+
+    tail_offset = offsetof(CfMove, prev_side_to_move);
+
+    start = clock();
+    for (repeat = 0; repeat < 2000000; ++repeat) {
+        move.prev_fullmove_number = 1U;
+        profile_memset_fn(&move, 0, sizeof(move));
+        move_clear_profile_sink += move.prev_fullmove_number;
+    }
+    end = clock();
+    full_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 2000000; ++repeat) {
+        move.prev_fullmove_number = 1U;
+        profile_memset_fn((char *)&move + tail_offset, 0,
+                          sizeof(move) - tail_offset);
+        move_clear_profile_sink += move.prev_fullmove_number;
+    }
+    end = clock();
+    tail_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("MOVE_CLEAR full_ms=%lu tail_ms=%lu full_bytes=%lu tail_bytes=%lu sink=%lu\n",
+           full_ms, tail_ms, (unsigned long)sizeof(move),
+           (unsigned long)(sizeof(move) - tail_offset),
+           move_clear_profile_sink);
+}
+
 static volatile int check_lookup_profile_sink;
 
 static void run_check_lookup_profile(void)
@@ -353,6 +396,7 @@ int main(void)
     run_sort_profile();
     run_fart_scan_profile();
     run_fart_apply_profile();
+    run_move_clear_profile();
     run_check_lookup_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);

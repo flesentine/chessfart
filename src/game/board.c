@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <string.h>
 
 #include "board.h"
@@ -246,7 +247,8 @@ static void add_move(CfMoveList *list, int ff, int fr, int tf, int tr,
     CfMove *move;
     if (list == 0 || list->count >= CF_MAX_MOVES) return;
     move = &list->moves[list->count++];
-    memset(move, 0, sizeof(*move));
+    memset((char *)move + offsetof(CfMove, prev_side_to_move), 0,
+           sizeof(*move) - offsetof(CfMove, prev_side_to_move));
     move->from_file = ff;
     move->from_rank = fr;
     move->to_file = tf;
