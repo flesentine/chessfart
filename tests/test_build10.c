@@ -171,6 +171,76 @@ static void test_merge_sort_matches_stable_insertion(void)
     }
 }
 
+static unsigned long eval_king_rng_next(unsigned long *state)
+{
+    *state = *state * 1664525UL + 1013904223UL;
+    return *state;
+}
+
+static void test_folded_eval_check_pair_matches_public_api(void)
+{
+    CfBoard board;
+    unsigned long rng = 0xE7A1C4E5UL;
+    CfPieceType type;
+    CfPieceColor color;
+    int white_king_file;
+    int white_king_rank;
+    int black_king_file;
+    int black_king_rank;
+    int white_check;
+    int black_check;
+    int sample;
+    int file;
+    int rank;
+
+    for (sample = 0; sample < 256; ++sample) {
+        board_clear(&board);
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if ((eval_king_rng_next(&rng) & 3UL) != 0UL) continue;
+                type = (CfPieceType)(1 +
+                       (eval_king_rng_next(&rng) % 6UL));
+                color = (eval_king_rng_next(&rng) & 1UL) != 0UL ?
+                        CF_COLOR_WHITE : CF_COLOR_BLACK;
+                board_set_piece(&board, file, rank, type, color);
+            }
+        }
+
+        white_king_file = -1;
+        white_king_rank = -1;
+        black_king_file = -1;
+        black_king_rank = -1;
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if (board.squares[rank][file].type != CF_PIECE_KING)
+                    continue;
+                if (board.squares[rank][file].color == CF_COLOR_WHITE &&
+                    white_king_file < 0) {
+                    white_king_file = file;
+                    white_king_rank = rank;
+                } else if (board.squares[rank][file].color == CF_COLOR_BLACK &&
+                           black_king_file < 0) {
+                    black_king_file = file;
+                    black_king_rank = rank;
+                }
+            }
+        }
+
+        white_check = white_king_file < 0 ||
+                      board_square_is_attacked(&board,
+                                               white_king_file,
+                                               white_king_rank,
+                                               CF_COLOR_BLACK);
+        black_check = black_king_file < 0 ||
+                      board_square_is_attacked(&board,
+                                               black_king_file,
+                                               black_king_rank,
+                                               CF_COLOR_WHITE);
+        CHECK(white_check == board_is_in_check(&board, CF_COLOR_WHITE));
+        CHECK(black_check == board_is_in_check(&board, CF_COLOR_BLACK));
+    }
+}
+
 static void test_evaluation_and_order_scores_stable(void)
 {
     CfBoard board;
@@ -635,6 +705,7 @@ int main(void)
 {
     test_action_storage_contract();
     test_merge_sort_matches_stable_insertion();
+    test_folded_eval_check_pair_matches_public_api();
     test_evaluation_and_order_scores_stable();
     test_legal_action_probe_matches_generator();
     test_root_draw_preflight_matches_status();
