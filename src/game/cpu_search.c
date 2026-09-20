@@ -81,7 +81,7 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
 
     if (depth <= 0) {
         actor_was_in_check = -1;
-        if (!cpu_internal_has_legal_action_with_check(
+        if (!cpu_internal_has_legal_action(
                 b, g, &actor_was_in_check)) {
             if (actor_was_in_check < 0)
                 actor_was_in_check = board_is_in_check(
