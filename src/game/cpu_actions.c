@@ -16,8 +16,8 @@ static int piece_value(CfPieceType type)
     return values[index];
 }
 
-static int find_first_king(const CfBoard *board, CfPieceColor color,
-                           int *king_file, int *king_rank)
+int cpu_internal_find_first_king(const CfBoard *board, CfPieceColor color,
+                                 int *king_file, int *king_rank)
 {
     int file;
     int rank;
@@ -156,8 +156,9 @@ static void generate_actions_core(const CfBoard *board,
     if (list == 0) return;
     list->count = 0;
     if (board == 0 || gas == 0) return;
-    have_actor_king = find_first_king(board, board->side_to_move,
-                                      &actor_king_file, &actor_king_rank);
+    have_actor_king = cpu_internal_find_first_king(
+                          board, board->side_to_move,
+                          &actor_king_file, &actor_king_rank);
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
             piece = &board->squares[rank][file];

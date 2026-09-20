@@ -536,6 +536,83 @@ static void run_movegen_king_profile(void)
            public_ms, prelocated_ms, movegen_king_profile_sink);
 }
 
+static volatile int action_bonus_king_profile_sink;
+
+static void run_action_bonus_king_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfCpuActionList list;
+    CfCpuConfig config;
+    CfCpuUndo undo;
+    clock_t start;
+    clock_t end;
+    unsigned long scanned_ms;
+    unsigned long prelocated_ms;
+    int king_file;
+    int king_rank;
+    int king_known;
+    int action_index;
+    int repeat;
+    int i;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_BLACK);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    cpu_generate_actions(&board, &gas, &list);
+
+    action_index = -1;
+    for (i = 0; i < list.count; ++i) {
+        if (list.actions[i].type == CF_CPU_ACTION_FART &&
+            list.actions[i].direction == CF_FART_NE &&
+            list.actions[i].fart_result == CF_FART_PUSH) {
+            action_index = i;
+            break;
+        }
+    }
+    if (action_index < 0) {
+        printf("ACTION_BONUS_KING ERROR no-action\n");
+        return;
+    }
+
+    king_file = -1;
+    king_rank = -1;
+    king_known = cpu_internal_find_first_king(
+        &board, CF_COLOR_BLACK, &king_file, &king_rank);
+    cpu_config_for_difficulty(&config, CF_CPU_MEDIUM);
+    if (!cpu_apply_action(&board, &gas, &list.actions[action_index], &undo)) {
+        printf("ACTION_BONUS_KING ERROR apply\n");
+        return;
+    }
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        action_bonus_king_profile_sink += cpu_internal_action_bonus(
+            &board, &gas, &list.actions[action_index], &undo, &config, 0);
+    end = clock();
+    scanned_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        action_bonus_king_profile_sink +=
+            cpu_internal_action_bonus_prelocated(
+                &board, &gas, &list.actions[action_index], &undo, &config, 0,
+                king_known, king_file, king_rank);
+    end = clock();
+    prelocated_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("ACTION_BONUS_KING scanned_ms=%lu prelocated_ms=%lu sink=%d\n",
+           scanned_ms, prelocated_ms, action_bonus_king_profile_sink);
+    cpu_unapply_action(&board, &gas, &undo);
+}
+
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
     CfMoveList list;
@@ -672,6 +749,7 @@ int main(void)
     run_check_lookup_profile();
     run_eval_check_profile();
     run_movegen_king_profile();
+    run_action_bonus_king_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);

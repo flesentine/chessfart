@@ -337,6 +337,91 @@ static void test_prelocated_king_move_generation_matches_public(void)
     CHECK(public_moves.count == 0);
 }
 
+static int find_fart_action(const CfCpuActionList *list,
+                            CfFartDirection direction,
+                            CfFartPreview result)
+{
+    int i;
+    for (i = 0; i < list->count; ++i)
+        if (list->actions[i].type == CF_CPU_ACTION_FART &&
+            list->actions[i].direction == (cf_u8)direction &&
+            list->actions[i].fart_result == (cf_u8)result)
+            return i;
+    return -1;
+}
+
+static void check_prelocated_action_bonus(CfBoard *board, CfGasState *gas,
+                                          CfFartDirection direction,
+                                          CfFartPreview result)
+{
+    CfCpuActionList list;
+    CfCpuConfig config;
+    CfCpuUndo undo;
+    CfPieceColor opponent;
+    int king_file = -1;
+    int king_rank = -1;
+    int king_known;
+    int index;
+    int reference_bonus;
+    int fast_bonus;
+
+    cpu_generate_actions(board, gas, &list);
+    index = find_fart_action(&list, direction, result);
+    CHECK(index >= 0);
+    if (index < 0) return;
+
+    opponent = board_other_color(board->side_to_move);
+    king_known = cpu_internal_find_first_king(
+        board, opponent, &king_file, &king_rank);
+    cpu_config_for_difficulty(&config, CF_CPU_MEDIUM);
+
+    CHECK(cpu_apply_action(board, gas, &list.actions[index], &undo));
+    reference_bonus = cpu_internal_action_bonus(
+        board, gas, &list.actions[index], &undo, &config, 0);
+    fast_bonus = cpu_internal_action_bonus_prelocated(
+        board, gas, &list.actions[index], &undo, &config, 0,
+        king_known, king_file, king_rank);
+    CHECK(reference_bonus == fast_bonus);
+    cpu_unapply_action(board, gas, &undo);
+}
+
+static void test_prelocated_action_bonus_matches_reference(void)
+{
+    CfBoard board;
+    CfGasState gas;
+
+    /* Normal enemy-piece push: cached opponent king remains stationary. */
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_BLACK);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    check_prelocated_action_bonus(&board, &gas, CF_FART_NE, CF_FART_PUSH);
+
+    /* First-scanned opponent king is pushed; fast path must fall back. */
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 3, 3, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    check_prelocated_action_bonus(&board, &gas, CF_FART_NE, CF_FART_PUSH);
+
+    /* Missing opponent king preserves board_is_in_check() == true. */
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    check_prelocated_action_bonus(&board, &gas, CF_FART_N, CF_FART_PUFF);
+}
+
 static void test_evaluation_and_order_scores_stable(void)
 {
     CfBoard board;
@@ -803,6 +888,7 @@ int main(void)
     test_merge_sort_matches_stable_insertion();
     test_folded_eval_check_pair_matches_public_api();
     test_prelocated_king_move_generation_matches_public();
+    test_prelocated_action_bonus_matches_reference();
     test_evaluation_and_order_scores_stable();
     test_legal_action_probe_matches_generator();
     test_root_draw_preflight_matches_status();

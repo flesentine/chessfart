@@ -55,11 +55,42 @@ static int pressure(const CfBoard *b, const CfGasState *g, int f, int r, CfPiece
     return s;
 }
 
-int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
-                              const CfCpuAction *action,
-                              const CfCpuUndo *undo,
-                              const CfCpuConfig *config,
-                              int actor_was_in_check)
+static int opponent_in_check_for_bonus(const CfBoard *after,
+                                       const CfCpuAction *action,
+                                       const CfCpuUndo *undo,
+                                       int use_prelocated,
+                                       int opponent_king_known,
+                                       int opponent_king_file,
+                                       int opponent_king_rank)
+{
+    const CfFartAction *fart;
+
+    if (!use_prelocated)
+        return board_is_in_check(after, after->side_to_move);
+    if (!opponent_king_known) return 1;
+
+    fart = &undo->action.fart;
+    if (action->fart_result == CF_FART_PUSH &&
+        fart->previous_target_piece.type == CF_PIECE_KING &&
+        fart->previous_target_piece.color == after->side_to_move &&
+        fart->target_file == opponent_king_file &&
+        fart->target_rank == opponent_king_rank)
+        return board_is_in_check(after, after->side_to_move);
+
+    return board_square_is_attacked(
+        after, opponent_king_file, opponent_king_rank,
+        board_other_color(after->side_to_move));
+}
+
+static int action_bonus_core(const CfBoard *after, const CfGasState *gas,
+                             const CfCpuAction *action,
+                             const CfCpuUndo *undo,
+                             const CfCpuConfig *config,
+                             int actor_was_in_check,
+                             int use_prelocated,
+                             int opponent_king_known,
+                             int opponent_king_file,
+                             int opponent_king_rank)
 {
     static const int df[8] = {0,1,1,1,0,-1,-1,-1};
     static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
@@ -117,7 +148,12 @@ int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
         bonus -= 60;
     }
 
-    if (board_is_in_check(after, after->side_to_move)) bonus += 55;
+    if (opponent_in_check_for_bonus(after, action, undo,
+                                    use_prelocated,
+                                    opponent_king_known,
+                                    opponent_king_file,
+                                    opponent_king_rank))
+        bonus += 55;
     if (actor_was_in_check) bonus += 18;
 
     lost_rights = undo->action.fart.previous_castling_rights &
@@ -129,6 +165,33 @@ int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
     bonus -= bit_count(lost_actor_rights) * 20;
 
     return bonus;
+}
+
+int cpu_internal_action_bonus(const CfBoard *after, const CfGasState *gas,
+                              const CfCpuAction *action,
+                              const CfCpuUndo *undo,
+                              const CfCpuConfig *config,
+                              int actor_was_in_check)
+{
+    return action_bonus_core(after, gas, action, undo, config,
+                             actor_was_in_check, 0, 0, -1, -1);
+}
+
+int cpu_internal_action_bonus_prelocated(
+                              const CfBoard *after, const CfGasState *gas,
+                              const CfCpuAction *action,
+                              const CfCpuUndo *undo,
+                              const CfCpuConfig *config,
+                              int actor_was_in_check,
+                              int opponent_king_known,
+                              int opponent_king_file,
+                              int opponent_king_rank)
+{
+    return action_bonus_core(after, gas, action, undo, config,
+                             actor_was_in_check, 1,
+                             opponent_king_known,
+                             opponent_king_file,
+                             opponent_king_rank);
 }
 
 int cpu_internal_evaluate(const CfBoard *b, const CfGasState *g)
