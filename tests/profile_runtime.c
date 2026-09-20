@@ -502,7 +502,7 @@ static void run_legal_probe_profile(void)
     start = clock();
     for (repeat = 0; repeat < 200000; ++repeat)
         legal_probe_profile_sink +=
-            cpu_internal_has_legal_action(&board, &gas);
+            cpu_internal_has_legal_action(&board, &gas, 0);
     end = clock();
     fast_ms = (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
 
@@ -574,7 +574,7 @@ static void run_leaf_terminal_profile(void)
     start = clock();
     for (repeat = 0; repeat < 300000; ++repeat) {
         actor_in_check = -1;
-        if (!cpu_internal_has_legal_action_with_check(
+        if (!cpu_internal_has_legal_action(
                 &board, &gas, &actor_in_check)) {
             if (actor_in_check < 0)
                 actor_in_check =
