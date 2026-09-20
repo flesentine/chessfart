@@ -139,6 +139,7 @@ static void generate_actions_core(const CfBoard *board,
         CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
     };
     CfMoveList moves;
+    CfBoard move_scratch;
     const CfPiece *piece;
     CfFartScan fart_scan;
     CfFartPreview preview;
@@ -159,14 +160,16 @@ static void generate_actions_core(const CfBoard *board,
     have_actor_king = cpu_internal_find_first_king(
                           board, board->side_to_move,
                           &actor_king_file, &actor_king_rank);
+    if (have_actor_king) move_scratch = *board;
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
             piece = &board->squares[rank][file];
             if (piece->type == CF_PIECE_NONE ||
                 piece->color != board->side_to_move) continue;
             if (have_actor_king)
-                board_generate_legal_moves_prelocated(
-                    board, file, rank, actor_king_file, actor_king_rank, &moves);
+                board_generate_legal_moves_prelocated_scratch(
+                    board, &move_scratch, file, rank,
+                    actor_king_file, actor_king_rank, &moves);
             else
                 moves.count = 0;
             for (i = 0; i < moves.count; ++i) add_move(list, &moves.moves[i]);
@@ -176,9 +179,6 @@ static void generate_actions_core(const CfBoard *board,
                     board_square_is_attacked(
                         board, actor_king_file, actor_king_rank,
                         board_other_color(board->side_to_move));
-            if (actor_in_check < 0)
-                actor_in_check =
-                    board_is_in_check(board, board->side_to_move);
             gas_scan_farts_prechecked(board, gas, file, rank,
                                       actor_in_check, &fart_scan);
             for (d = 0; d < 8; ++d) {
