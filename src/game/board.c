@@ -637,16 +637,9 @@ void board_generate_legal_moves_prelocated_scratch(
                                            int king_file, int king_rank,
                                            CfMoveList *list)
 {
-    CfPiece piece;
-
     if (list == 0) return;
     list->count = 0;
-    if (board == 0 || scratch == 0 || !in_bounds(file, rank) ||
-        !in_bounds(king_file, king_rank)) return;
-    piece = board->squares[rank][file];
-    if (piece.type == CF_PIECE_NONE || piece.color != board->side_to_move) return;
-    if (board->squares[king_rank][king_file].type != CF_PIECE_KING ||
-        board->squares[king_rank][king_file].color != piece.color) return;
+    if (board == 0 || scratch == 0) return;
     generate_legal_moves_prelocated_core(board, scratch, file, rank,
                                          king_file, king_rank, list);
 }
