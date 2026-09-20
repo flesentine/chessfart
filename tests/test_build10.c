@@ -305,6 +305,8 @@ static void test_prelocated_king_move_generation_matches_public(void)
     CfBoard board;
     CfMoveList public_moves;
     CfMoveList fast_moves;
+    CfMoveList scratch_moves;
+    CfBoard scratch;
     unsigned long rng = 0x16C0FFEEUL;
     CfPieceType type;
     CfPieceColor color;
@@ -349,6 +351,7 @@ static void test_prelocated_king_move_generation_matches_public(void)
             }
         }
         CHECK(king_file >= 0);
+        scratch = board;
 
         for (rank = 0; rank < 8; ++rank) {
             for (file = 0; file < 8; ++file) {
@@ -358,11 +361,20 @@ static void test_prelocated_king_move_generation_matches_public(void)
                 board_generate_legal_moves(&board, file, rank, &public_moves);
                 board_generate_legal_moves_prelocated(
                     &board, file, rank, king_file, king_rank, &fast_moves);
+                board_generate_legal_moves_prelocated_scratch(
+                    &board, &scratch, file, rank,
+                    king_file, king_rank, &scratch_moves);
                 CHECK(public_moves.count == fast_moves.count);
+                CHECK(public_moves.count == scratch_moves.count);
                 for (i = 0; i < public_moves.count &&
-                            i < fast_moves.count; ++i)
+                            i < fast_moves.count &&
+                            i < scratch_moves.count; ++i) {
                     CHECK(same_generated_move(&public_moves.moves[i],
                                               &fast_moves.moves[i]));
+                    CHECK(same_generated_move(&public_moves.moves[i],
+                                              &scratch_moves.moves[i]));
+                }
+                CHECK(same_board(&scratch, &board));
             }
         }
     }
