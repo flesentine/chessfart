@@ -64,6 +64,10 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     int child_alpha;
     int child_beta;
     int actor_was_in_check;
+    int opponent_king_located = 0;
+    int opponent_king_known = 0;
+    int opponent_king_file = -1;
+    int opponent_king_rank = -1;
     int i;
 
     if (budget_expired(c)) {
@@ -104,10 +108,21 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
             c->stats->budget_hit = 1;
             break;
         }
+        if (list->actions[i].type == CF_CPU_ACTION_FART &&
+            !opponent_king_located) {
+            opponent_king_known = cpu_internal_find_first_king(
+                b, board_other_color(b->side_to_move),
+                &opponent_king_file, &opponent_king_rank);
+            opponent_king_located = 1;
+        }
         if (!cpu_apply_action(b, g, &list->actions[i], &undo)) continue;
-        action_bonus = cpu_internal_action_bonus(b, g, &list->actions[i],
-                                                 &undo, &c->config,
-                                                 actor_was_in_check);
+        if (list->actions[i].type == CF_CPU_ACTION_FART)
+            action_bonus = cpu_internal_action_bonus_prelocated(
+                b, g, &list->actions[i], &undo, &c->config,
+                actor_was_in_check, opponent_king_known,
+                opponent_king_file, opponent_king_rank);
+        else
+            action_bonus = 0;
         child_alpha = shifted_bound(action_bonus, beta);
         child_beta = shifted_bound(action_bonus, alpha);
         score = -negamax(b, g, depth-1, child_alpha, child_beta, ply+1, c) +
@@ -141,6 +156,10 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     int score;
     int action_bonus;
     int actor_was_in_check;
+    int opponent_king_located = 0;
+    int opponent_king_known = 0;
+    int opponent_king_file = -1;
+    int opponent_king_rank = -1;
     int depth;
     int i;
 
@@ -183,10 +202,21 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
                 completed = 0;
                 break;
             }
+            if (root->actions[i].type == CF_CPU_ACTION_FART &&
+                !opponent_king_located) {
+                opponent_king_known = cpu_internal_find_first_king(
+                    b, board_other_color(b->side_to_move),
+                    &opponent_king_file, &opponent_king_rank);
+                opponent_king_located = 1;
+            }
             if (!cpu_apply_action(b, g, &root->actions[i], &undo)) continue;
-            action_bonus = cpu_internal_action_bonus(b, g, &root->actions[i],
-                                                     &undo, &c.config,
-                                                     actor_was_in_check);
+            if (root->actions[i].type == CF_CPU_ACTION_FART)
+                action_bonus = cpu_internal_action_bonus_prelocated(
+                    b, g, &root->actions[i], &undo, &c.config,
+                    actor_was_in_check, opponent_king_known,
+                    opponent_king_file, opponent_king_rank);
+            else
+                action_bonus = 0;
             score = -negamax(b, g, depth-1, -CPU_INF, CPU_INF, 1, &c) +
                     action_bonus;
             cpu_unapply_action(b, g, &undo);
