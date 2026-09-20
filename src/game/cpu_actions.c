@@ -317,23 +317,25 @@ int cpu_apply_action(CfBoard *board, CfGasState *gas,
                      const CfCpuAction *action, CfCpuUndo *undo)
 {
     CfCpuUndo local;
+    CfCpuUndo *out;
     int ok;
+
     if (board == 0 || gas == 0 || action == 0) return 0;
-    local.type = action->type;
+    out = undo != 0 ? undo : &local;
     if (action->type == CF_CPU_ACTION_MOVE)
         ok = gas_make_move_prevalidated(
             board, gas, action->from_file, action->from_rank,
             action->to_file, action->to_rank,
-            (CfPieceType)action->promotion, &local.action.move);
+            (CfPieceType)action->promotion, &out->action.move);
     else if (action->type == CF_CPU_ACTION_FART)
         ok = gas_make_fart_prevalidated(
             board, gas, action->from_file, action->from_rank,
             (CfFartDirection)action->direction,
             (CfFartPreview)action->fart_result,
-            (CfPieceType)action->promotion, &local.action.fart);
+            (CfPieceType)action->promotion, &out->action.fart);
     else return 0;
     if (!ok) return 0;
-    if (undo != 0) *undo = local;
+    out->type = action->type;
     return 1;
 }
 
