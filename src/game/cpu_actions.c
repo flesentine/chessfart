@@ -176,6 +176,9 @@ static void generate_actions_core(const CfBoard *board,
                     board_square_is_attacked(
                         board, actor_king_file, actor_king_rank,
                         board_other_color(board->side_to_move));
+            if (actor_in_check < 0)
+                actor_in_check =
+                    board_is_in_check(board, board->side_to_move);
             gas_scan_farts_prechecked(board, gas, file, rank,
                                       actor_in_check, &fart_scan);
             for (d = 0; d < 8; ++d) {
@@ -226,8 +229,11 @@ static int has_legal_action_core(const CfBoard *board,
     if (board == 0 || gas == 0) return 0;
     if (board_has_legal_move(board)) return 1;
 
-    actor_in_check = board_is_in_check(board, board->side_to_move);
-    if (actor_in_check_out != 0) *actor_in_check_out = actor_in_check;
+    actor_in_check = -1;
+    if (actor_in_check_out != 0) {
+        actor_in_check = board_is_in_check(board, board->side_to_move);
+        *actor_in_check_out = actor_in_check;
+    }
 
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
