@@ -770,6 +770,63 @@ static void run_movegen_king_profile(void)
            public_ms, prelocated_ms, movegen_king_profile_sink);
 }
 
+static volatile int movegen_scratch_profile_sink;
+
+static void run_movegen_scratch_profile(void)
+{
+    CfBoard board;
+    CfBoard scratch;
+    CfMoveList moves;
+    clock_t start;
+    clock_t end;
+    unsigned long per_piece_ms;
+    unsigned long shared_ms;
+    int repeat;
+    int file;
+    int rank;
+
+    board_init_starting_position(&board);
+    board.side_to_move = CF_COLOR_BLACK;
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if (board.squares[rank][file].color != CF_COLOR_BLACK)
+                    continue;
+                board_generate_legal_moves_prelocated(
+                    &board, file, rank, 4, 7, &moves);
+                movegen_scratch_profile_sink += moves.count;
+            }
+        }
+    }
+    end = clock();
+    per_piece_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        scratch = board;
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if (board.squares[rank][file].color != CF_COLOR_BLACK)
+                    continue;
+                board_generate_legal_moves_prelocated_scratch(
+                    &board, &scratch, file, rank, 4, 7, &moves);
+                movegen_scratch_profile_sink += moves.count;
+            }
+        }
+    }
+    end = clock();
+    shared_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("MOVEGEN_SCRATCH per_piece_ms=%lu shared_ms=%lu "
+           "board_bytes=%lu sink=%d\n",
+           per_piece_ms, shared_ms, (unsigned long)sizeof(CfBoard),
+           movegen_scratch_profile_sink);
+}
+
 static volatile int action_bonus_king_profile_sink;
 
 static void run_action_bonus_king_profile(void)
@@ -1094,6 +1151,7 @@ int main(void)
     run_check_lookup_profile();
     run_eval_check_profile();
     run_movegen_king_profile();
+    run_movegen_scratch_profile();
     run_action_bonus_king_profile();
     run_status_fart_profile();
     run_perft_profile();

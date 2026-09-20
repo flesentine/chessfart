@@ -117,6 +117,17 @@ void board_generate_legal_moves_prelocated(const CfBoard *board,
                                            int file, int rank,
                                            int king_file, int king_rank,
                                            CfMoveList *list);
+/*
+ * Search fast path: caller supplies a valid friendly piece coordinate, the
+ * first rank-major/file-major king coordinate, and a scratch board that is an
+ * exact copy of board on entry. The scratch board is restored before return.
+ */
+void board_generate_legal_moves_prelocated_scratch(
+                                           const CfBoard *board,
+                                           CfBoard *scratch,
+                                           int file, int rank,
+                                           int king_file, int king_rank,
+                                           CfMoveList *list);
 int board_has_legal_move(const CfBoard *board);
 int board_move_is_legal(const CfBoard *board, int from_file, int from_rank, int to_file, int to_rank);
 int board_make_move(CfBoard *board, int from_file, int from_rank, int to_file, int to_rank, CfMove *made_move);

@@ -563,11 +563,10 @@ void board_unmake_move(CfBoard *board, const CfMove *move)
 }
 
 static void generate_legal_moves_prelocated_core(
-    const CfBoard *board, int file, int rank,
+    const CfBoard *board, CfBoard *scratch, int file, int rank,
     int king_file, int king_rank, CfMoveList *list)
 {
     CfMoveList pseudo;
-    CfBoard scratch;
     CfPiece piece;
     CfPieceColor enemy;
     int check_file;
@@ -580,21 +579,21 @@ static void generate_legal_moves_prelocated_core(
     moving_first_king = piece.type == CF_PIECE_KING &&
                         file == king_file && rank == king_rank;
     generate_pseudo_moves(board, file, rank, &pseudo);
-    scratch = *board;
     for (i = 0; i < pseudo.count; ++i) {
-        apply_position_only(&scratch, &pseudo.moves[i]);
+        apply_position_only(scratch, &pseudo.moves[i]);
         check_file = moving_first_king ? pseudo.moves[i].to_file : king_file;
         check_rank = moving_first_king ? pseudo.moves[i].to_rank : king_rank;
-        if (!board_square_is_attacked(&scratch, check_file, check_rank, enemy) &&
+        if (!board_square_is_attacked(scratch, check_file, check_rank, enemy) &&
             list->count < CF_MAX_MOVES)
             list->moves[list->count++] = pseudo.moves[i];
-        unapply_position_only(&scratch, &pseudo.moves[i]);
+        unapply_position_only(scratch, &pseudo.moves[i]);
     }
 }
 
 void board_generate_legal_moves(const CfBoard *board, int file, int rank,
                                 CfMoveList *list)
 {
+    CfBoard scratch;
     CfPiece piece;
     int king_file;
     int king_rank;
@@ -605,7 +604,8 @@ void board_generate_legal_moves(const CfBoard *board, int file, int rank,
     piece = board->squares[rank][file];
     if (piece.type == CF_PIECE_NONE || piece.color != board->side_to_move) return;
     if (!find_king_square(board, piece.color, &king_file, &king_rank)) return;
-    generate_legal_moves_prelocated_core(board, file, rank,
+    scratch = *board;
+    generate_legal_moves_prelocated_core(board, &scratch, file, rank,
                                          king_file, king_rank, list);
 }
 
@@ -614,6 +614,7 @@ void board_generate_legal_moves_prelocated(const CfBoard *board,
                                            int king_file, int king_rank,
                                            CfMoveList *list)
 {
+    CfBoard scratch;
     CfPiece piece;
 
     if (list == 0) return;
@@ -624,7 +625,22 @@ void board_generate_legal_moves_prelocated(const CfBoard *board,
     if (piece.type == CF_PIECE_NONE || piece.color != board->side_to_move) return;
     if (board->squares[king_rank][king_file].type != CF_PIECE_KING ||
         board->squares[king_rank][king_file].color != piece.color) return;
-    generate_legal_moves_prelocated_core(board, file, rank,
+    scratch = *board;
+    generate_legal_moves_prelocated_core(board, &scratch, file, rank,
+                                         king_file, king_rank, list);
+}
+
+void board_generate_legal_moves_prelocated_scratch(
+                                           const CfBoard *board,
+                                           CfBoard *scratch,
+                                           int file, int rank,
+                                           int king_file, int king_rank,
+                                           CfMoveList *list)
+{
+    if (list == 0) return;
+    list->count = 0;
+    if (board == 0 || scratch == 0) return;
+    generate_legal_moves_prelocated_core(board, scratch, file, rank,
                                          king_file, king_rank, list);
 }
 
