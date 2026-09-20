@@ -613,6 +613,115 @@ static void run_action_bonus_king_profile(void)
     cpu_unapply_action(&board, &gas, &undo);
 }
 
+static volatile int status_fart_profile_sink;
+
+static int profile_legacy_status_has_fart(const CfBoard *board,
+                                          const CfGasState *gas)
+{
+    CfFartScan scan;
+    int file;
+    int rank;
+    int direction;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            if (gas->squares[rank][file] < CF_GAS_FART_COST ||
+                board->squares[rank][file].type == CF_PIECE_NONE ||
+                board->squares[rank][file].color != board->side_to_move)
+                continue;
+            gas_scan_farts(board, gas, file, rank, &scan);
+            for (direction = 0; direction < 8; ++direction)
+                if ((CfFartPreview)scan.preview[direction] != CF_FART_INVALID)
+                    return 1;
+        }
+    }
+    return 0;
+}
+
+static CfGameStatus profile_legacy_gas_status(const CfBoard *board,
+                                              const CfGasState *gas)
+{
+    int has_move;
+    int check;
+    int fart;
+
+    has_move = board_has_legal_move(board);
+    check = board_is_in_check(board, board->side_to_move);
+    fart = profile_legacy_status_has_fart(board, gas);
+    if (!has_move && !fart)
+        return check ? CF_GAME_CHECKMATE : CF_GAME_STALEMATE;
+    if (board_is_insufficient_material(board))
+        return CF_GAME_DRAW_INSUFFICIENT;
+    if (board->halfmove_clock >= 100U)
+        return CF_GAME_DRAW_FIFTY_MOVE;
+    if (check) return CF_GAME_CHECK;
+    return CF_GAME_ONGOING;
+}
+
+static void run_status_fart_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    clock_t start;
+    clock_t end;
+    unsigned long fast_ms;
+    unsigned long legacy_ms;
+    unsigned long fart_only_fast_ms;
+    unsigned long fart_only_legacy_ms;
+    int repeat;
+    int file;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    for (file = 0; file < 8; ++file)
+        gas_set(&gas, file, 1, 3U);
+
+    start = clock();
+    for (repeat = 0; repeat < 200000; ++repeat)
+        status_fart_profile_sink += (int)gas_game_status(&board, &gas, 0);
+    end = clock();
+    fast_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 200000; ++repeat)
+        status_fart_profile_sink +=
+            (int)profile_legacy_gas_status(&board, &gas);
+    end = clock();
+    legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 2, 1, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 1, 2, CF_PIECE_QUEEN, CF_COLOR_BLACK);
+    board_set_piece(&board, 7, 6, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    gas_set(&gas, 7, 6, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+
+    start = clock();
+    for (repeat = 0; repeat < 200000; ++repeat)
+        status_fart_profile_sink += (int)gas_game_status(&board, &gas, 0);
+    end = clock();
+    fart_only_fast_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 200000; ++repeat)
+        status_fart_profile_sink +=
+            (int)profile_legacy_gas_status(&board, &gas);
+    end = clock();
+    fart_only_legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("STATUS_FART ongoing_fast_ms=%lu ongoing_legacy_ms=%lu "
+           "fart_only_fast_ms=%lu fart_only_legacy_ms=%lu sink=%d\n",
+           fast_ms, legacy_ms, fart_only_fast_ms, fart_only_legacy_ms,
+           status_fart_profile_sink);
+}
+
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
     CfMoveList list;
@@ -750,6 +859,7 @@ int main(void)
     run_eval_check_profile();
     run_movegen_king_profile();
     run_action_bonus_king_profile();
+    run_status_fart_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);
