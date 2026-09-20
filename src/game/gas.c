@@ -710,7 +710,8 @@ int gas_history_repetition_count(const CfGasHistory *history,
     return count;
 }
 
-static int has_legal_fart(const CfBoard *board, const CfGasState *gas)
+static int has_legal_fart(const CfBoard *board, const CfGasState *gas,
+                          int actor_in_check)
 {
     CfFartScan scan;
     int file;
@@ -722,7 +723,8 @@ static int has_legal_fart(const CfBoard *board, const CfGasState *gas)
                 board->squares[rank][file].type == CF_PIECE_NONE ||
                 board->squares[rank][file].color != board->side_to_move)
                 continue;
-            gas_scan_farts(board, gas, file, rank, &scan);
+            gas_scan_farts_prechecked(board, gas, file, rank,
+                                      actor_in_check, &scan);
             for (direction = 0; direction < 8; ++direction)
                 if ((CfFartPreview)scan.preview[direction] != CF_FART_INVALID)
                     return 1;
@@ -740,7 +742,9 @@ CfGameStatus gas_game_status(const CfBoard *board, const CfGasState *gas,
     if (board == 0 || gas == 0) return CF_GAME_ONGOING;
     has_move = board_has_legal_move(board);
     check = board_is_in_check(board, board->side_to_move);
-    fart = has_legal_fart(board, gas);
+    fart = 0;
+    if (!has_move)
+        fart = has_legal_fart(board, gas, check);
     if (!has_move && !fart)
         return check ? CF_GAME_CHECKMATE : CF_GAME_STALEMATE;
     if (board_is_insufficient_material(board)) return CF_GAME_DRAW_INSUFFICIENT;
