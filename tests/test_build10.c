@@ -69,22 +69,59 @@ static void test_legal_action_probe_matches_generator(void)
     CfBoard board;
     CfGasState gas;
     CfCpuActionList list;
+    int actor_in_check;
 
     board_init_starting_position(&board);
     gas_init(&gas);
     cpu_generate_actions(&board, &gas, &list);
     CHECK(list.count > 0);
     CHECK(cpu_internal_has_legal_action(&board, &gas));
+    actor_in_check = 99;
+    CHECK(cpu_internal_has_legal_action_with_check(
+        &board, &gas, &actor_in_check));
+    CHECK(actor_in_check == -1);
 
+    /* Checkmate: the king has gas, but every Fart is still illegal. */
     board_clear(&board);
     gas_init(&gas);
     board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
     board_set_piece(&board, 2, 1, CF_PIECE_KING, CF_COLOR_BLACK);
     board_set_piece(&board, 1, 1, CF_PIECE_QUEEN, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    gas_set(&gas, 0, 0, 3U);
     board.side_to_move = CF_COLOR_WHITE;
     cpu_generate_actions(&board, &gas, &list);
     CHECK(list.count == 0);
     CHECK(!cpu_internal_has_legal_action(&board, &gas));
+    actor_in_check = -1;
+    CHECK(!cpu_internal_has_legal_action_with_check(
+        &board, &gas, &actor_in_check));
+    CHECK(actor_in_check == 1);
+
+    /* Stalemate: no chess move, no Fart, and the king is not in check. */
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 2, 1, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 1, 2, CF_PIECE_QUEEN, CF_COLOR_BLACK);
+    board.side_to_move = CF_COLOR_WHITE;
+    cpu_generate_actions(&board, &gas, &list);
+    CHECK(list.count == 0);
+    actor_in_check = -1;
+    CHECK(!cpu_internal_has_legal_action_with_check(
+        &board, &gas, &actor_in_check));
+    CHECK(actor_in_check == 0);
+
+    /* No chess move, but a legal BLOCKED Fart keeps the position alive. */
+    board_set_piece(&board, 7, 6, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    gas_set(&gas, 7, 6, 3U);
+    cpu_generate_actions(&board, &gas, &list);
+    CHECK(list.count > 0);
+    actor_in_check = -1;
+    CHECK(cpu_internal_has_legal_action_with_check(
+        &board, &gas, &actor_in_check));
+    CHECK(actor_in_check == 0);
 
     board_clear(&board);
     gas_init(&gas);
