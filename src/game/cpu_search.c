@@ -80,8 +80,13 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     if (ply >= CPU_SEARCH_PLY) return cpu_internal_evaluate(b, g);
 
     if (depth <= 0) {
-        if (!cpu_internal_has_legal_action(b, g)) {
-            if (board_is_in_check(b, b->side_to_move))
+        actor_was_in_check = -1;
+        if (!cpu_internal_has_legal_action(
+                b, g, &actor_was_in_check)) {
+            if (actor_was_in_check < 0)
+                actor_was_in_check = board_is_in_check(
+                    b, b->side_to_move);
+            if (actor_was_in_check)
                 return -CPU_MATE + ply;
             return 0;
         }
