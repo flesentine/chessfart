@@ -518,6 +518,88 @@ static void run_legal_probe_profile(void)
            fast_ms, reference_ms, legal_probe_profile_sink);
 }
 
+static volatile int leaf_terminal_profile_sink;
+
+static int profile_legacy_leaf_has_legal_action(const CfBoard *board,
+                                                const CfGasState *gas)
+{
+    const CfPiece *piece;
+    CfFartScan fart_scan;
+    int actor_in_check = -1;
+    int file;
+    int rank;
+    int d;
+
+    if (board_has_legal_move(board)) return 1;
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            piece = &board->squares[rank][file];
+            if (piece->type == CF_PIECE_NONE ||
+                piece->color != board->side_to_move ||
+                gas->squares[rank][file] < CF_GAS_FART_COST)
+                continue;
+            if (actor_in_check < 0)
+                actor_in_check =
+                    board_is_in_check(board, board->side_to_move);
+            gas_scan_farts_prechecked(board, gas, file, rank,
+                                      actor_in_check, &fart_scan);
+            for (d = 0; d < 8; ++d)
+                if ((CfFartPreview)fart_scan.preview[d] != CF_FART_INVALID)
+                    return 1;
+        }
+    }
+    return 0;
+}
+
+static void run_leaf_terminal_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    clock_t start;
+    clock_t end;
+    unsigned long fast_ms;
+    unsigned long legacy_ms;
+    int actor_in_check;
+    int repeat;
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 2, 1, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 1, 1, CF_PIECE_QUEEN, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    gas_set(&gas, 0, 0, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+
+    start = clock();
+    for (repeat = 0; repeat < 300000; ++repeat) {
+        actor_in_check = -1;
+        if (!cpu_internal_has_legal_action_with_check(
+                &board, &gas, &actor_in_check)) {
+            if (actor_in_check < 0)
+                actor_in_check =
+                    board_is_in_check(&board, board.side_to_move);
+            leaf_terminal_profile_sink += actor_in_check;
+        }
+    }
+    end = clock();
+    fast_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 300000; ++repeat) {
+        if (!profile_legacy_leaf_has_legal_action(&board, &gas))
+            leaf_terminal_profile_sink +=
+                board_is_in_check(&board, board.side_to_move);
+    }
+    end = clock();
+    legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("LEAF_TERMINAL fast_ms=%lu legacy_ms=%lu sink=%d\n",
+           fast_ms, legacy_ms, leaf_terminal_profile_sink);
+}
+
 static volatile int root_preflight_profile_sink;
 
 static void run_root_preflight_profile(void)
@@ -1007,6 +1089,7 @@ int main(void)
     run_move_apply_profile();
     run_undo_write_profile();
     run_legal_probe_profile();
+    run_leaf_terminal_profile();
     run_root_preflight_profile();
     run_check_lookup_profile();
     run_eval_check_profile();
