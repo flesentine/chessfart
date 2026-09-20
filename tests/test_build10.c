@@ -860,6 +860,29 @@ static void test_cpu_fart_promotes_own_pawn(void)
     cpu_unapply_action(&board, &gas, &undo);
 }
 
+static void test_cpu_apply_failure_preserves_undo(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfCpuAction action;
+    CfCpuUndo undo;
+    CfCpuUndo before;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    memset(&action, 0, sizeof(action));
+    action.type = CF_CPU_ACTION_MOVE;
+    action.from_file = 1;
+    action.from_rank = 0;
+    action.to_file = 1;
+    action.to_rank = 0;
+
+    memset(&undo, 0x5A, sizeof(undo));
+    before = undo;
+    CHECK(!cpu_apply_action(&board, &gas, &action, &undo));
+    CHECK(memcmp(&undo, &before, sizeof(undo)) == 0);
+}
+
 static void test_budget_cap(void)
 {
     CfBoard board;
@@ -903,6 +926,7 @@ int main(void)
     test_cpu_fart_gives_forcing_check();
     test_cpu_fart_wrecks_castling_with_check();
     test_cpu_fart_promotes_own_pawn();
+    test_cpu_apply_failure_preserves_undo();
     test_budget_cap();
     if (failures != 0) {
         printf("Build 10 CPU tests failed: %d\n", failures);
