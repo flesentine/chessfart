@@ -562,24 +562,20 @@ void board_unmake_move(CfBoard *board, const CfMove *move)
     board->fullmove_number = move->prev_fullmove_number;
 }
 
-void board_generate_legal_moves(const CfBoard *board, int file, int rank, CfMoveList *list)
+static void generate_legal_moves_prelocated_core(
+    const CfBoard *board, int file, int rank,
+    int king_file, int king_rank, CfMoveList *list)
 {
     CfMoveList pseudo;
     CfBoard scratch;
     CfPiece piece;
     CfPieceColor enemy;
-    int king_file;
-    int king_rank;
     int check_file;
     int check_rank;
     int moving_first_king;
     int i;
-    if (list == 0) return;
-    list->count = 0;
-    if (board == 0 || !in_bounds(file, rank)) return;
+
     piece = board->squares[rank][file];
-    if (piece.type == CF_PIECE_NONE || piece.color != board->side_to_move) return;
-    if (!find_king_square(board, piece.color, &king_file, &king_rank)) return;
     enemy = board_other_color(piece.color);
     moving_first_king = piece.type == CF_PIECE_KING &&
                         file == king_file && rank == king_rank;
@@ -594,6 +590,42 @@ void board_generate_legal_moves(const CfBoard *board, int file, int rank, CfMove
             list->moves[list->count++] = pseudo.moves[i];
         unapply_position_only(&scratch, &pseudo.moves[i]);
     }
+}
+
+void board_generate_legal_moves(const CfBoard *board, int file, int rank,
+                                CfMoveList *list)
+{
+    CfPiece piece;
+    int king_file;
+    int king_rank;
+
+    if (list == 0) return;
+    list->count = 0;
+    if (board == 0 || !in_bounds(file, rank)) return;
+    piece = board->squares[rank][file];
+    if (piece.type == CF_PIECE_NONE || piece.color != board->side_to_move) return;
+    if (!find_king_square(board, piece.color, &king_file, &king_rank)) return;
+    generate_legal_moves_prelocated_core(board, file, rank,
+                                         king_file, king_rank, list);
+}
+
+void board_generate_legal_moves_prelocated(const CfBoard *board,
+                                           int file, int rank,
+                                           int king_file, int king_rank,
+                                           CfMoveList *list)
+{
+    CfPiece piece;
+
+    if (list == 0) return;
+    list->count = 0;
+    if (board == 0 || !in_bounds(file, rank) ||
+        !in_bounds(king_file, king_rank)) return;
+    piece = board->squares[rank][file];
+    if (piece.type == CF_PIECE_NONE || piece.color != board->side_to_move) return;
+    if (board->squares[king_rank][king_file].type != CF_PIECE_KING ||
+        board->squares[king_rank][king_file].color != piece.color) return;
+    generate_legal_moves_prelocated_core(board, file, rank,
+                                         king_file, king_rank, list);
 }
 
 int board_has_legal_move(const CfBoard *board)

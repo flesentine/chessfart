@@ -484,6 +484,58 @@ static void run_eval_check_profile(void)
            scanned_pair_ms, folded_pair_ms, eval_check_profile_sink);
 }
 
+static volatile int movegen_king_profile_sink;
+
+static void run_movegen_king_profile(void)
+{
+    CfBoard board;
+    CfMoveList moves;
+    clock_t start;
+    clock_t end;
+    unsigned long public_ms;
+    unsigned long prelocated_ms;
+    int repeat;
+    int file;
+    int rank;
+
+    board_init_starting_position(&board);
+    board.side_to_move = CF_COLOR_BLACK;
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if (board.squares[rank][file].color != CF_COLOR_BLACK)
+                    continue;
+                board_generate_legal_moves(&board, file, rank, &moves);
+                movegen_king_profile_sink += moves.count;
+            }
+        }
+    }
+    end = clock();
+    public_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if (board.squares[rank][file].color != CF_COLOR_BLACK)
+                    continue;
+                board_generate_legal_moves_prelocated(
+                    &board, file, rank, 4, 7, &moves);
+                movegen_king_profile_sink += moves.count;
+            }
+        }
+    }
+    end = clock();
+    prelocated_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("MOVEGEN_KING public_ms=%lu prelocated_ms=%lu sink=%d\n",
+           public_ms, prelocated_ms, movegen_king_profile_sink);
+}
+
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
     CfMoveList list;
@@ -619,6 +671,7 @@ int main(void)
     run_root_preflight_profile();
     run_check_lookup_profile();
     run_eval_check_profile();
+    run_movegen_king_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);

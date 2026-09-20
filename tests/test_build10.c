@@ -241,6 +241,102 @@ static void test_folded_eval_check_pair_matches_public_api(void)
     }
 }
 
+static int same_generated_move(const CfMove *a, const CfMove *b)
+{
+    return a->from_file == b->from_file &&
+           a->from_rank == b->from_rank &&
+           a->to_file == b->to_file &&
+           a->to_rank == b->to_rank &&
+           a->captured_file == b->captured_file &&
+           a->captured_rank == b->captured_rank &&
+           a->moved.type == b->moved.type &&
+           a->moved.color == b->moved.color &&
+           a->captured.type == b->captured.type &&
+           a->captured.color == b->captured.color &&
+           a->promotion == b->promotion &&
+           a->flags == b->flags &&
+           a->prev_side_to_move == b->prev_side_to_move &&
+           a->prev_castling_rights == b->prev_castling_rights &&
+           a->prev_en_passant_file == b->prev_en_passant_file &&
+           a->prev_en_passant_rank == b->prev_en_passant_rank &&
+           a->prev_halfmove_clock == b->prev_halfmove_clock &&
+           a->prev_fullmove_number == b->prev_fullmove_number;
+}
+
+static void test_prelocated_king_move_generation_matches_public(void)
+{
+    CfBoard board;
+    CfMoveList public_moves;
+    CfMoveList fast_moves;
+    unsigned long rng = 0x16C0FFEEUL;
+    CfPieceType type;
+    CfPieceColor color;
+    CfPieceColor side;
+    int king_file;
+    int king_rank;
+    int sample;
+    int file;
+    int rank;
+    int i;
+
+    for (sample = 0; sample < 256; ++sample) {
+        board_clear(&board);
+        side = (eval_king_rng_next(&rng) & 1UL) != 0UL ?
+               CF_COLOR_WHITE : CF_COLOR_BLACK;
+        board.side_to_move = side;
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if ((eval_king_rng_next(&rng) & 3UL) != 0UL) continue;
+                type = (CfPieceType)(1 +
+                       (eval_king_rng_next(&rng) % 6UL));
+                color = (eval_king_rng_next(&rng) & 1UL) != 0UL ?
+                        CF_COLOR_WHITE : CF_COLOR_BLACK;
+                board_set_piece(&board, file, rank, type, color);
+            }
+        }
+
+        file = (int)(eval_king_rng_next(&rng) & 7UL);
+        rank = (int)(eval_king_rng_next(&rng) & 7UL);
+        board_set_piece(&board, file, rank, CF_PIECE_KING, side);
+
+        king_file = -1;
+        king_rank = -1;
+        for (rank = 0; rank < 8 && king_file < 0; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if (board.squares[rank][file].type == CF_PIECE_KING &&
+                    board.squares[rank][file].color == side) {
+                    king_file = file;
+                    king_rank = rank;
+                    break;
+                }
+            }
+        }
+        CHECK(king_file >= 0);
+
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                if (board.squares[rank][file].type == CF_PIECE_NONE ||
+                    board.squares[rank][file].color != side)
+                    continue;
+                board_generate_legal_moves(&board, file, rank, &public_moves);
+                board_generate_legal_moves_prelocated(
+                    &board, file, rank, king_file, king_rank, &fast_moves);
+                CHECK(public_moves.count == fast_moves.count);
+                for (i = 0; i < public_moves.count &&
+                            i < fast_moves.count; ++i)
+                    CHECK(same_generated_move(&public_moves.moves[i],
+                                              &fast_moves.moves[i]));
+            }
+        }
+    }
+
+    board_clear(&board);
+    board.side_to_move = CF_COLOR_WHITE;
+    board_set_piece(&board, 0, 0, CF_PIECE_ROOK, CF_COLOR_WHITE);
+    board_generate_legal_moves(&board, 0, 0, &public_moves);
+    CHECK(public_moves.count == 0);
+}
+
 static void test_evaluation_and_order_scores_stable(void)
 {
     CfBoard board;
@@ -706,6 +802,7 @@ int main(void)
     test_action_storage_contract();
     test_merge_sort_matches_stable_insertion();
     test_folded_eval_check_pair_matches_public_api();
+    test_prelocated_king_move_generation_matches_public();
     test_evaluation_and_order_scores_stable();
     test_legal_action_probe_matches_generator();
     test_root_draw_preflight_matches_status();

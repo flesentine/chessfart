@@ -16,6 +16,25 @@ static int piece_value(CfPieceType type)
     return values[index];
 }
 
+static int find_first_king(const CfBoard *board, CfPieceColor color,
+                           int *king_file, int *king_rank)
+{
+    int file;
+    int rank;
+    if (board == 0) return 0;
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            if (board->squares[rank][file].type == CF_PIECE_KING &&
+                board->squares[rank][file].color == color) {
+                *king_file = file;
+                *king_rank = rank;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 static int move_order_score(const CfMove *move)
 {
     int score = 0;
@@ -124,6 +143,9 @@ static void generate_actions_core(const CfBoard *board,
     CfFartScan fart_scan;
     CfFartPreview preview;
     int actor_in_check = -1;
+    int actor_king_file = -1;
+    int actor_king_rank = -1;
+    int have_actor_king;
     int file;
     int rank;
     int i;
@@ -134,16 +156,25 @@ static void generate_actions_core(const CfBoard *board,
     if (list == 0) return;
     list->count = 0;
     if (board == 0 || gas == 0) return;
+    have_actor_king = find_first_king(board, board->side_to_move,
+                                      &actor_king_file, &actor_king_rank);
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
             piece = &board->squares[rank][file];
             if (piece->type == CF_PIECE_NONE ||
                 piece->color != board->side_to_move) continue;
-            board_generate_legal_moves(board, file, rank, &moves);
+            if (have_actor_king)
+                board_generate_legal_moves_prelocated(
+                    board, file, rank, actor_king_file, actor_king_rank, &moves);
+            else
+                moves.count = 0;
             for (i = 0; i < moves.count; ++i) add_move(list, &moves.moves[i]);
             if (gas->squares[rank][file] < CF_GAS_FART_COST) continue;
             if (actor_in_check < 0)
-                actor_in_check = board_is_in_check(board, board->side_to_move);
+                actor_in_check = !have_actor_king ||
+                    board_square_is_attacked(
+                        board, actor_king_file, actor_king_rank,
+                        board_other_color(board->side_to_move));
             gas_scan_farts_prechecked(board, gas, file, rank,
                                       actor_in_check, &fart_scan);
             for (d = 0; d < 8; ++d) {
