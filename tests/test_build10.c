@@ -75,9 +75,9 @@ static void test_legal_action_probe_matches_generator(void)
     gas_init(&gas);
     cpu_generate_actions(&board, &gas, &list);
     CHECK(list.count > 0);
-    CHECK(cpu_internal_has_legal_action(&board, &gas));
+    CHECK(cpu_internal_has_legal_action(&board, &gas, 0));
     actor_in_check = 99;
-    CHECK(cpu_internal_has_legal_action_with_check(
+    CHECK(cpu_internal_has_legal_action(
         &board, &gas, &actor_in_check));
     CHECK(actor_in_check == -1);
 
@@ -92,9 +92,9 @@ static void test_legal_action_probe_matches_generator(void)
     board.side_to_move = CF_COLOR_WHITE;
     cpu_generate_actions(&board, &gas, &list);
     CHECK(list.count == 0);
-    CHECK(!cpu_internal_has_legal_action(&board, &gas));
+    CHECK(!cpu_internal_has_legal_action(&board, &gas, 0));
     actor_in_check = -1;
-    CHECK(!cpu_internal_has_legal_action_with_check(
+    CHECK(!cpu_internal_has_legal_action(
         &board, &gas, &actor_in_check));
     CHECK(actor_in_check == 1);
 
@@ -108,7 +108,7 @@ static void test_legal_action_probe_matches_generator(void)
     cpu_generate_actions(&board, &gas, &list);
     CHECK(list.count == 0);
     actor_in_check = -1;
-    CHECK(!cpu_internal_has_legal_action_with_check(
+    CHECK(!cpu_internal_has_legal_action(
         &board, &gas, &actor_in_check));
     CHECK(actor_in_check == 0);
 
@@ -119,7 +119,7 @@ static void test_legal_action_probe_matches_generator(void)
     cpu_generate_actions(&board, &gas, &list);
     CHECK(list.count > 0);
     actor_in_check = -1;
-    CHECK(cpu_internal_has_legal_action_with_check(
+    CHECK(cpu_internal_has_legal_action(
         &board, &gas, &actor_in_check));
     CHECK(actor_in_check == 0);
 
@@ -133,7 +133,7 @@ static void test_legal_action_probe_matches_generator(void)
     board.side_to_move = CF_COLOR_WHITE;
     cpu_generate_actions(&board, &gas, &list);
     CHECK(list.count > 0);
-    CHECK(cpu_internal_has_legal_action(&board, &gas));
+    CHECK(cpu_internal_has_legal_action(&board, &gas, 0));
 }
 
 static void reference_insertion_sort(CfCpuActionList *list)
