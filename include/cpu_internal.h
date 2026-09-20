@@ -8,6 +8,9 @@ void cpu_internal_generate_actions(const CfBoard *board,
 void cpu_internal_sort_actions(CfCpuActionList *list, CfCpuActionList *scratch);
 int cpu_internal_has_legal_action(const CfBoard *board,
                                   const CfGasState *gas);
+int cpu_internal_has_legal_action_with_check(const CfBoard *board,
+                                             const CfGasState *gas,
+                                             int *actor_in_check);
 int cpu_internal_find_first_king(const CfBoard *board, CfPieceColor color,
                                  int *king_file, int *king_rank);
 int cpu_internal_evaluate(const CfBoard *board, const CfGasState *gas);
