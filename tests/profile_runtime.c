@@ -306,6 +306,158 @@ static void run_move_apply_profile(void)
            fast_ms, public_ms, move_apply_profile_sink);
 }
 
+static volatile unsigned long undo_write_profile_sink;
+
+static int profile_legacy_gas_move_prevalidated(
+    CfBoard *board, CfGasState *gas,
+    int from_file, int from_rank, int to_file, int to_rank,
+    CfPieceType promotion, CfGasMove *made_move)
+{
+    CfGasMove local;
+    if (!gas_make_move_prevalidated(board, gas,
+                                    from_file, from_rank,
+                                    to_file, to_rank,
+                                    promotion, &local))
+        return 0;
+    if (made_move != 0) *made_move = local;
+    return 1;
+}
+
+static int profile_legacy_gas_fart_prevalidated(
+    CfBoard *board, CfGasState *gas,
+    int file, int rank, CfFartDirection direction,
+    CfFartPreview preview, CfPieceType promotion,
+    CfFartAction *action)
+{
+    CfFartAction local;
+    if (!gas_make_fart_prevalidated(board, gas, file, rank,
+                                    direction, preview,
+                                    promotion, &local))
+        return 0;
+    if (action != 0) *action = local;
+    return 1;
+}
+
+static int profile_legacy_cpu_apply_action(
+    CfBoard *board, CfGasState *gas,
+    const CfCpuAction *action, CfCpuUndo *undo)
+{
+    CfCpuUndo local;
+    int ok;
+
+    if (action->type == CF_CPU_ACTION_MOVE)
+        ok = profile_legacy_gas_move_prevalidated(
+            board, gas, action->from_file, action->from_rank,
+            action->to_file, action->to_rank,
+            (CfPieceType)action->promotion, &local.action.move);
+    else if (action->type == CF_CPU_ACTION_FART)
+        ok = profile_legacy_gas_fart_prevalidated(
+            board, gas, action->from_file, action->from_rank,
+            (CfFartDirection)action->direction,
+            (CfFartPreview)action->fart_result,
+            (CfPieceType)action->promotion, &local.action.fart);
+    else
+        return 0;
+
+    if (!ok) return 0;
+    local.type = action->type;
+    if (undo != 0) *undo = local;
+    return 1;
+}
+
+static void run_undo_write_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfCpuAction move_action;
+    CfCpuAction fart_action;
+    CfCpuUndo undo;
+    clock_t start;
+    clock_t end;
+    unsigned long move_direct_ms;
+    unsigned long move_legacy_ms;
+    unsigned long fart_direct_ms;
+    unsigned long fart_legacy_ms;
+    int repeat;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    memset(&move_action, 0, sizeof(move_action));
+    move_action.type = CF_CPU_ACTION_MOVE;
+    move_action.from_file = 1;
+    move_action.from_rank = 0;
+    move_action.to_file = 2;
+    move_action.to_rank = 2;
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat) {
+        if (!cpu_apply_action(&board, &gas, &move_action, &undo)) break;
+        undo_write_profile_sink +=
+            (unsigned long)undo.action.move.chess_move.to_file;
+        cpu_unapply_action(&board, &gas, &undo);
+    }
+    end = clock();
+    move_direct_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat) {
+        if (!profile_legacy_cpu_apply_action(
+                &board, &gas, &move_action, &undo)) break;
+        undo_write_profile_sink +=
+            (unsigned long)undo.action.move.chess_move.to_file;
+        cpu_unapply_action(&board, &gas, &undo);
+    }
+    end = clock();
+    move_legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 2, CF_PIECE_KNIGHT, CF_COLOR_WHITE);
+    board_set_piece(&board, 3, 3, CF_PIECE_PAWN, CF_COLOR_BLACK);
+    gas_set(&gas, 2, 2, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+    memset(&fart_action, 0, sizeof(fart_action));
+    fart_action.type = CF_CPU_ACTION_FART;
+    fart_action.from_file = 2;
+    fart_action.from_rank = 2;
+    fart_action.direction = CF_FART_NE;
+    fart_action.fart_result = CF_FART_PUSH;
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat) {
+        if (!cpu_apply_action(&board, &gas, &fart_action, &undo)) break;
+        undo_write_profile_sink +=
+            (unsigned long)undo.action.fart.destination_file;
+        cpu_unapply_action(&board, &gas, &undo);
+    }
+    end = clock();
+    fart_direct_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat) {
+        if (!profile_legacy_cpu_apply_action(
+                &board, &gas, &fart_action, &undo)) break;
+        undo_write_profile_sink +=
+            (unsigned long)undo.action.fart.destination_file;
+        cpu_unapply_action(&board, &gas, &undo);
+    }
+    end = clock();
+    fart_legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("UNDO_WRITE move_direct_ms=%lu move_legacy_ms=%lu "
+           "fart_direct_ms=%lu fart_legacy_ms=%lu bytes=%lu sink=%lu\n",
+           move_direct_ms, move_legacy_ms,
+           fart_direct_ms, fart_legacy_ms,
+           (unsigned long)sizeof(CfCpuUndo),
+           undo_write_profile_sink);
+}
+
 static volatile int legal_probe_profile_sink;
 
 static int profile_reference_has_legal_action(const CfBoard *board,
@@ -853,6 +1005,7 @@ int main(void)
     run_fart_apply_profile();
     run_move_clear_profile();
     run_move_apply_profile();
+    run_undo_write_profile();
     run_legal_probe_profile();
     run_root_preflight_profile();
     run_check_lookup_profile();
