@@ -214,9 +214,9 @@ void cpu_internal_generate_actions(const CfBoard *board,
     generate_actions_core(board, gas, list, actor_in_check);
 }
 
-static int has_legal_action_core(const CfBoard *board,
-                                 const CfGasState *gas,
-                                 int *actor_in_check_out)
+int cpu_internal_has_legal_action(const CfBoard *board,
+                                  const CfGasState *gas,
+                                  int *actor_in_check_out)
 {
     const CfPiece *piece;
     CfFartScan fart_scan;
@@ -251,19 +251,6 @@ static int has_legal_action_core(const CfBoard *board,
         }
     }
     return 0;
-}
-
-int cpu_internal_has_legal_action(const CfBoard *board,
-                                  const CfGasState *gas)
-{
-    return has_legal_action_core(board, gas, 0);
-}
-
-int cpu_internal_has_legal_action_with_check(const CfBoard *board,
-                                             const CfGasState *gas,
-                                             int *actor_in_check)
-{
-    return has_legal_action_core(board, gas, actor_in_check);
 }
 
 static void insertion_sort_actions(CfCpuActionList *list)
