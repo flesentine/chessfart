@@ -586,6 +586,109 @@ static void test_push_history_uses_gas_and_position(void)
     CHECK(gas_history_repetition_count(&history, &board, &gas) == 1);
 }
 
+static int legacy_status_has_legal_fart(const CfBoard *board,
+                                        const CfGasState *gas)
+{
+    CfFartScan scan;
+    int file;
+    int rank;
+    int direction;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            if (gas->squares[rank][file] < CF_GAS_FART_COST ||
+                board->squares[rank][file].type == CF_PIECE_NONE ||
+                board->squares[rank][file].color != board->side_to_move)
+                continue;
+            gas_scan_farts(board, gas, file, rank, &scan);
+            for (direction = 0; direction < 8; ++direction)
+                if ((CfFartPreview)scan.preview[direction] != CF_FART_INVALID)
+                    return 1;
+        }
+    }
+    return 0;
+}
+
+static CfGameStatus legacy_gas_game_status(const CfBoard *board,
+                                           const CfGasState *gas)
+{
+    int has_move;
+    int check;
+    int fart;
+
+    if (board == 0 || gas == 0) return CF_GAME_ONGOING;
+    has_move = board_has_legal_move(board);
+    check = board_is_in_check(board, board->side_to_move);
+    fart = legacy_status_has_legal_fart(board, gas);
+    if (!has_move && !fart)
+        return check ? CF_GAME_CHECKMATE : CF_GAME_STALEMATE;
+    if (board_is_insufficient_material(board))
+        return CF_GAME_DRAW_INSUFFICIENT;
+    if (board->halfmove_clock >= 100U)
+        return CF_GAME_DRAW_FIFTY_MOVE;
+    if (check) return CF_GAME_CHECK;
+    return CF_GAME_ONGOING;
+}
+
+static void test_gas_game_status_fast_path_matches_legacy(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    unsigned long rng = 0x57A70518UL;
+    CfPieceType type;
+    CfPieceColor color;
+    int sample;
+    int square;
+    int file;
+    int rank;
+
+    for (sample = 0; sample < 256; ++sample) {
+        board_clear(&board);
+        gas_init(&gas);
+        board.side_to_move =
+            (fart_scan_rng_next(&rng) & 1UL) != 0UL ?
+            CF_COLOR_WHITE : CF_COLOR_BLACK;
+
+        for (square = 0; square < 64; ++square) {
+            if ((fart_scan_rng_next(&rng) & 3UL) != 0UL) continue;
+            file = square & 7;
+            rank = square >> 3;
+            type = (CfPieceType)(1 +
+                   (fart_scan_rng_next(&rng) % 6UL));
+            color = (fart_scan_rng_next(&rng) & 1UL) != 0UL ?
+                    CF_COLOR_WHITE : CF_COLOR_BLACK;
+            board_set_piece(&board, file, rank, type, color);
+            gas_set(&gas, file, rank,
+                    (cf_u8)(fart_scan_rng_next(&rng) & 3UL));
+        }
+
+        CHECK(gas_game_status(&board, &gas, 0) ==
+              legacy_gas_game_status(&board, &gas));
+    }
+
+    /*
+     * No chess move, but a blocked Fart remains legal. This forces the
+     * terminal-status path to consult Farts and verifies that reusing the
+     * already-known check state does not turn the position into stalemate.
+     */
+    board_clear(&board);
+    gas_init(&gas);
+    board_set_piece(&board, 0, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 2, 1, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 1, 2, CF_PIECE_QUEEN, CF_COLOR_BLACK);
+    board_set_piece(&board, 7, 6, CF_PIECE_PAWN, CF_COLOR_WHITE);
+    board_set_piece(&board, 7, 7, CF_PIECE_ROOK, CF_COLOR_BLACK);
+    gas_set(&gas, 7, 6, 3U);
+    board.side_to_move = CF_COLOR_WHITE;
+
+    CHECK(!board_is_in_check(&board, CF_COLOR_WHITE));
+    CHECK(!board_has_legal_move(&board));
+    CHECK(gas_preview_fart(&board, &gas, 7, 6, CF_FART_N) ==
+          CF_FART_BLOCKED);
+    CHECK(legacy_gas_game_status(&board, &gas) == CF_GAME_ONGOING);
+    CHECK(gas_game_status(&board, &gas, 0) == CF_GAME_ONGOING);
+}
+
 int main(void)
 {
     test_batch_fart_scan_matches_public_api();
@@ -601,6 +704,7 @@ int main(void)
     test_displaced_king_loses_castling_and_ep_expires();
     test_pushed_pawn_promotion();
     test_push_history_uses_gas_and_position();
+    test_gas_game_status_fast_path_matches_legacy();
 
     if (failures != 0) {
         printf("Build 6 tests failed: %d\n", failures);
