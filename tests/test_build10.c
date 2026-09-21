@@ -970,24 +970,29 @@ static void test_cpu_apply_failure_preserves_undo(void)
 
 static void test_budget_cap(void)
 {
+    static const unsigned long budgets[] = {1UL, 2UL, 3UL, 8UL, 17UL};
     CfBoard board;
     CfGasState gas;
     CfGasHistory history;
     CfCpuConfig config;
     CfCpuAction action;
     CfCpuStats stats;
+    int i;
 
     board_init_starting_position(&board);
     gas_init(&gas);
     gas_history_init(&history, &board, &gas);
     cpu_config_for_difficulty(&config, CF_CPU_HARD);
     config.max_depth = 4;
-    config.node_budget = 8UL;
     config.time_limit_ms = 0UL;
-    CHECK(cpu_choose_action(&board, &gas, &history, &config, &action, &stats));
-    CHECK(stats.nodes <= config.node_budget);
-    CHECK(stats.budget_hit);
-    CHECK(action.type != CF_CPU_ACTION_NONE);
+    for (i = 0; i < (int)(sizeof(budgets) / sizeof(budgets[0])); ++i) {
+        config.node_budget = budgets[i];
+        CHECK(cpu_choose_action(
+            &board, &gas, &history, &config, &action, &stats));
+        CHECK(stats.nodes <= config.node_budget);
+        CHECK(stats.budget_hit);
+        CHECK(action.type != CF_CPU_ACTION_NONE);
+    }
 }
 
 int main(void)
