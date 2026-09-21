@@ -129,7 +129,7 @@ $(TEST17_BINARY): tests/test_build17.c src/game/ui_theme.c include/ui_theme.h in
 
 $(PROFILE_BINARY): tests/profile_runtime.c $(CPU_SOURCES) include/version.h include/replay.h include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
 	mkdir -p build/host
-	$(CC) $(CFLAGS) tests/profile_runtime.c $(CPU_SOURCES) -o $(PROFILE_BINARY)
+	$(CC) $(CFLAGS) -DCF_PROFILE_RUNTIME tests/profile_runtime.c $(CPU_SOURCES) -o $(PROFILE_BINARY)
 
 host-run: host
 	./$(HOST_BINARY)
