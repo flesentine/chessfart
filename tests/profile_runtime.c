@@ -1408,6 +1408,110 @@ static void run_status_fart_profile(void)
            status_fart_profile_sink);
 }
 
+static volatile int action_gen_total_profile_sink;
+
+static void run_action_generation_total_profile(void)
+{
+    static CfCpuActionList list;
+    CfBoard board;
+    CfGasState gas;
+    clock_t start;
+    clock_t end;
+    unsigned long start_ms;
+    unsigned long gas_ms;
+    int repeat;
+    int file;
+    int start_count;
+    int gas_count;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        cpu_generate_actions(&board, &gas, &list);
+        action_gen_total_profile_sink += list.count;
+    }
+    end = clock();
+    start_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+    cpu_generate_actions(&board, &gas, &list);
+    start_count = list.count;
+
+    for (file = 0; file < 8; ++file) {
+        gas_set(&gas, file, 1, 3U);
+        gas_set(&gas, file, 6, 3U);
+    }
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        cpu_generate_actions(&board, &gas, &list);
+        action_gen_total_profile_sink += list.count;
+    }
+    end = clock();
+    gas_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+    cpu_generate_actions(&board, &gas, &list);
+    gas_count = list.count;
+
+    printf("ACTION_GEN_TOTAL start_ms=%lu start_actions=%d "
+           "gas_ms=%lu gas_actions=%d sink=%d\n",
+           start_ms, start_count, gas_ms, gas_count,
+           action_gen_total_profile_sink);
+}
+
+#ifdef CF_PROFILE_RUNTIME
+static void print_search_counters(const char *name)
+{
+    const CfCpuProfileCounters *p;
+    p = cpu_internal_profile_counters();
+    printf("SEARCH_COUNTS %s budget_full=%lu node_guard=%lu "
+           "action_gen=%lu sort=%lu legal_probe=%lu eval=%lu "
+           "move_attempt=%lu fart_attempt=%lu fart_bonus=%lu\n",
+           name,
+           p->full_budget_checks, p->node_guard_checks,
+           p->action_gen_calls, p->sort_calls,
+           p->legal_probe_calls, p->eval_calls,
+           p->move_attempts, p->fart_attempts,
+           p->fart_bonus_calls);
+}
+
+static void run_search_counter_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+    int file;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    gas_history_init(&history, &board, &gas);
+    cpu_config_for_difficulty(&config, CF_CPU_HARD);
+    config.time_limit_ms = 0UL;
+    cpu_internal_profile_reset();
+    if (cpu_choose_action(
+            &board, &gas, &history, &config, &action, &stats))
+        print_search_counters("HARD_START");
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    for (file = 0; file < 8; ++file) {
+        gas_set(&gas, file, 1, 3U);
+        gas_set(&gas, file, 6, 3U);
+    }
+    board.side_to_move = CF_COLOR_BLACK;
+    gas_history_init(&history, &board, &gas);
+    cpu_config_for_difficulty(&config, CF_CPU_MEDIUM);
+    config.time_limit_ms = 0UL;
+    cpu_internal_profile_reset();
+    if (cpu_choose_action(
+            &board, &gas, &history, &config, &action, &stats))
+        print_search_counters("FART_HEAVY");
+}
+#endif
+
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
     CfMoveList list;
@@ -1583,6 +1687,10 @@ int main(void)
     run_movegen_scratch_profile();
     run_action_bonus_king_profile();
     run_status_fart_profile();
+    run_action_generation_total_profile();
+#ifdef CF_PROFILE_RUNTIME
+    run_search_counter_profile();
+#endif
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);
