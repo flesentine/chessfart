@@ -710,6 +710,59 @@ static void run_postgen_check_profile(void)
            skipped_ms, legacy_ms, postgen_check_profile_sink);
 }
 
+static volatile unsigned long budget_guard_profile_sink;
+static volatile unsigned long budget_guard_profile_nodes = 1234UL;
+static volatile unsigned long budget_guard_profile_limit = 50000UL;
+
+static void run_budget_guard_profile(void)
+{
+    clock_t origin;
+    clock_t start;
+    clock_t end;
+    clock_t now;
+    unsigned long elapsed;
+    unsigned long node_guard_ms;
+    unsigned long full_guard_ms;
+    unsigned long nodes;
+    unsigned long node_budget;
+    int repeat;
+
+    nodes = budget_guard_profile_nodes;
+    node_budget = budget_guard_profile_limit;
+
+    start = clock();
+    for (repeat = 0; repeat < 1000000; ++repeat) {
+        if (node_budget != 0UL && nodes >= node_budget)
+            ++budget_guard_profile_sink;
+        budget_guard_profile_sink += nodes & 1UL;
+    }
+    end = clock();
+    node_guard_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    origin = clock();
+    start = clock();
+    for (repeat = 0; repeat < 1000000; ++repeat) {
+        if (node_budget != 0UL && nodes >= node_budget) {
+            ++budget_guard_profile_sink;
+        } else {
+            now = clock();
+            elapsed = now >= origin ?
+                (unsigned long)(now - origin) * 1000UL /
+                (unsigned long)CLOCKS_PER_SEC : 0UL;
+            if (elapsed >= 60000UL)
+                ++budget_guard_profile_sink;
+        }
+        budget_guard_profile_sink += nodes & 1UL;
+    }
+    end = clock();
+    full_guard_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("BUDGET_GUARD node_only_ms=%lu full_ms=%lu sink=%lu\n",
+           node_guard_ms, full_guard_ms, budget_guard_profile_sink);
+}
+
 static volatile int check_lookup_profile_sink;
 
 static void run_check_lookup_profile(void)
@@ -1152,6 +1205,37 @@ static void run_profile(const char *name, CfCpuDifficulty difficulty)
            stats.score, stats.budget_hit, elapsed_ms);
 }
 
+static void run_timed_hard_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfGasHistory history;
+    CfCpuConfig config;
+    CfCpuAction action;
+    CfCpuStats stats;
+    clock_t start;
+    clock_t end;
+    unsigned long elapsed_ms;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    gas_history_init(&history, &board, &gas);
+    cpu_config_for_difficulty(&config, CF_CPU_HARD);
+    start = clock();
+    if (!cpu_choose_action(
+            &board, &gas, &history, &config, &action, &stats)) {
+        printf("HARD_TIMED ERROR no-action\n");
+        return;
+    }
+    end = clock();
+    elapsed_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+    printf("HARD_TIMED depth=%d nodes=%lu cutoffs=%lu score=%d "
+           "budget=%d elapsed_ms=%lu\n",
+           stats.depth_completed, stats.nodes, stats.cutoffs,
+           stats.score, stats.budget_hit, elapsed_ms);
+}
+
 static void run_fart_profile(void)
 {
     CfBoard board;
@@ -1214,6 +1298,7 @@ int main(void)
     run_leaf_terminal_profile();
     run_root_preflight_profile();
     run_postgen_check_profile();
+    run_budget_guard_profile();
     run_check_lookup_profile();
     run_eval_check_profile();
     run_movegen_king_profile();
@@ -1224,6 +1309,7 @@ int main(void)
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);
     run_profile("HARD_START", CF_CPU_HARD);
+    run_timed_hard_profile();
     run_fart_profile();
     return 0;
 }
