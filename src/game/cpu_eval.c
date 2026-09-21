@@ -231,7 +231,7 @@ int cpu_internal_evaluate(const CfBoard *b, const CfGasState *g)
         gv = (int)g->squares[r][f];
         score += sign * v + sign * gv * 8;
         if (gv >= 2) score += sign * 10;
-        if (gv >= CF_GAS_FART_COST)
+        if ((unsigned)gv >= CF_GAS_FART_COST)
             score += sign * pressure(b, f, r, p->color);
         if (f >= 2 && f <= 5 && r >= 2 && r <= 5) score += sign * 5;
         if (p->type == CF_PIECE_PAWN) score += sign * (p->color == CF_COLOR_WHITE ? r : 7-r) * 2;
