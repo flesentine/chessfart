@@ -797,6 +797,283 @@ static void run_check_lookup_profile(void)
            scanned_ms, cached_ms, check_lookup_profile_sink);
 }
 
+static volatile int eval_breakdown_profile_sink;
+
+static int profile_eval_piece_value(CfPieceType t)
+{
+    static const int values[7] = {0,100,320,330,500,900,0};
+    int index = (int)t;
+    if (index < 0 || index > 6) return 0;
+    return values[index];
+}
+
+static int profile_eval_in_bounds(int file, int rank)
+{
+    return file >= 0 && file < 8 && rank >= 0 && rank < 8;
+}
+
+static int profile_eval_pressure(const CfBoard *board,
+                                 int file, int rank,
+                                 CfPieceColor color)
+{
+    static const int df[8] = {0,1,1,1,0,-1,-1,-1};
+    static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
+    static const int enemy_bonus[7] = {8,9,12,12,14,19,8};
+    const CfPiece *target;
+    int type_index;
+    int target_file;
+    int target_rank;
+    int push_file;
+    int push_rank;
+    int score = 0;
+    int i;
+
+    for (i = 0; i < 8; ++i) {
+        target_file = file + df[i];
+        target_rank = rank + dr[i];
+        push_file = target_file + df[i];
+        push_rank = target_rank + dr[i];
+        if (!profile_eval_in_bounds(push_file, push_rank))
+            continue;
+        target = &board->squares[target_rank][target_file];
+        if (target->type == CF_PIECE_NONE ||
+            board->squares[push_rank][push_file].type != CF_PIECE_NONE)
+            continue;
+        if (target->color != color) {
+            type_index = (int)target->type;
+            score += type_index >= 0 && type_index <= 6 ?
+                enemy_bonus[type_index] : 8;
+        } else {
+            score += 2;
+        }
+    }
+    return score;
+}
+
+static int profile_eval_pressure_legacy(const CfBoard *board,
+                                        int file, int rank,
+                                        CfPieceColor color)
+{
+    static const int df[8] = {0,1,1,1,0,-1,-1,-1};
+    static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
+    const CfPiece *target;
+    int target_file;
+    int target_rank;
+    int push_file;
+    int push_rank;
+    int score = 0;
+    int i;
+
+    for (i = 0; i < 8; ++i) {
+        target_file = file + df[i];
+        target_rank = rank + dr[i];
+        push_file = target_file + df[i];
+        push_rank = target_rank + dr[i];
+        if (!profile_eval_in_bounds(target_file, target_rank) ||
+            !profile_eval_in_bounds(push_file, push_rank))
+            continue;
+        target = &board->squares[target_rank][target_file];
+        if (target->type == CF_PIECE_NONE ||
+            board->squares[push_rank][push_file].type != CF_PIECE_NONE)
+            continue;
+        score += target->color != color ?
+            8 + profile_eval_piece_value(target->type) / 80 : 2;
+    }
+    return score;
+}
+
+static int profile_eval_base_scan(const CfBoard *board,
+                                  const CfGasState *gas)
+{
+    const CfPiece *piece;
+    int file;
+    int rank;
+    int sign;
+    int value;
+    int gas_value;
+    int score = 0;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            piece = &board->squares[rank][file];
+            if (piece->type == CF_PIECE_NONE) continue;
+            sign = piece->color == CF_COLOR_WHITE ? 1 : -1;
+            value = profile_eval_piece_value(piece->type);
+            gas_value = (int)gas->squares[rank][file];
+            score += sign * value + sign * gas_value * 8;
+            if (gas_value >= 2) score += sign * 10;
+            if (file >= 2 && file <= 5 && rank >= 2 && rank <= 5)
+                score += sign * 5;
+            if (piece->type == CF_PIECE_PAWN)
+                score += sign *
+                    (piece->color == CF_COLOR_WHITE ? rank : 7-rank) * 2;
+        }
+    }
+    if ((board->castling_rights & CF_CASTLE_WHITE_KING) != 0U) score += 5;
+    if ((board->castling_rights & CF_CASTLE_WHITE_QUEEN) != 0U) score += 4;
+    if ((board->castling_rights & CF_CASTLE_BLACK_KING) != 0U) score -= 5;
+    if ((board->castling_rights & CF_CASTLE_BLACK_QUEEN) != 0U) score -= 4;
+    return board->side_to_move == CF_COLOR_WHITE ? score : -score;
+}
+
+static int profile_eval_pressure_sum(const CfBoard *board,
+                                     const CfGasState *gas)
+{
+    const CfPiece *piece;
+    int file;
+    int rank;
+    int sign;
+    int score = 0;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            piece = &board->squares[rank][file];
+            if (piece->type == CF_PIECE_NONE ||
+                gas->squares[rank][file] < CF_GAS_FART_COST)
+                continue;
+            sign = piece->color == CF_COLOR_WHITE ? 1 : -1;
+            score += sign *
+                profile_eval_pressure(board, file, rank, piece->color);
+        }
+    }
+    return score;
+}
+
+static int profile_eval_pressure_sum_legacy(const CfBoard *board,
+                                            const CfGasState *gas)
+{
+    const CfPiece *piece;
+    int file;
+    int rank;
+    int sign;
+    int score = 0;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            piece = &board->squares[rank][file];
+            if (piece->type == CF_PIECE_NONE ||
+                gas->squares[rank][file] < CF_GAS_FART_COST)
+                continue;
+            sign = piece->color == CF_COLOR_WHITE ? 1 : -1;
+            score += sign *
+                profile_eval_pressure_legacy(board, file, rank, piece->color);
+        }
+    }
+    return score;
+}
+
+static int profile_eval_check_pair(const CfBoard *board)
+{
+    int score = 0;
+    if (board_square_is_attacked(board, 4, 0, CF_COLOR_BLACK))
+        score -= 35;
+    if (board_square_is_attacked(board, 4, 7, CF_COLOR_WHITE))
+        score += 35;
+    return score;
+}
+
+static void run_eval_breakdown_profile(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    clock_t start;
+    clock_t end;
+    unsigned long full_start_ms;
+    unsigned long base_start_ms;
+    unsigned long pressure_start_ms;
+    unsigned long checks_start_ms;
+    unsigned long full_gas_ms;
+    unsigned long base_gas_ms;
+    unsigned long pressure_gas_ms;
+    unsigned long pressure_gas_legacy_ms;
+    unsigned long checks_gas_ms;
+    int repeat;
+    int file;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink += cpu_internal_evaluate(&board, &gas);
+    end = clock();
+    full_start_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink += profile_eval_base_scan(&board, &gas);
+    end = clock();
+    base_start_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink +=
+            profile_eval_pressure_sum(&board, &gas);
+    end = clock();
+    pressure_start_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink += profile_eval_check_pair(&board);
+    end = clock();
+    checks_start_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    for (file = 0; file < 8; ++file) {
+        gas_set(&gas, file, 1, 3U);
+        gas_set(&gas, file, 6, 3U);
+    }
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink += cpu_internal_evaluate(&board, &gas);
+    end = clock();
+    full_gas_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink += profile_eval_base_scan(&board, &gas);
+    end = clock();
+    base_gas_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink +=
+            profile_eval_pressure_sum(&board, &gas);
+    end = clock();
+    pressure_gas_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink +=
+            profile_eval_pressure_sum_legacy(&board, &gas);
+    end = clock();
+    pressure_gas_legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink += profile_eval_check_pair(&board);
+    end = clock();
+    checks_gas_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("EVAL_BREAKDOWN start_full_ms=%lu start_base_ms=%lu "
+           "start_pressure_ms=%lu start_checks_ms=%lu "
+           "gas_full_ms=%lu gas_base_ms=%lu gas_pressure_ms=%lu "
+           "gas_pressure_legacy_ms=%lu gas_checks_ms=%lu sink=%d\n",
+           full_start_ms, base_start_ms, pressure_start_ms, checks_start_ms,
+           full_gas_ms, base_gas_ms, pressure_gas_ms,
+           pressure_gas_legacy_ms, checks_gas_ms,
+           eval_breakdown_profile_sink);
+}
+
 static volatile int eval_check_profile_sink;
 
 static void run_eval_check_profile(void)
@@ -1300,6 +1577,7 @@ int main(void)
     run_postgen_check_profile();
     run_budget_guard_profile();
     run_check_lookup_profile();
+    run_eval_breakdown_profile();
     run_eval_check_profile();
     run_movegen_king_profile();
     run_movegen_scratch_profile();
