@@ -104,6 +104,11 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     cpu_internal_sort_actions(list,
                               ply + 1 < CPU_SEARCH_PLY ?
                               &g_lists[ply + 1] : 0);
+    /*
+     * If check state is still unknown, this node has no Fart actions.
+     * Generation resolves it before adding any Fart action, and ordinary
+     * chess actions never consume the value.
+     */
     for (i = 0; i < list->count; ++i) {
         if (budget_expired(c)) {
             c->aborted = 1;
@@ -189,6 +194,10 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     c.stats = stats;
     c.start_clock = clock();
     c.aborted = 0;
+    /*
+     * As in negamax, an unknown actor check state means there are no Fart
+     * actions in this root list, so no action bonus can consume the value.
+     */
 
     for (depth = 1; depth <= config->max_depth; ++depth) {
         int completed = 1;
