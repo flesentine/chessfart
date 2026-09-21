@@ -82,6 +82,7 @@ static void run_fart_scan_profile(void)
         CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
     };
     CfBoard board;
+    CfBoard scratch;
     CfGasState gas;
     CfFartScan scan;
     CfFartPreview preview;
@@ -89,6 +90,7 @@ static void run_fart_scan_profile(void)
     clock_t start;
     clock_t end;
     unsigned long prechecked_ms;
+    unsigned long shared_scratch_ms;
     unsigned long batch_ms;
     unsigned long reference_ms;
     int actor_in_check;
@@ -116,6 +118,23 @@ static void run_fart_scan_profile(void)
     }
     end = clock();
     prechecked_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        actor_in_check = board_is_in_check(&board, board.side_to_move);
+        scratch = board;
+        for (file = 0; file < 8; ++file) {
+            gas_scan_farts_prechecked_scratch(
+                &board, &gas, &scratch, file, 6,
+                actor_in_check, &scan);
+            for (d = 0; d < 8; ++d)
+                fart_scan_profile_sink +=
+                    (int)scan.preview[d] + (int)scan.promotion_mask[d];
+        }
+    }
+    end = clock();
+    shared_scratch_ms =
         (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
 
     start = clock();
@@ -152,8 +171,10 @@ static void run_fart_scan_profile(void)
     reference_ms =
         (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
 
-    printf("FART_SCAN prechecked_ms=%lu batch_ms=%lu reference_ms=%lu sink=%d\n",
-           prechecked_ms, batch_ms, reference_ms, fart_scan_profile_sink);
+    printf("FART_SCAN prechecked_ms=%lu shared_scratch_ms=%lu "
+           "batch_ms=%lu reference_ms=%lu sink=%d\n",
+           prechecked_ms, shared_scratch_ms,
+           batch_ms, reference_ms, fart_scan_profile_sink);
 }
 
 static volatile int fart_apply_profile_sink;

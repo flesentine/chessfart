@@ -122,6 +122,7 @@ static void test_legal_action_probe_matches_generator(void)
     CHECK(cpu_internal_has_legal_action(
         &board, &gas, &actor_in_check));
     CHECK(actor_in_check == 0);
+    CHECK(cpu_internal_has_legal_action(&board, &gas, 0));
 
     board_clear(&board);
     gas_init(&gas);

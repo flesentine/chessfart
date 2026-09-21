@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "board.h"
 #include "gas.h"
@@ -37,6 +38,8 @@ static void test_batch_fart_scan_matches_public_api(void)
     CfGasState gas;
     CfFartScan scan;
     CfFartScan prechecked_scan;
+    CfFartScan scratch_scan;
+    CfBoard scratch;
     CfFartPreview expected;
     unsigned long rng = 0xF47CA11UL;
     cf_u8 expected_mask;
@@ -86,9 +89,17 @@ static void test_batch_fart_scan_matches_public_api(void)
         actor_in_check = board_is_in_check(&board, board.side_to_move);
         gas_scan_farts_prechecked(&board, &gas, actor_file, actor_rank,
                                   actor_in_check, &prechecked_scan);
+        scratch = board;
+        gas_scan_farts_prechecked_scratch(
+            &board, &gas, &scratch, actor_file, actor_rank,
+            actor_in_check, &scratch_scan);
+        CHECK(memcmp(&scratch, &board, sizeof(board)) == 0);
         for (d = 0; d < 8; ++d) {
             CHECK(prechecked_scan.preview[d] == scan.preview[d]);
             CHECK(prechecked_scan.promotion_mask[d] ==
+                  scan.promotion_mask[d]);
+            CHECK(scratch_scan.preview[d] == scan.preview[d]);
+            CHECK(scratch_scan.promotion_mask[d] ==
                   scan.promotion_mask[d]);
             expected = gas_preview_fart(&board, &gas,
                                         actor_file, actor_rank,
