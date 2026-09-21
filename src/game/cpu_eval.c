@@ -37,20 +37,32 @@ static int bit_count(unsigned value)
     return count;
 }
 
-static int pressure(const CfBoard *b, const CfGasState *g, int f, int r, CfPieceColor c)
+static int pressure(const CfBoard *b, int f, int r, CfPieceColor c)
 {
     static const int df[8] = {0,1,1,1,0,-1,-1,-1};
     static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
+    static const int enemy_bonus[7] = {8,9,12,12,14,19,8};
     const CfPiece *t;
+    int type_index;
     int i, tf, tr, pf, pr, s = 0;
-    if (g->squares[r][f] < CF_GAS_FART_COST) return 0;
     for (i = 0; i < 8; ++i) {
         tf = f + df[i]; tr = r + dr[i]; pf = tf + df[i]; pr = tr + dr[i];
-        if (!in_bounds(tf,tr) || !in_bounds(pf,pr)) continue;
+        /*
+         * The target square is exactly halfway between the actor and push
+         * destination, so an in-bounds destination implies an in-bounds
+         * target.
+         */
+        if (!in_bounds(pf,pr)) continue;
         t = &b->squares[tr][tf];
         if (t->type == CF_PIECE_NONE ||
             b->squares[pr][pf].type != CF_PIECE_NONE) continue;
-        s += t->color != c ? 8 + piece_value(t->type) / 80 : 2;
+        if (t->color != c) {
+            type_index = (int)t->type;
+            s += type_index >= 0 && type_index <= 6 ?
+                 enemy_bonus[type_index] : 8;
+        } else {
+            s += 2;
+        }
     }
     return s;
 }
@@ -219,7 +231,8 @@ int cpu_internal_evaluate(const CfBoard *b, const CfGasState *g)
         gv = (int)g->squares[r][f];
         score += sign * v + sign * gv * 8;
         if (gv >= 2) score += sign * 10;
-        score += sign * pressure(b, g, f, r, p->color);
+        if (gv >= CF_GAS_FART_COST)
+            score += sign * pressure(b, f, r, p->color);
         if (f >= 2 && f <= 5 && r >= 2 && r <= 5) score += sign * 5;
         if (p->type == CF_PIECE_PAWN) score += sign * (p->color == CF_COLOR_WHITE ? r : 7-r) * 2;
     }
