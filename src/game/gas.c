@@ -243,11 +243,10 @@ static int push_keeps_actor_safe(const CfBoard *board,
                                  int destination_file, int destination_rank,
                                  CfPieceType promotion)
 {
-    CfBoard scratch;
     scratch = *board;
     push_scratch(&scratch, target_file, target_rank,
                  destination_file, destination_rank, promotion);
-    return !board_is_in_check(&scratch, board->side_to_move);
+    return !board_is_in_check(scratch, board->side_to_move);
 }
 
 static int fart_geometry(int file, int rank,
@@ -289,6 +288,7 @@ static int prepare_fart_scan(const CfBoard *board, const CfGasState *gas,
 }
 
 static void gas_scan_farts_core(const CfBoard *board,
+                                CfBoard *scratch,
                                 int file, int rank,
                                 int actor_in_check,
                                 CfFartScan *scan)
@@ -309,7 +309,6 @@ static void gas_scan_farts_core(const CfBoard *board,
     int d;
     int p;
 
-    scratch = *board;
     empty = empty_piece();
 
     for (d = 0; d < 8; ++d) {
@@ -337,12 +336,12 @@ static void gas_scan_farts_core(const CfBoard *board,
             for (p = 0; p < 4; ++p) {
                 pushed = target;
                 pushed.type = promotions[p];
-                scratch.squares[tr][tf] = empty;
-                scratch.squares[dr][df] = pushed;
-                if (!board_is_in_check(&scratch, board->side_to_move))
+                scratch->squares[tr][tf] = empty;
+                scratch->squares[dr][df] = pushed;
+                if (!board_is_in_check(scratch, board->side_to_move))
                     mask = (cf_u8)(mask | (cf_u8)(1U << p));
-                scratch.squares[tr][tf] = target;
-                scratch.squares[dr][df] = destination;
+                scratch->squares[tr][tf] = target;
+                scratch->squares[dr][df] = destination;
             }
             if (mask != 0U) {
                 scan->preview[d] = (cf_u8)CF_FART_PROMOTION;
@@ -351,30 +350,48 @@ static void gas_scan_farts_core(const CfBoard *board,
             continue;
         }
 
-        scratch.squares[tr][tf] = empty;
-        scratch.squares[dr][df] = target;
-        if (!board_is_in_check(&scratch, board->side_to_move))
+        scratch->squares[tr][tf] = empty;
+        scratch->squares[dr][df] = target;
+        if (!board_is_in_check(scratch, board->side_to_move))
             scan->preview[d] = (cf_u8)CF_FART_PUSH;
-        scratch.squares[tr][tf] = target;
-        scratch.squares[dr][df] = destination;
+        scratch->squares[tr][tf] = target;
+        scratch->squares[dr][df] = destination;
     }
+}
+
+void gas_scan_farts_prechecked_scratch(const CfBoard *board,
+                                       const CfGasState *gas,
+                                       CfBoard *scratch,
+                                       int file, int rank,
+                                       int actor_in_check,
+                                       CfFartScan *scan)
+{
+    if (!prepare_fart_scan(board, gas, file, rank, scan)) return;
+    if (scratch == 0) return;
+    gas_scan_farts_core(board, scratch, file, rank,
+                        actor_in_check != 0, scan);
 }
 
 void gas_scan_farts_prechecked(const CfBoard *board, const CfGasState *gas,
                                int file, int rank, int actor_in_check,
                                CfFartScan *scan)
 {
+    CfBoard scratch;
     if (!prepare_fart_scan(board, gas, file, rank, scan)) return;
-    gas_scan_farts_core(board, file, rank, actor_in_check != 0, scan);
+    scratch = *board;
+    gas_scan_farts_core(board, &scratch, file, rank,
+                        actor_in_check != 0, scan);
 }
 
 void gas_scan_farts(const CfBoard *board, const CfGasState *gas,
                     int file, int rank, CfFartScan *scan)
 {
+    CfBoard scratch;
     int actor_in_check;
     if (!prepare_fart_scan(board, gas, file, rank, scan)) return;
     actor_in_check = board_is_in_check(board, board->side_to_move);
-    gas_scan_farts_core(board, file, rank, actor_in_check, scan);
+    scratch = *board;
+    gas_scan_farts_core(board, &scratch, file, rank, actor_in_check, scan);
 }
 
 int gas_fart_promotion_choice_legal(const CfBoard *board, const CfGasState *gas,
@@ -716,18 +733,21 @@ int gas_history_repetition_count(const CfGasHistory *history,
 static int has_legal_fart(const CfBoard *board, const CfGasState *gas,
                           int actor_in_check)
 {
+    CfBoard scratch;
     CfFartScan scan;
     int file;
     int rank;
     int direction;
+    scratch = *board;
     for (rank = 0; rank < 8; ++rank) {
         for (file = 0; file < 8; ++file) {
             if (gas->squares[rank][file] < CF_GAS_FART_COST ||
                 board->squares[rank][file].type == CF_PIECE_NONE ||
                 board->squares[rank][file].color != board->side_to_move)
                 continue;
-            gas_scan_farts_prechecked(board, gas, file, rank,
-                                      actor_in_check, &scan);
+            gas_scan_farts_prechecked_scratch(
+                board, gas, &scratch, file, rank,
+                actor_in_check, &scan);
             for (direction = 0; direction < 8; ++direction)
                 if ((CfFartPreview)scan.preview[direction] != CF_FART_INVALID)
                     return 1;
