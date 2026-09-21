@@ -250,6 +250,151 @@ static unsigned long eval_king_rng_next(unsigned long *state)
     return *state;
 }
 
+
+static int reference_eval_piece_value(CfPieceType type)
+{
+    static const int values[7] = {0,100,320,330,500,900,0};
+    int index = (int)type;
+    if (index < 0 || index > 6) return 0;
+    return values[index];
+}
+
+static int reference_eval_in_bounds(int file, int rank)
+{
+    return file >= 0 && file < 8 && rank >= 0 && rank < 8;
+}
+
+static int reference_eval_pressure(const CfBoard *board,
+                                   const CfGasState *gas,
+                                   int file, int rank,
+                                   CfPieceColor color)
+{
+    static const int df[8] = {0,1,1,1,0,-1,-1,-1};
+    static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
+    const CfPiece *target;
+    int i;
+    int target_file;
+    int target_rank;
+    int push_file;
+    int push_rank;
+    int score = 0;
+
+    if (gas->squares[rank][file] < CF_GAS_FART_COST) return 0;
+    for (i = 0; i < 8; ++i) {
+        target_file = file + df[i];
+        target_rank = rank + dr[i];
+        push_file = target_file + df[i];
+        push_rank = target_rank + dr[i];
+        if (!reference_eval_in_bounds(target_file, target_rank) ||
+            !reference_eval_in_bounds(push_file, push_rank))
+            continue;
+        target = &board->squares[target_rank][target_file];
+        if (target->type == CF_PIECE_NONE ||
+            board->squares[push_rank][push_file].type != CF_PIECE_NONE)
+            continue;
+        score += target->color != color ?
+            8 + reference_eval_piece_value(target->type) / 80 : 2;
+    }
+    return score;
+}
+
+static int reference_evaluate(const CfBoard *board, const CfGasState *gas)
+{
+    const CfPiece *piece;
+    int white_king_file = -1;
+    int white_king_rank = -1;
+    int black_king_file = -1;
+    int black_king_rank = -1;
+    int file;
+    int rank;
+    int sign;
+    int value;
+    int gas_value;
+    int score = 0;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            piece = &board->squares[rank][file];
+            if (piece->type == CF_PIECE_NONE) continue;
+            if (piece->type == CF_PIECE_KING) {
+                if (piece->color == CF_COLOR_WHITE &&
+                    white_king_file < 0) {
+                    white_king_file = file;
+                    white_king_rank = rank;
+                } else if (piece->color == CF_COLOR_BLACK &&
+                           black_king_file < 0) {
+                    black_king_file = file;
+                    black_king_rank = rank;
+                }
+            }
+            sign = piece->color == CF_COLOR_WHITE ? 1 : -1;
+            value = reference_eval_piece_value(piece->type);
+            gas_value = (int)gas->squares[rank][file];
+            score += sign * value + sign * gas_value * 8;
+            if (gas_value >= 2) score += sign * 10;
+            score += sign * reference_eval_pressure(
+                board, gas, file, rank, piece->color);
+            if (file >= 2 && file <= 5 && rank >= 2 && rank <= 5)
+                score += sign * 5;
+            if (piece->type == CF_PIECE_PAWN)
+                score += sign *
+                    (piece->color == CF_COLOR_WHITE ? rank : 7-rank) * 2;
+        }
+    }
+
+    if (white_king_file < 0 ||
+        board_square_is_attacked(board, white_king_file, white_king_rank,
+                                 CF_COLOR_BLACK))
+        score -= 35;
+    if (black_king_file < 0 ||
+        board_square_is_attacked(board, black_king_file, black_king_rank,
+                                 CF_COLOR_WHITE))
+        score += 35;
+    if ((board->castling_rights & CF_CASTLE_WHITE_KING) != 0U) score += 5;
+    if ((board->castling_rights & CF_CASTLE_WHITE_QUEEN) != 0U) score += 4;
+    if ((board->castling_rights & CF_CASTLE_BLACK_KING) != 0U) score -= 5;
+    if ((board->castling_rights & CF_CASTLE_BLACK_QUEEN) != 0U) score -= 4;
+    return board->side_to_move == CF_COLOR_WHITE ? score : -score;
+}
+
+static void test_optimized_evaluation_matches_reference(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    unsigned long rng = 0x25E7A1UL;
+    CfPieceType type;
+    CfPieceColor color;
+    int sample;
+    int file;
+    int rank;
+
+    for (sample = 0; sample < 512; ++sample) {
+        board_clear(&board);
+        gas_init(&gas);
+        for (rank = 0; rank < 8; ++rank) {
+            for (file = 0; file < 8; ++file) {
+                gas_set(&gas, file, rank,
+                        (cf_u8)(eval_king_rng_next(&rng) % 4UL));
+                if ((eval_king_rng_next(&rng) & 3UL) != 0UL)
+                    continue;
+                type = (CfPieceType)(1 +
+                    (eval_king_rng_next(&rng) % 6UL));
+                color = (eval_king_rng_next(&rng) & 1UL) != 0UL ?
+                    CF_COLOR_WHITE : CF_COLOR_BLACK;
+                board_set_piece(&board, file, rank, type, color);
+            }
+        }
+        board.side_to_move =
+            (eval_king_rng_next(&rng) & 1UL) != 0UL ?
+            CF_COLOR_WHITE : CF_COLOR_BLACK;
+        board.castling_rights =
+            (unsigned)(eval_king_rng_next(&rng) & 15UL);
+
+        CHECK(cpu_internal_evaluate(&board, &gas) ==
+              reference_evaluate(&board, &gas));
+    }
+}
+
 static void test_folded_eval_check_pair_matches_public_api(void)
 {
     CfBoard board;
@@ -1000,6 +1145,7 @@ int main(void)
     test_action_storage_contract();
     test_merge_sort_matches_stable_insertion();
     test_folded_eval_check_pair_matches_public_api();
+    test_optimized_evaluation_matches_reference();
     test_prelocated_king_move_generation_matches_public();
     test_prelocated_action_bonus_matches_reference();
     test_evaluation_and_order_scores_stable();
