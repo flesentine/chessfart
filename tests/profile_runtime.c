@@ -1013,6 +1013,45 @@ static void run_status_fart_profile(void)
            status_fart_profile_sink);
 }
 
+static volatile int insufficient_material_profile_sink;
+
+static void run_insufficient_material_profile(void)
+{
+    CfBoard board;
+    clock_t start;
+    clock_t end;
+    unsigned long opening_ms;
+    unsigned long minor_only_ms;
+    int repeat;
+
+    board_init_starting_position(&board);
+    start = clock();
+    for (repeat = 0; repeat < 2000000; ++repeat)
+        insufficient_material_profile_sink +=
+            board_is_insufficient_material(&board);
+    end = clock();
+    opening_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    board_clear(&board);
+    board_set_piece(&board, 4, 0, CF_PIECE_KING, CF_COLOR_WHITE);
+    board_set_piece(&board, 4, 7, CF_PIECE_KING, CF_COLOR_BLACK);
+    board_set_piece(&board, 2, 0, CF_PIECE_BISHOP, CF_COLOR_WHITE);
+    board_set_piece(&board, 5, 7, CF_PIECE_BISHOP, CF_COLOR_BLACK);
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
+        insufficient_material_profile_sink +=
+            board_is_insufficient_material(&board);
+    end = clock();
+    minor_only_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("INSUFFICIENT_MATERIAL opening_ms=%lu minor_only_ms=%lu "
+           "sink=%d\n",
+           opening_ms, minor_only_ms,
+           insufficient_material_profile_sink);
+}
+
 static unsigned long profile_perft(CfBoard *board, int depth)
 {
     CfMoveList list;
@@ -1154,6 +1193,7 @@ int main(void)
     run_movegen_scratch_profile();
     run_action_bonus_king_profile();
     run_status_fart_profile();
+    run_insufficient_material_profile();
     run_perft_profile();
     run_profile("EASY_START", CF_CPU_EASY);
     run_profile("MED_START", CF_CPU_MEDIUM);
