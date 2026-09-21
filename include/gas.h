@@ -115,8 +115,9 @@ void gas_scan_farts_prechecked(const CfBoard *board, const CfGasState *gas,
                                int file, int rank, int actor_in_check,
                                CfFartScan *scan);
 /*
- * Search fast path: as above, but caller supplies a scratch board that is an
- * exact copy of board on entry. The scratch board is restored before return.
+ * Search fast path: caller supplies the precomputed check state plus a scratch
+ * board that is an exact copy of board on entry. The scratch board is restored
+ * before return so one copy can be reused across a batch of actor pieces.
  */
 void gas_scan_farts_prechecked_scratch(const CfBoard *board,
                                        const CfGasState *gas,
