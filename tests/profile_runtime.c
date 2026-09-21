@@ -818,6 +818,44 @@ static int profile_eval_pressure(const CfBoard *board,
 {
     static const int df[8] = {0,1,1,1,0,-1,-1,-1};
     static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
+    static const int enemy_bonus[7] = {8,9,12,12,14,19,8};
+    const CfPiece *target;
+    int type_index;
+    int target_file;
+    int target_rank;
+    int push_file;
+    int push_rank;
+    int score = 0;
+    int i;
+
+    for (i = 0; i < 8; ++i) {
+        target_file = file + df[i];
+        target_rank = rank + dr[i];
+        push_file = target_file + df[i];
+        push_rank = target_rank + dr[i];
+        if (!profile_eval_in_bounds(push_file, push_rank))
+            continue;
+        target = &board->squares[target_rank][target_file];
+        if (target->type == CF_PIECE_NONE ||
+            board->squares[push_rank][push_file].type != CF_PIECE_NONE)
+            continue;
+        if (target->color != color) {
+            type_index = (int)target->type;
+            score += type_index >= 0 && type_index <= 6 ?
+                enemy_bonus[type_index] : 8;
+        } else {
+            score += 2;
+        }
+    }
+    return score;
+}
+
+static int profile_eval_pressure_legacy(const CfBoard *board,
+                                        int file, int rank,
+                                        CfPieceColor color)
+{
+    static const int df[8] = {0,1,1,1,0,-1,-1,-1};
+    static const int dr[8] = {1,1,0,-1,-1,-1,0,1};
     const CfPiece *target;
     int target_file;
     int target_rank;
@@ -901,6 +939,29 @@ static int profile_eval_pressure_sum(const CfBoard *board,
     return score;
 }
 
+static int profile_eval_pressure_sum_legacy(const CfBoard *board,
+                                            const CfGasState *gas)
+{
+    const CfPiece *piece;
+    int file;
+    int rank;
+    int sign;
+    int score = 0;
+
+    for (rank = 0; rank < 8; ++rank) {
+        for (file = 0; file < 8; ++file) {
+            piece = &board->squares[rank][file];
+            if (piece->type == CF_PIECE_NONE ||
+                gas->squares[rank][file] < CF_GAS_FART_COST)
+                continue;
+            sign = piece->color == CF_COLOR_WHITE ? 1 : -1;
+            score += sign *
+                profile_eval_pressure_legacy(board, file, rank, piece->color);
+        }
+    }
+    return score;
+}
+
 static int profile_eval_check_pair(const CfBoard *board)
 {
     int score = 0;
@@ -924,6 +985,7 @@ static void run_eval_breakdown_profile(void)
     unsigned long full_gas_ms;
     unsigned long base_gas_ms;
     unsigned long pressure_gas_ms;
+    unsigned long pressure_gas_legacy_ms;
     unsigned long checks_gas_ms;
     int repeat;
     int file;
@@ -989,6 +1051,14 @@ static void run_eval_breakdown_profile(void)
 
     start = clock();
     for (repeat = 0; repeat < 500000; ++repeat)
+        eval_breakdown_profile_sink +=
+            profile_eval_pressure_sum_legacy(&board, &gas);
+    end = clock();
+    pressure_gas_legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 500000; ++repeat)
         eval_breakdown_profile_sink += profile_eval_check_pair(&board);
     end = clock();
     checks_gas_ms =
@@ -997,9 +1067,10 @@ static void run_eval_breakdown_profile(void)
     printf("EVAL_BREAKDOWN start_full_ms=%lu start_base_ms=%lu "
            "start_pressure_ms=%lu start_checks_ms=%lu "
            "gas_full_ms=%lu gas_base_ms=%lu gas_pressure_ms=%lu "
-           "gas_checks_ms=%lu sink=%d\n",
+           "gas_pressure_legacy_ms=%lu gas_checks_ms=%lu sink=%d\n",
            full_start_ms, base_start_ms, pressure_start_ms, checks_start_ms,
-           full_gas_ms, base_gas_ms, pressure_gas_ms, checks_gas_ms,
+           full_gas_ms, base_gas_ms, pressure_gas_ms,
+           pressure_gas_legacy_ms, checks_gas_ms,
            eval_breakdown_profile_sink);
 }
 
