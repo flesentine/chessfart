@@ -666,6 +666,50 @@ static void run_root_preflight_profile(void)
            direct_ms, legacy_ms, root_preflight_profile_sink);
 }
 
+static volatile int postgen_check_profile_sink;
+
+static void run_postgen_check_profile(void)
+{
+    static CfCpuActionList list;
+    CfBoard board;
+    CfGasState gas;
+    clock_t start;
+    clock_t end;
+    unsigned long skipped_ms;
+    unsigned long legacy_ms;
+    int actor_in_check;
+    int repeat;
+
+    board_init_starting_position(&board);
+    gas_init(&gas);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        cpu_internal_generate_actions(
+            &board, &gas, &list, &actor_in_check);
+        postgen_check_profile_sink += list.count;
+    }
+    end = clock();
+    skipped_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    start = clock();
+    for (repeat = 0; repeat < 100000; ++repeat) {
+        cpu_internal_generate_actions(
+            &board, &gas, &list, &actor_in_check);
+        if (list.count > 0 && actor_in_check < 0)
+            actor_in_check =
+                board_is_in_check(&board, board.side_to_move);
+        postgen_check_profile_sink += list.count + actor_in_check;
+    }
+    end = clock();
+    legacy_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    printf("POSTGEN_CHECK skipped_ms=%lu legacy_ms=%lu sink=%d\n",
+           skipped_ms, legacy_ms, postgen_check_profile_sink);
+}
+
 static volatile int check_lookup_profile_sink;
 
 static void run_check_lookup_profile(void)
@@ -1169,6 +1213,7 @@ int main(void)
     run_legal_probe_profile();
     run_leaf_terminal_profile();
     run_root_preflight_profile();
+    run_postgen_check_profile();
     run_check_lookup_profile();
     run_eval_check_profile();
     run_movegen_king_profile();

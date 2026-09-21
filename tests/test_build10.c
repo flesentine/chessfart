@@ -137,6 +137,41 @@ static void test_legal_action_probe_matches_generator(void)
     CHECK(cpu_internal_has_legal_action(&board, &gas, 0));
 }
 
+static void test_generated_check_state_contract(void)
+{
+    CfBoard board;
+    CfGasState gas;
+    CfCpuActionList list;
+    int actor_in_check;
+    int i;
+    int has_fart;
+
+    /* Ordinary chess-only nodes may leave check state unknown. */
+    board_init_starting_position(&board);
+    gas_init(&gas);
+    actor_in_check = 99;
+    cpu_internal_generate_actions(&board, &gas, &list, &actor_in_check);
+    CHECK(list.count > 0);
+    CHECK(actor_in_check == -1);
+    has_fart = 0;
+    for (i = 0; i < list.count; ++i)
+        if (list.actions[i].type == CF_CPU_ACTION_FART)
+            has_fart = 1;
+    CHECK(!has_fart);
+
+    /* Any generated Fart action requires and therefore resolves check state. */
+    gas_set(&gas, 1, 0, 3U);
+    actor_in_check = -1;
+    cpu_internal_generate_actions(&board, &gas, &list, &actor_in_check);
+    CHECK(list.count > 0);
+    CHECK(actor_in_check == 0 || actor_in_check == 1);
+    has_fart = 0;
+    for (i = 0; i < list.count; ++i)
+        if (list.actions[i].type == CF_CPU_ACTION_FART)
+            has_fart = 1;
+    CHECK(has_fart);
+}
+
 static void reference_insertion_sort(CfCpuActionList *list)
 {
     CfCpuAction item;
@@ -964,6 +999,7 @@ int main(void)
     test_prelocated_action_bonus_matches_reference();
     test_evaluation_and_order_scores_stable();
     test_legal_action_probe_matches_generator();
+    test_generated_check_state_contract();
     test_root_draw_preflight_matches_status();
     test_difficulty_config();
     test_starting_position_deterministic();
