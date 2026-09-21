@@ -104,9 +104,6 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     cpu_internal_sort_actions(list,
                               ply + 1 < CPU_SEARCH_PLY ?
                               &g_lists[ply + 1] : 0);
-    if (actor_was_in_check < 0)
-        actor_was_in_check = board_is_in_check(b, b->side_to_move);
-
     for (i = 0; i < list->count; ++i) {
         if (budget_expired(c)) {
             c->aborted = 1;
@@ -192,8 +189,6 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     c.stats = stats;
     c.start_clock = clock();
     c.aborted = 0;
-    if (actor_was_in_check < 0)
-        actor_was_in_check = board_is_in_check(b, b->side_to_move);
 
     for (depth = 1; depth <= config->max_depth; ++depth) {
         int completed = 1;
