@@ -37,10 +37,15 @@ static int time_expired(SearchContext *c)
     return elapsed >= c->config.time_limit_ms;
 }
 
+static int node_budget_expired(SearchContext *c)
+{
+    return c->config.node_budget != 0UL &&
+           c->stats->nodes >= c->config.node_budget;
+}
+
 static int budget_expired(SearchContext *c)
 {
-    if (c->config.node_budget != 0UL &&
-        c->stats->nodes >= c->config.node_budget) return 1;
+    if (node_budget_expired(c)) return 1;
     return time_expired(c);
 }
 
@@ -110,7 +115,12 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
      * chess actions never consume the value.
      */
     for (i = 0; i < list->count; ++i) {
-        if (budget_expired(c)) {
+        /*
+         * Child negamax checks the full time+node budget immediately on
+         * entry. Keep only the hard node-cap guard here so recursive action
+         * loops do not call clock() twice per child.
+         */
+        if (node_budget_expired(c)) {
             c->aborted = 1;
             c->stats->budget_hit = 1;
             break;
