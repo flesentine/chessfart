@@ -711,6 +711,8 @@ static void run_postgen_check_profile(void)
 }
 
 static volatile unsigned long budget_guard_profile_sink;
+static volatile unsigned long budget_guard_profile_nodes = 1234UL;
+static volatile unsigned long budget_guard_profile_limit = 50000UL;
 
 static void run_budget_guard_profile(void)
 {
@@ -725,8 +727,8 @@ static void run_budget_guard_profile(void)
     unsigned long node_budget;
     int repeat;
 
-    nodes = 1234UL;
-    node_budget = 50000UL;
+    nodes = budget_guard_profile_nodes;
+    node_budget = budget_guard_profile_limit;
 
     start = clock();
     for (repeat = 0; repeat < 1000000; ++repeat) {
