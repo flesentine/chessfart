@@ -243,10 +243,11 @@ static int push_keeps_actor_safe(const CfBoard *board,
                                  int destination_file, int destination_rank,
                                  CfPieceType promotion)
 {
+    CfBoard scratch;
     scratch = *board;
     push_scratch(&scratch, target_file, target_rank,
                  destination_file, destination_rank, promotion);
-    return !board_is_in_check(scratch, board->side_to_move);
+    return !board_is_in_check(&scratch, board->side_to_move);
 }
 
 static int fart_geometry(int file, int rank,
@@ -296,7 +297,6 @@ static void gas_scan_farts_core(const CfBoard *board,
     static const CfPieceType promotions[4] = {
         CF_PIECE_QUEEN, CF_PIECE_ROOK, CF_PIECE_BISHOP, CF_PIECE_KNIGHT
     };
-    CfBoard scratch;
     CfPiece empty;
     CfPiece target;
     CfPiece destination;
