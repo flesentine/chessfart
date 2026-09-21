@@ -26,4 +26,19 @@ int cpu_internal_action_bonus_prelocated(
                               int opponent_king_known,
                               int opponent_king_file,
                               int opponent_king_rank);
+#ifdef CF_PROFILE_RUNTIME
+typedef struct CfCpuProfileCounters {
+    unsigned long full_budget_checks;
+    unsigned long node_guard_checks;
+    unsigned long action_gen_calls;
+    unsigned long sort_calls;
+    unsigned long legal_probe_calls;
+    unsigned long eval_calls;
+    unsigned long move_attempts;
+    unsigned long fart_attempts;
+    unsigned long fart_bonus_calls;
+} CfCpuProfileCounters;
+void cpu_internal_profile_reset(void);
+const CfCpuProfileCounters *cpu_internal_profile_counters(void);
+#endif
 #endif
