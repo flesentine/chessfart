@@ -54,6 +54,7 @@ HOST_FART_WAV = build/host/chessfart_fart.wav
 HOST_SAVE = build/host/CHESSFRT.SAV
 HOST_CONFIG = build/host/CHESSFRT.CFG
 PROFILE_REPORT = build/host/PROFILE.txt
+WEIGHTED_PROFILE_REPORT = build/host/PROFILE_WEIGHTED.txt
 SIZE_REPORT = build/host/SIZE.txt
 TEST4_BINARY = build/host/test_build4
 TEST5_BINARY = build/host/test_build5
@@ -68,6 +69,7 @@ TEST15_FILE_BINARY = build/host/test_build15_replay_file
 TEST16_BINARY = build/host/test_build16
 TEST17_BINARY = build/host/test_build17
 PROFILE_BINARY = build/host/profile_runtime
+WEIGHTED_PROFILE_BINARY = build/host/profile_weighted
 
 .PHONY: all host host-run test profile release-audit dos release clean
 
@@ -131,15 +133,22 @@ $(PROFILE_BINARY): tests/profile_runtime.c $(CPU_SOURCES) include/version.h incl
 	mkdir -p build/host
 	$(CC) $(CFLAGS) tests/profile_runtime.c $(CPU_SOURCES) -o $(PROFILE_BINARY)
 
+$(WEIGHTED_PROFILE_BINARY): tests/profile_runtime.c $(CPU_SOURCES) include/version.h include/replay.h include/cpu.h include/cpu_internal.h include/gas.h include/board.h include/cf_types.h
+	mkdir -p build/host
+	$(CC) $(CFLAGS) -DCF_PROFILE_RUNTIME tests/profile_runtime.c $(CPU_SOURCES) -o $(WEIGHTED_PROFILE_BINARY)
+
 host-run: host
 	./$(HOST_BINARY)
 
-profile: $(PROFILE_BINARY) $(HOST_BINARY)
+profile: $(PROFILE_BINARY) $(WEIGHTED_PROFILE_BINARY) $(HOST_BINARY)
 	./$(PROFILE_BINARY) > $(PROFILE_REPORT)
+	./$(WEIGHTED_PROFILE_BINARY) > $(WEIGHTED_PROFILE_REPORT)
 	size $(HOST_BINARY) > $(SIZE_REPORT)
 	test -s $(PROFILE_REPORT)
+	test -s $(WEIGHTED_PROFILE_REPORT)
 	test -s $(SIZE_REPORT)
 	cat $(PROFILE_REPORT)
+	cat $(WEIGHTED_PROFILE_REPORT)
 	cat $(SIZE_REPORT)
 
 release-audit:
@@ -148,7 +157,8 @@ release-audit:
 test: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) \
       $(TEST9_BINARY) $(TEST10_BINARY) $(TEST10_ALPHA_BINARY) \
       $(TEST11_BINARY) $(TEST15_BINARY) $(TEST15_FILE_BINARY) \
-      $(TEST16_BINARY) $(TEST17_BINARY) $(PROFILE_BINARY) $(HOST_BINARY)
+      $(TEST16_BINARY) $(TEST17_BINARY) $(PROFILE_BINARY) \
+      $(WEIGHTED_PROFILE_BINARY) $(HOST_BINARY)
 	./$(TEST4_BINARY)
 	./$(TEST5_BINARY)
 	./$(TEST6_BINARY)
@@ -174,10 +184,13 @@ test: $(TEST4_BINARY) $(TEST5_BINARY) $(TEST6_BINARY) $(TEST8_BINARY) \
 	test -s $(HOST_SAVE)
 	test -s $(HOST_CONFIG)
 	./$(PROFILE_BINARY) > $(PROFILE_REPORT)
+	./$(WEIGHTED_PROFILE_BINARY) > $(WEIGHTED_PROFILE_REPORT)
 	size $(HOST_BINARY) > $(SIZE_REPORT)
 	test -s $(PROFILE_REPORT)
+	test -s $(WEIGHTED_PROFILE_REPORT)
 	test -s $(SIZE_REPORT)
 	cat $(PROFILE_REPORT)
+	cat $(WEIGHTED_PROFILE_REPORT)
 	cat $(SIZE_REPORT)
 	sh scripts/release_audit.sh
 	@echo "Full host regression gate passed."
