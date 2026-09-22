@@ -722,6 +722,7 @@ static void run_budget_guard_profile(void)
     clock_t now;
     unsigned long elapsed;
     unsigned long node_guard_ms;
+    unsigned long sampled_guard_ms;
     unsigned long full_guard_ms;
     unsigned long nodes;
     unsigned long node_budget;
@@ -745,6 +746,25 @@ static void run_budget_guard_profile(void)
     for (repeat = 0; repeat < 1000000; ++repeat) {
         if (node_budget != 0UL && nodes >= node_budget) {
             ++budget_guard_profile_sink;
+        } else if ((((unsigned long)repeat) & 3UL) == 0UL) {
+            now = clock();
+            elapsed = now >= origin ?
+                (unsigned long)(now - origin) * 1000UL /
+                (unsigned long)CLOCKS_PER_SEC : 0UL;
+            if (elapsed >= 60000UL)
+                ++budget_guard_profile_sink;
+        }
+        budget_guard_profile_sink += nodes & 1UL;
+    }
+    end = clock();
+    sampled_guard_ms =
+        (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
+
+    origin = clock();
+    start = clock();
+    for (repeat = 0; repeat < 1000000; ++repeat) {
+        if (node_budget != 0UL && nodes >= node_budget) {
+            ++budget_guard_profile_sink;
         } else {
             now = clock();
             elapsed = now >= origin ?
@@ -759,8 +779,10 @@ static void run_budget_guard_profile(void)
     full_guard_ms =
         (unsigned long)(((end - start) * 1000L) / CLOCKS_PER_SEC);
 
-    printf("BUDGET_GUARD node_only_ms=%lu full_ms=%lu sink=%lu\n",
-           node_guard_ms, full_guard_ms, budget_guard_profile_sink);
+    printf("BUDGET_GUARD node_only_ms=%lu sampled4_ms=%lu "
+           "full_ms=%lu sink=%lu\n",
+           node_guard_ms, sampled_guard_ms, full_guard_ms,
+           budget_guard_profile_sink);
 }
 
 static volatile int check_lookup_profile_sink;
