@@ -1115,7 +1115,9 @@ static void test_cpu_apply_failure_preserves_undo(void)
 
 static void test_budget_cap(void)
 {
-    static const unsigned long budgets[] = {1UL, 2UL, 3UL, 8UL, 17UL};
+    static const unsigned long budgets[] = {
+        1UL, 2UL, 3UL, 4UL, 5UL, 8UL, 17UL
+    };
     CfBoard board;
     CfGasState gas;
     CfGasHistory history;
