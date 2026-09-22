@@ -5,6 +5,7 @@
 #define CPU_INF 32000
 #define CPU_MATE 30000
 #define CPU_SEARCH_PLY 5
+#define CPU_TIME_POLL_MASK 3UL
 
 typedef struct SearchContext {
     CfCpuConfig config;
@@ -44,6 +45,15 @@ static int budget_expired(SearchContext *c)
     return time_expired(c);
 }
 
+static int recursive_budget_expired(SearchContext *c)
+{
+    if (c->config.node_budget != 0UL &&
+        c->stats->nodes >= c->config.node_budget) return 1;
+    if (c->config.time_limit_ms == 0UL) return 0;
+    if ((c->stats->nodes & CPU_TIME_POLL_MASK) != 0UL) return 0;
+    return time_expired(c);
+}
+
 static int shifted_bound(int bonus, int bound)
 {
     long shifted;
@@ -70,7 +80,7 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     int opponent_king_rank = -1;
     int i;
 
-    if (budget_expired(c)) {
+    if (recursive_budget_expired(c)) {
         c->aborted = 1;
         c->stats->budget_hit = 1;
         return 0;
