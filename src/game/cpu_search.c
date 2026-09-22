@@ -26,11 +26,27 @@ static CfCpuActionList __far g_lists[CPU_SEARCH_PLY];
 static CfCpuActionList g_lists[CPU_SEARCH_PLY];
 #endif
 
+#ifdef CF_PROFILE_RUNTIME
+static CfCpuProfileCounters g_profile_counters;
+#define PROFILE_INC(field) (++g_profile_counters.field)
+void cpu_internal_profile_reset(void)
+{
+    memset(&g_profile_counters, 0, sizeof(g_profile_counters));
+}
+const CfCpuProfileCounters *cpu_internal_profile_counters(void)
+{
+    return &g_profile_counters;
+}
+#else
+#define PROFILE_INC(field) ((void)0)
+#endif
+
 static int time_expired(SearchContext *c)
 {
     clock_t now;
     unsigned long elapsed;
     if (c->config.time_limit_ms == 0UL) return 0;
+    PROFILE_INC(clock_polls);
     now = clock();
     if (now < c->start_clock) return 0;
     elapsed = (unsigned long)(now - c->start_clock) * 1000UL /
@@ -40,6 +56,7 @@ static int time_expired(SearchContext *c)
 
 static int budget_expired(SearchContext *c)
 {
+    PROFILE_INC(full_budget_checks);
     if (c->config.node_budget != 0UL &&
         c->stats->nodes >= c->config.node_budget) return 1;
     return time_expired(c);
@@ -47,6 +64,7 @@ static int budget_expired(SearchContext *c)
 
 static int recursive_budget_expired(SearchContext *c)
 {
+    PROFILE_INC(recursive_budget_checks);
     if (c->config.node_budget != 0UL &&
         c->stats->nodes >= c->config.node_budget) return 1;
     if (c->config.time_limit_ms == 0UL) return 0;
@@ -87,10 +105,14 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
     }
     ++c->stats->nodes;
     if (b->halfmove_clock >= 100U || board_is_insufficient_material(b)) return 0;
-    if (ply >= CPU_SEARCH_PLY) return cpu_internal_evaluate(b, g);
+    if (ply >= CPU_SEARCH_PLY) {
+        PROFILE_INC(eval_calls);
+        return cpu_internal_evaluate(b, g);
+    }
 
     if (depth <= 0) {
         actor_was_in_check = -1;
+        PROFILE_INC(legal_probe_calls);
         if (!cpu_internal_has_legal_action(
                 b, g, &actor_was_in_check)) {
             if (actor_was_in_check < 0)
@@ -100,10 +122,12 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
                 return -CPU_MATE + ply;
             return 0;
         }
+        PROFILE_INC(eval_calls);
         return cpu_internal_evaluate(b, g);
     }
 
     list = &g_lists[ply];
+    PROFILE_INC(action_gen_calls);
     cpu_internal_generate_actions(b, g, list, &actor_was_in_check);
     if (list->count == 0) {
         if (actor_was_in_check < 0)
@@ -111,6 +135,7 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
         if (actor_was_in_check) return -CPU_MATE + ply;
         return 0;
     }
+    PROFILE_INC(sort_calls);
     cpu_internal_sort_actions(list,
                               ply + 1 < CPU_SEARCH_PLY ?
                               &g_lists[ply + 1] : 0);
@@ -125,6 +150,7 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
          * entry. Keep only the hard node-cap guard here so recursive action
          * loops do not call clock() twice per child.
          */
+        PROFILE_INC(node_guard_checks);
         if (c->config.node_budget != 0UL &&
             c->stats->nodes >= c->config.node_budget) {
             c->aborted = 1;
@@ -138,14 +164,20 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
                 &opponent_king_file, &opponent_king_rank);
             opponent_king_located = 1;
         }
-        if (!cpu_apply_action(b, g, &list->actions[i], &undo)) continue;
         if (list->actions[i].type == CF_CPU_ACTION_FART)
+            PROFILE_INC(fart_attempts);
+        else
+            PROFILE_INC(move_attempts);
+        if (!cpu_apply_action(b, g, &list->actions[i], &undo)) continue;
+        if (list->actions[i].type == CF_CPU_ACTION_FART) {
+            PROFILE_INC(fart_bonus_calls);
             action_bonus = cpu_internal_action_bonus_prelocated(
                 b, g, &list->actions[i], &undo, &c->config,
                 actor_was_in_check, opponent_king_known,
                 opponent_king_file, opponent_king_rank);
-        else
+        } else {
             action_bonus = 0;
+        }
         child_alpha = shifted_bound(action_bonus, beta);
         child_beta = shifted_bound(action_bonus, alpha);
         score = -negamax(b, g, depth-1, child_alpha, child_beta, ply+1, c) +
@@ -159,7 +191,11 @@ static int negamax(CfBoard *b, CfGasState *g, int depth,
             break;
         }
     }
-    return best == -CPU_INF ? cpu_internal_evaluate(b, g) : best;
+    if (best == -CPU_INF) {
+        PROFILE_INC(eval_calls);
+        return cpu_internal_evaluate(b, g);
+    }
+    return best;
 }
 
 int cpu_choose_action(CfBoard *b, CfGasState *g,
@@ -196,6 +232,7 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
     else memset(stats, 0, sizeof(*stats));
 
     root = &g_lists[0];
+    PROFILE_INC(action_gen_calls);
     cpu_internal_generate_actions(b, g, root, &actor_was_in_check);
     if (root->count == 0) return 0;
     if (board_is_insufficient_material(b)) return 0;
@@ -203,6 +240,7 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
         gas_history_repetition_count(history, b, g) >= 3)
         return 0;
     if (b->halfmove_clock >= 100U) return 0;
+    PROFILE_INC(sort_calls);
     cpu_internal_sort_actions(root, &g_lists[1]);
     best_action = root->actions[0];
 
@@ -234,14 +272,20 @@ int cpu_choose_action(CfBoard *b, CfGasState *g,
                     &opponent_king_file, &opponent_king_rank);
                 opponent_king_located = 1;
             }
-            if (!cpu_apply_action(b, g, &root->actions[i], &undo)) continue;
             if (root->actions[i].type == CF_CPU_ACTION_FART)
+                PROFILE_INC(fart_attempts);
+            else
+                PROFILE_INC(move_attempts);
+            if (!cpu_apply_action(b, g, &root->actions[i], &undo)) continue;
+            if (root->actions[i].type == CF_CPU_ACTION_FART) {
+                PROFILE_INC(fart_bonus_calls);
                 action_bonus = cpu_internal_action_bonus_prelocated(
                     b, g, &root->actions[i], &undo, &c.config,
                     actor_was_in_check, opponent_king_known,
                     opponent_king_file, opponent_king_rank);
-            else
+            } else {
                 action_bonus = 0;
+            }
             score = -negamax(b, g, depth-1, -CPU_INF, CPU_INF, 1, &c) +
                     action_bonus;
             cpu_unapply_action(b, g, &undo);
