@@ -39,8 +39,12 @@ async function canvasShot(page, name) {
 async function canvasPoint(page, file, rank) {
   const canvas = await page.$('#canvas');
   const box = await canvas.boundingBox();
-  const vx = 18 + file * 18 + 9;
-  const vy = 27 + (7 - rank) * 18 + 9;
+  if (!box) throw new Error('canvas has no bounding box');
+  const boardX = await call(page, 'cf_review_board_x');
+  const boardY = await call(page, 'cf_review_board_y');
+  const square = await call(page, 'cf_review_square_size');
+  const vx = boardX + file * square + Math.floor(square / 2);
+  const vy = boardY + (7 - rank) * square + Math.floor(square / 2);
   return { x: box.x + vx / 320 * box.width, y: box.y + vy / 200 * box.height };
 }
 
