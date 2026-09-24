@@ -403,25 +403,6 @@ static int ux_square_in_bounds(int file, int rank)
     return file >= 0 && file < 8 && rank >= 0 && rank < 8;
 }
 
-static void ux_draw_direction_arrow(int x, int y,
-                                    CfFartDirection direction, cf_u8 color)
-{
-    int df;
-    int dr;
-    int sx;
-    int sy;
-    int i;
-
-    ux_fart_delta(direction, &df, &dr);
-    if (df == 0 && dr == 0) return;
-    sy = -dr;
-    for (i = 0; i < 3; ++i)
-        vga_fill_rect(x + df * i * 2, y + sy * i * 2, 2, 2, color);
-    sx = x + df * 6;
-    sy = y + sy * 6;
-    vga_fill_rect(sx - 1, sy - 1, 3, 3, color);
-}
-
 static void ux_fart_preview_lines(int file, int rank,
                                   CfFartDirection direction,
                                   CfFartPreview preview,
