@@ -172,6 +172,21 @@ body{display:flex;justify-content:center;padding:20px;touch-action:manipulation}
   .controls{grid-template-columns:repeat(3,56px)}
   .help{font-size:10px}
 }
+@media (max-width:340px){
+  body{padding:6px}
+  .brand{font-size:18px;margin:0 0 1px}
+  .tag{font-size:9px;margin-bottom:6px}
+  .edition{display:none}
+  .machine{padding:5px;border-radius:6px}
+  .status{font-size:9px;margin-top:5px;padding:2px 6px}
+  .control-deck{margin-top:6px;padding-top:6px}
+  .controls{grid-template-columns:repeat(3,52px);gap:3px;margin-bottom:7px}
+  .controls button{min-height:40px;font-size:13px}
+  .actions{gap:4px}
+  .action-group{display:contents}
+  .actions button{min-height:36px;padding:5px 7px;font-size:11px}
+  .help{display:none}
+}
 </style>
 </head>
 <body>
@@ -223,7 +238,17 @@ var Module = {
     });
   }],
   onRuntimeInitialized: function () {
-    document.getElementById('status').textContent = 'Ready — click the VGA screen or use the controls.';
+    var status = document.getElementById('status');
+    var compactStatus = window.matchMedia('(max-width:340px)');
+    function syncStatusCopy() {
+      status.textContent = compactStatus.matches ?
+        'Ready' : 'Ready — click the VGA screen or use the controls.';
+    }
+    syncStatusCopy();
+    if (compactStatus.addEventListener)
+      compactStatus.addEventListener('change', syncStatusCopy);
+    else
+      compactStatus.addListener(syncStatusCopy);
     setInterval(function () { try { FS.syncfs(false, function () {}); } catch (_) {} }, 1500);
     Module.canvas.focus();
   },

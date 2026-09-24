@@ -43,6 +43,8 @@ async function layoutMetrics(page) {
     const canvas = document.getElementById('canvas');
     const canvasStyle = getComputedStyle(canvas);
     const touch = document.querySelector('.touch');
+    const help = document.querySelector('.help');
+    const status = document.getElementById('status');
     const buttons = Array.from(document.querySelectorAll('button')).map((b) => ({
       text: b.textContent.trim(),
       key: Number(b.dataset.k || 0),
@@ -70,6 +72,8 @@ async function layoutMetrics(page) {
         borderLeft: parseFloat(canvasStyle.borderLeftWidth) || 0
       },
       touchDisplay: getComputedStyle(touch).display,
+      helpDisplay: getComputedStyle(help).display,
+      statusText: status.textContent,
       canvasAccessibleName: canvas.getAttribute('aria-label'),
       viewportMeta: viewport,
       buttons
@@ -194,6 +198,38 @@ try {
         id: 'mobile-horizontal-overflow',
         state: layout.name,
         detail: `document width ${layout.document.scrollWidth}px exceeds ${layout.viewport.width}px viewport`
+      });
+    }
+  }
+
+  const compact320 = report.layouts.find((layout) => layout.name === 'mobile-320x568');
+  if (compact320) {
+    if (compact320.canvas.width < 290) {
+      report.findings.push({
+        severity: 'high',
+        id: 'compact-mobile-game-shrink',
+        detail: `320px layout shrank the VGA screen to ${compact320.canvas.width}px; keep it at least 290px wide`
+      });
+    }
+    if (compact320.document.scrollHeight > 620) {
+      report.findings.push({
+        severity: 'medium',
+        id: 'compact-mobile-height',
+        detail: `320x568 layout is still ${compact320.document.scrollHeight}px tall; compact chrome should stay at or below 620px`
+      });
+    }
+    if (compact320.helpDisplay !== 'none') {
+      report.findings.push({
+        severity: 'low',
+        id: 'compact-mobile-desktop-help',
+        detail: 'desktop keyboard guidance should be hidden on the 320px compact layout'
+      });
+    }
+    if (compact320.statusText !== 'Ready') {
+      report.findings.push({
+        severity: 'low',
+        id: 'compact-mobile-status-copy',
+        detail: `compact mobile status should be "Ready", got "${compact320.statusText}"`
       });
     }
   }
