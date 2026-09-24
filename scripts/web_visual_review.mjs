@@ -448,6 +448,15 @@ try {
   if (crimsonOpeningSig !== BUILD17_CRIMSON_OPENING_SIG)
     throw new Error('Build 17 Crimson Cellar opening signature drifted');
 
+  /* Chromium UX follow-up: Replay footer controls must all read as active.
+   * Capture the real viewer after restoring Royal Basement so the command
+   * bar remains part of the permanent visual-review surface. */
+  if (await call(page, 'cf_review_set_ui_theme', 0) !== 1)
+    throw new Error('Replay visual review could not restore Royal Basement');
+  await press(page, 'r', 250);
+  await nativeShot(page, '37-replay-active-close', 'real', states);
+  await press(page, 'r', 180);
+
   if (errors.length) throw new Error(errors.join(' | '));
 
   const manifest = {
