@@ -6,40 +6,207 @@
 <title>Chess Fart — Web</title>
 <link rel="icon" href="data:,">
 <style>
-:root{color-scheme:dark;--bg:#080708;--panel:#17131a;--line:#6c503a;--text:#eee4ce;--muted:#a79680;--accent:#b7d45b}
-*{box-sizing:border-box} html,body{margin:0;min-height:100%;background:radial-gradient(circle at top,#211821 0,#0b090c 52%,#050405 100%);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-body{display:flex;justify-content:center;padding:18px;touch-action:manipulation}.wrap{width:min(980px,100%);text-align:center}.brand{letter-spacing:.12em;font-size:clamp(20px,4vw,38px);margin:2px 0 4px}.tag{color:var(--muted);font-size:13px;margin-bottom:14px}
-.machine{display:block;width:min(824px,100%);margin:0 auto;background:#19141a;border:2px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 18px 60px #000a,inset 0 0 0 2px #30252d}
-#canvas{display:block;width:100%;height:auto;aspect-ratio:8/5;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;outline:none;cursor:crosshair}
-#canvas:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
-.status{font-size:12px;color:var(--muted);margin:8px 0 0}.controls{display:grid;grid-template-columns:repeat(3,64px);gap:6px;justify-content:center;margin:14px auto 8px}.controls button,.actions button{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:8px;min-height:44px;box-shadow:inset 0 1px #ffffff10;cursor:pointer}.controls button:active,.actions button:active{transform:translateY(1px);background:#2b222b}.blank{visibility:hidden}.actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:760px;margin:auto}.actions button{padding:8px 13px}.fart{color:#d6ef83!important;border-color:#799341!important}.help{max-width:760px;margin:12px auto 0;color:var(--muted);font-size:12px;line-height:1.55}.kbd{color:var(--text)}
+:root{
+  color-scheme:dark;
+  --bg:#050911;
+  --bg-top:#111a29;
+  --panel:#101722;
+  --panel-raised:#151e2c;
+  --edge:#2c3f5e;
+  --copper:#875d31;
+  --gold:#e7b739;
+  --cyan:#35d7d2;
+  --gas:#a9dc55;
+  --text:#f0e5cb;
+  --muted:#98a1ae;
+  --danger:#d47a62;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  min-height:100%;
+  background:
+    radial-gradient(circle at 50% -10%,#192640 0,var(--bg-top) 25%,#090e17 58%,#030508 100%);
+  color:var(--text);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+body{display:flex;justify-content:center;padding:20px;touch-action:manipulation}
+.wrap{width:min(980px,100%);text-align:center}
+.brand{
+  color:var(--gold);
+  letter-spacing:.16em;
+  font-size:clamp(20px,3.2vw,32px);
+  font-weight:700;
+  margin:1px 0 2px;
+  text-shadow:0 1px 0 #000,0 0 18px #e7b73918;
+}
+.tag{font-size:12px;margin-bottom:14px;letter-spacing:.025em}
+.tagline{color:var(--cyan)}
+.edition{color:var(--muted)}
+.machine{
+  display:block;
+  width:min(824px,100%);
+  margin:0 auto;
+  background:#090e16;
+  border:1px solid var(--copper);
+  border-radius:10px;
+  padding:9px;
+  box-shadow:
+    0 18px 60px #000c,
+    inset 0 0 0 1px var(--edge),
+    inset 0 0 18px #0009;
+}
+#canvas{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:8/5;
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+  background:#000;
+  outline:none;
+  cursor:crosshair;
+  border:1px solid #05070b;
+}
+#canvas:focus-visible{outline:2px solid var(--cyan);outline-offset:4px}
+.status{
+  display:inline-block;
+  font-size:11px;
+  color:var(--muted);
+  margin:8px 0 0;
+  padding:3px 8px;
+  border:1px solid #26354e;
+  border-radius:999px;
+  background:#0a1019cc;
+}
+.control-deck{
+  width:min(824px,100%);
+  margin:12px auto 0;
+  padding-top:11px;
+  border-top:1px solid #27344a;
+}
+.controls{
+  display:grid;
+  grid-template-columns:repeat(3,58px);
+  gap:5px;
+  justify-content:center;
+  margin:0 auto 10px;
+}
+.controls button,.actions button{
+  font:inherit;
+  color:var(--text);
+  background:linear-gradient(#172131,#101721);
+  border:1px solid #40506a;
+  border-radius:6px;
+  min-height:42px;
+  box-shadow:inset 0 1px #ffffff12,0 1px 0 #000;
+  cursor:pointer;
+  transition:border-color .12s ease,background .12s ease,color .12s ease,transform .04s ease;
+}
+.controls button:hover,.actions button:hover{
+  border-color:#687a98;
+  background:linear-gradient(#1d2a3e,#131c29);
+}
+.controls button:focus-visible,.actions button:focus-visible{
+  outline:2px solid var(--cyan);
+  outline-offset:2px;
+}
+.controls button:active,.actions button:active{transform:translateY(1px)}
+.controls button[data-k="10"]{
+  color:var(--gold);
+  border-color:#8d6b32;
+  background:linear-gradient(#272216,#17150f);
+}
+.actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 12px;
+  justify-content:center;
+  align-items:center;
+  max-width:824px;
+  margin:auto;
+}
+.action-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  justify-content:center;
+  padding:4px;
+  border:1px solid #26354b;
+  border-radius:8px;
+  background:#080d15a8;
+}
+.actions button{padding:7px 11px;min-height:38px}
+.fart{
+  color:#dff79b!important;
+  border-color:#789e3f!important;
+  background:linear-gradient(#1c2a18,#111b10)!important;
+  box-shadow:inset 0 1px #dff79b18,0 0 12px #a9dc5510!important;
+}
+.session button{border-color:#50617a}
+.utility button{color:#d6dbe3}
+.settings button{color:var(--muted);border-color:#39465a}
+.settings button[data-k="20"]{color:#d7ad78;border-color:#765638}
+.settings button[data-k="1"]{color:#e6a08e;border-color:#72483f}
+.help{
+  max-width:760px;
+  margin:10px auto 0;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.55;
+}
+.kbd{color:var(--text)}
 @media (min-width:760px) and (hover:hover) and (pointer:fine){.touch{display:none}}
-@media (max-width:480px){body{padding:8px}.machine{padding:6px;border-radius:8px}}
+@media (max-width:620px){
+  body{padding:10px}
+  .control-deck{margin-top:9px;padding-top:9px}
+  .actions{gap:6px 8px}
+  .action-group{padding:3px}
+  .actions button{padding:7px 9px}
+}
+@media (max-width:480px){
+  body{padding:8px}
+  .machine{padding:6px;border-radius:7px}
+  .brand{font-size:20px}
+  .tag{font-size:10px;margin-bottom:9px}
+  .controls{grid-template-columns:repeat(3,56px)}
+  .help{font-size:10px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="brand">CHESS FART</div>
-  <div class="tag">Check. Mate. Ventilate. — browser/WASM edition</div>
+  <div class="tag"><span class="tagline">Check. Mate. Ventilate.</span> <span class="edition">— browser/WASM edition</span></div>
   <div class="machine"><canvas id="canvas" width="320" height="200" tabindex="0" aria-label="Chess Fart game screen. Use the keyboard shortcuts or controls below."></canvas></div>
   <div id="status" class="status">Loading the 256-color ventilation engine…</div>
 
-  <div class="touch">
-    <div class="controls">
-      <button data-k="6" aria-label="Move northwest">↖</button><button data-k="2" aria-label="Move north">↑</button><button data-k="7" aria-label="Move northeast">↗</button>
-      <button data-k="4" aria-label="Move west">←</button><button data-k="10">OK</button><button data-k="5" aria-label="Move east">→</button>
-      <button data-k="8" aria-label="Move southwest">↙</button><button data-k="3" aria-label="Move south">↓</button><button data-k="9" aria-label="Move southeast">↘</button>
+  <div class="control-deck">
+    <div class="touch">
+      <div class="controls">
+        <button data-k="6" aria-label="Move northwest">↖</button><button data-k="2" aria-label="Move north">↑</button><button data-k="7" aria-label="Move northeast">↗</button>
+        <button data-k="4" aria-label="Move west">←</button><button data-k="10">OK</button><button data-k="5" aria-label="Move east">→</button>
+        <button data-k="8" aria-label="Move southwest">↙</button><button data-k="3" aria-label="Move south">↓</button><button data-k="9" aria-label="Move southeast">↘</button>
+      </div>
     </div>
-  </div>
-  <div class="actions">
-    <button class="fart" data-k="11">FART (F)</button>
-    <button data-k="12">SAVE</button><button data-k="13">LOAD</button><button data-k="18">REPLAY</button>
-    <button data-k="19">UNDO</button><button data-k="15">HELP</button><button data-k="16">LOG</button><button data-k="17">CREDITS</button>
-    <button data-k="14">CPU LEVEL</button><button data-k="20">THEME</button><button data-k="1">ESC</button>
-  </div>
-  <div class="help">
-    Desktop: <span class="kbd">arrows + Enter/Space</span>. Diagonals: <span class="kbd">Home / PgUp / End / PgDn</span>.
-    Click the VGA screen to use the mouse; right-click enters Fart mode. Saves persist in this browser.
+    <div class="actions">
+      <div class="action-group primary">
+        <button class="fart" data-k="11">FART (F)</button>
+      </div>
+      <div class="action-group session">
+        <button data-k="12">SAVE</button><button data-k="13">LOAD</button><button data-k="18">REPLAY</button><button data-k="19">UNDO</button>
+      </div>
+      <div class="action-group utility">
+        <button data-k="15">HELP</button><button data-k="16">LOG</button><button data-k="17">CREDITS</button>
+      </div>
+      <div class="action-group settings">
+        <button data-k="14">CPU LEVEL</button><button data-k="20">THEME</button><button data-k="1">ESC</button>
+      </div>
+    </div>
+    <div class="help">
+      Desktop: <span class="kbd">arrows + Enter/Space</span>. Diagonals: <span class="kbd">Home / PgUp / End / PgDn</span>.
+      Click the VGA screen to use the mouse; right-click enters Fart mode. Saves persist in this browser.
+    </div>
   </div>
 </div>
 <script>
