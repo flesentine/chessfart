@@ -928,7 +928,7 @@ static void ux_draw_replay_command_bar(void)
     font_draw_text(202, CF_UI_PROMPT_TEXT_Y,
                    "L IMP", UX_COL_GOLD, 1);
     font_draw_text(264, CF_UI_PROMPT_TEXT_Y,
-                   "R CLOSE", UX_COL_MUTED, 1);
+                   "R CLOSE", UX_COL_TEXT, 1);
 }
 
 static int ux_render_replay_frame(int index)
