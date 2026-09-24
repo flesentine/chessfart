@@ -144,15 +144,15 @@ static void draw_corner_mark(int x, int y, cf_u8 color)
 
 static void draw_selection_brackets(int x, int y, cf_u8 color)
 {
-    int far = SQUARE_SIZE - 2;
+    int far_edge = SQUARE_SIZE - 2;
     int start = SQUARE_SIZE - 6;
     draw_corner_mark(x + 1, y + 1, color);
     vga_fill_rect(x + start, y + 1, 5, 1, color);
-    vga_fill_rect(x + far, y + 1, 1, 5, color);
-    vga_fill_rect(x + 1, y + far, 5, 1, color);
+    vga_fill_rect(x + far_edge, y + 1, 1, 5, color);
+    vga_fill_rect(x + 1, y + far_edge, 5, 1, color);
     vga_fill_rect(x + 1, y + start, 1, 5, color);
-    vga_fill_rect(x + start, y + far, 5, 1, color);
-    vga_fill_rect(x + far, y + start, 1, 5, color);
+    vga_fill_rect(x + start, y + far_edge, 5, 1, color);
+    vga_fill_rect(x + far_edge, y + start, 1, 5, color);
 }
 
 static void draw_move_dot(int x, int y)
@@ -165,15 +165,15 @@ static void draw_move_dot(int x, int y)
 
 static void draw_capture_mark(int x, int y)
 {
-    int far = SQUARE_SIZE - 3;
+    int far_edge = SQUARE_SIZE - 3;
     int start = SQUARE_SIZE - 7;
     draw_corner_mark(x + 2, y + 2, COL_CAPTURE);
     vga_fill_rect(x + start, y + 2, 5, 1, COL_CAPTURE);
-    vga_fill_rect(x + far, y + 2, 1, 5, COL_CAPTURE);
-    vga_fill_rect(x + 2, y + far, 5, 1, COL_CAPTURE);
+    vga_fill_rect(x + far_edge, y + 2, 1, 5, COL_CAPTURE);
+    vga_fill_rect(x + 2, y + far_edge, 5, 1, COL_CAPTURE);
     vga_fill_rect(x + 2, y + start, 1, 5, COL_CAPTURE);
-    vga_fill_rect(x + start, y + far, 5, 1, COL_CAPTURE);
-    vga_fill_rect(x + far, y + start, 1, 5, COL_CAPTURE);
+    vga_fill_rect(x + start, y + far_edge, 5, 1, COL_CAPTURE);
+    vga_fill_rect(x + far_edge, y + start, 1, 5, COL_CAPTURE);
 }
 
 static void draw_piece_gas(int x, int y, cf_u8 gas)
