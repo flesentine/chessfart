@@ -69,6 +69,13 @@ jobs:
           grep -q '^LOCAL_FULL_GAME=PASS opera-game plies=33 rollback=exact-persisted-state replay=2 castling=O-O-O result=CHECKMATE winner=WHITE terminal-lock$' build/web-playtest/hardening/hardening.txt
           cat build/web-playtest/playtest.txt
           cat build/web-playtest/hardening/hardening.txt
+      - name: Deep Chromium UX audit
+        run: |
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_ux_audit.mjs
+          test -s build/web-ux-audit/audit.json
+          test -s build/web-ux-audit/mobile-390x844.png
+          grep -q '^findings=0$' build/web-ux-audit/audit.txt
+          cat build/web-ux-audit/audit.txt
       - name: Visual regression review
         run: |
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_visual_review.mjs
@@ -115,6 +122,7 @@ jobs:
             build/web-smoke.txt
             build/web-smoke.png
             build/web-playtest/
+            build/web-ux-audit/
             build/web-visual-review/
       - name: Preserve browser bundle
         uses: actions/upload-artifact@v4
