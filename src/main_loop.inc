@@ -358,11 +358,15 @@ static int game_loop(void)
             case CF_KEY_LEFT:
             case CF_KEY_DOWN:
                 promotion_choice = cycle_promotion(promotion_choice, -1);
+                sprintf(message, "PROMOTE %s",
+                        board_piece_type_name(promotion_choice));
                 changed = 1;
                 break;
             case CF_KEY_RIGHT:
             case CF_KEY_UP:
                 promotion_choice = cycle_promotion(promotion_choice, 1);
+                sprintf(message, "PROMOTE %s",
+                        board_piece_type_name(promotion_choice));
                 changed = 1;
                 break;
             case CF_KEY_ENTER:
@@ -501,7 +505,8 @@ static int game_loop(void)
                                             cursor_file, cursor_rank)) {
                         promotion_pending = 1;
                         promotion_choice = CF_PIECE_QUEEN;
-                        strcpy(message, "CHOOSE PROMO");
+                        sprintf(message, "PROMOTE %s",
+                                board_piece_type_name(promotion_choice));
                     } else if (ux_human_make_move(&g_board, &g_gas,
                                                     selected_file,
                                                     selected_rank,
