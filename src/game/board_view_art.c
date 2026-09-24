@@ -431,22 +431,6 @@ static void fart_preview_lines(int file, int rank,
     }
 }
 
-static void draw_direction_arrow(int x, int y,
-                                 CfFartDirection direction, cf_u8 color)
-{
-    int df;
-    int dr;
-    int sy;
-    int i;
-
-    fart_delta(direction, &df, &dr);
-    if (df == 0 && dr == 0) return;
-    sy = -dr;
-    for (i = 0; i < 3; ++i)
-        vga_fill_rect(x + df * i * 2, y + sy * i * 2, 2, 2, color);
-    vga_fill_rect(x + df * 6 - 1, y + sy * 6 - 1, 3, 3, color);
-}
-
 static void draw_fart_panel_art(const CfBoard *board, const CfGasState *gas,
                                 int cursor_file, int cursor_rank,
                                 int has_selection,
@@ -517,8 +501,8 @@ static void draw_fart_panel_art(const CfBoard *board, const CfGasState *gas,
                    "DIRECTION", COL_SELECTED, 1);
     font_draw_text(CF_UI_FART_DIRECTION_VALUE_X, CF_UI_FART_DIRECTION_Y,
                    gas_direction_name(fart_direction), COL_GAS, 1);
-    draw_direction_arrow(CF_UI_PANEL_X + CF_UI_PANEL_W - 10, CF_UI_FART_DIRECTION_Y + 3,
-                         fart_direction, COL_GAS);
+    /* Direction text plus the on-board trail carry this state in the
+     * narrower board-first rail. */
 
     font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LABEL_Y,
                    "PREVIEW", COL_SELECTED, 1);
