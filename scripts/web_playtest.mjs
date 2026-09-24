@@ -41,8 +41,13 @@ async function canvasPoint(page, vx, vy) {
 }
 
 async function clickSquare(page, file, rank, button = 'left') {
-  const vx = 18 + file * 18 + 9;
-  const vy = 27 + (7 - rank) * 18 + 9;
+  const geometry = await page.evaluate(() => ({
+    boardX: Module._cf_review_board_x(),
+    boardY: Module._cf_review_board_y(),
+    square: Module._cf_review_square_size()
+  }));
+  const vx = geometry.boardX + file * geometry.square + Math.floor(geometry.square / 2);
+  const vy = geometry.boardY + (7 - rank) * geometry.square + Math.floor(geometry.square / 2);
   const p = await canvasPoint(page, vx, vy);
   await page.mouse.click(p.x, p.y, { button, delay: 60 });
   await sleep(180);
