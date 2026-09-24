@@ -293,6 +293,10 @@ static void ux_panel_outline(void)
     vga_fill_rect(CF_UI_PANEL_X + 2,
                   CF_UI_PANEL_Y + CF_UI_PANEL_H - 3,
                   CF_UI_PANEL_W - 4, 1, UX_COL_SHADOW);
+    font_draw_heading(CF_UI_HUD_LABEL_X, CF_UI_HUD_TITLE_Y,
+                      "CHESS FART", UX_COL_GOLD, 1);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_TITLE_RULE_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
 }
 
 static void ux_draw_gas_pips(int x, int y, cf_u8 gas)
@@ -326,28 +330,33 @@ static void ux_draw_action_two_lines(int x, int y, int second_y,
     int len;
     int split;
     int start;
+    int max_chars;
 
     if (text == 0 || text[0] == '\0') {
         font_draw_text(x, y, "NONE YET", UX_COL_MUTED, 1);
         return;
     }
 
+    max_chars = (CF_UI_HUD_DIVIDER_W + 1) / 6;
+    if (max_chars > 20) max_chars = 20;
+    if (max_chars < 8) max_chars = 8;
+
     len = (int)strlen(text);
-    if (len <= 20) {
+    if (len <= max_chars) {
         font_draw_text_clipped(x, y, text, color, 1, CF_UI_HUD_DIVIDER_W);
         return;
     }
 
-    split = 20;
+    split = max_chars;
     while (split > 0 && text[split] != ' ') --split;
-    if (split == 0) split = 20;
+    if (split == 0) split = max_chars;
 
     strncpy(first, text, (size_t)split);
     first[split] = '\0';
     start = split;
     while (text[start] == ' ') ++start;
-    strncpy(second, text + start, 20U);
-    second[20] = '\0';
+    strncpy(second, text + start, (size_t)max_chars);
+    second[max_chars] = '\0';
 
     font_draw_text_clipped(x, y, first, color, 1, CF_UI_HUD_DIVIDER_W);
     font_draw_text_clipped(x, second_y,
@@ -535,8 +544,8 @@ static void ux_draw_fart_panel(const CfBoard *board,
                    "DIRECTION", UX_COL_SELECTED, 1);
     font_draw_text(CF_UI_FART_DIRECTION_VALUE_X, CF_UI_FART_DIRECTION_Y,
                    gas_direction_name(fart_direction), UX_COL_GAS, 1);
-    ux_draw_direction_arrow(286, CF_UI_FART_DIRECTION_Y + 3,
-                            fart_direction, UX_COL_GAS);
+    /* Direction text plus the on-board Fart trail are clearer than a tiny
+     * duplicate arrow in the narrower board-first rail. */
 
     font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LABEL_Y,
                    "PREVIEW", UX_COL_SELECTED, 1);
