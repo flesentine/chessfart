@@ -76,6 +76,10 @@ static void draw_panel_box(int x, int y, int w, int h)
     vga_fill_rect(x + 2, y + 2, w - 4, h - 4, COL_PANEL);
     vga_fill_rect(x + 2, y + 2, w - 4, 1, COL_GOLD);
     vga_fill_rect(x + 2, y + h - 3, w - 4, 1, COL_SHADOW);
+    font_draw_heading(CF_UI_HUD_LABEL_X, CF_UI_HUD_TITLE_Y,
+                      "CHESS FART", COL_GOLD, 1);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_TITLE_RULE_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, COL_PANEL_LINE);
 }
 
 static cf_u8 square_color(int file, int rank)
@@ -100,13 +104,14 @@ static void draw_square_surface(int x, int y, int file, int rank, cf_u8 color)
          * Keep the square center quiet so the 16x18 piece silhouette wins.
          */
         grain = color == COL_SQUARE_LIGHT ? COL_COPPER : COL_PANEL_LINE;
-        seam_y = ((file + rank) & 1) ? 6 : 12;
-        vga_fill_rect(x + 1, y + seam_y, 4, 1, grain);
-        vga_fill_rect(x + 15, y + seam_y, 4, 1, grain);
-        vga_put_pixel(x + 5, y + seam_y - 1, grain);
-        vga_put_pixel(x + 14, y + seam_y + 1, grain);
+        seam_y = ((file + rank) & 1) ? SQUARE_SIZE / 3 :
+                                             (SQUARE_SIZE * 2) / 3;
+        vga_fill_rect(x + 1, y + seam_y, 5, 1, grain);
+        vga_fill_rect(x + SQUARE_SIZE - 6, y + seam_y, 5, 1, grain);
+        vga_put_pixel(x + 6, y + seam_y - 1, grain);
+        vga_put_pixel(x + SQUARE_SIZE - 7, y + seam_y + 1, grain);
         vga_put_pixel(x + 2, y + 2, grain);
-        vga_put_pixel(x + 17, y + 17, grain);
+        vga_put_pixel(x + SQUARE_SIZE - 3, y + SQUARE_SIZE - 3, grain);
         return;
     }
 
@@ -115,9 +120,9 @@ static void draw_square_surface(int x, int y, int file, int rank, cf_u8 color)
      * these pixels: the native visual suite treats Royal as the exact anchor.
      */
     vga_put_pixel(x + 2, y + 2, grain);
-    vga_put_pixel(x + 15, y + 15, grain);
+    vga_put_pixel(x + SQUARE_SIZE - 3, y + SQUARE_SIZE - 3, grain);
     if (((file * 3 + rank) & 3) == 0)
-        vga_put_pixel(x + 13, y + 4, grain);
+        vga_put_pixel(x + SQUARE_SIZE - 5, y + 4, grain);
 }
 
 static int move_index_at(const CfMoveList *list, int file, int rank)
@@ -139,40 +144,47 @@ static void draw_corner_mark(int x, int y, cf_u8 color)
 
 static void draw_selection_brackets(int x, int y, cf_u8 color)
 {
+    int far = SQUARE_SIZE - 2;
+    int start = SQUARE_SIZE - 6;
     draw_corner_mark(x + 1, y + 1, color);
-    vga_fill_rect(x + 12, y + 1, 5, 1, color);
-    vga_fill_rect(x + 16, y + 1, 1, 5, color);
-    vga_fill_rect(x + 1, y + 16, 5, 1, color);
-    vga_fill_rect(x + 1, y + 12, 1, 5, color);
-    vga_fill_rect(x + 12, y + 16, 5, 1, color);
-    vga_fill_rect(x + 16, y + 12, 1, 5, color);
+    vga_fill_rect(x + start, y + 1, 5, 1, color);
+    vga_fill_rect(x + far, y + 1, 1, 5, color);
+    vga_fill_rect(x + 1, y + far, 5, 1, color);
+    vga_fill_rect(x + 1, y + start, 1, 5, color);
+    vga_fill_rect(x + start, y + far, 5, 1, color);
+    vga_fill_rect(x + far, y + start, 1, 5, color);
 }
 
 static void draw_move_dot(int x, int y)
 {
-    vga_fill_rect(x + 7, y + 7, 4, 4, COL_SHADOW);
-    vga_fill_rect(x + 8, y + 7, 2, 4, COL_LEGAL);
-    vga_fill_rect(x + 7, y + 8, 4, 2, COL_LEGAL);
+    int center = SQUARE_SIZE / 2;
+    vga_fill_rect(x + center - 2, y + center - 2, 5, 5, COL_SHADOW);
+    vga_fill_rect(x + center - 1, y + center - 2, 3, 5, COL_LEGAL);
+    vga_fill_rect(x + center - 2, y + center - 1, 5, 3, COL_LEGAL);
 }
 
 static void draw_capture_mark(int x, int y)
 {
+    int far = SQUARE_SIZE - 3;
+    int start = SQUARE_SIZE - 7;
     draw_corner_mark(x + 2, y + 2, COL_CAPTURE);
-    vga_fill_rect(x + 11, y + 2, 5, 1, COL_CAPTURE);
-    vga_fill_rect(x + 15, y + 2, 1, 5, COL_CAPTURE);
-    vga_fill_rect(x + 2, y + 15, 5, 1, COL_CAPTURE);
-    vga_fill_rect(x + 2, y + 11, 1, 5, COL_CAPTURE);
-    vga_fill_rect(x + 11, y + 15, 5, 1, COL_CAPTURE);
-    vga_fill_rect(x + 15, y + 11, 1, 5, COL_CAPTURE);
+    vga_fill_rect(x + start, y + 2, 5, 1, COL_CAPTURE);
+    vga_fill_rect(x + far, y + 2, 1, 5, COL_CAPTURE);
+    vga_fill_rect(x + 2, y + far, 5, 1, COL_CAPTURE);
+    vga_fill_rect(x + 2, y + start, 1, 5, COL_CAPTURE);
+    vga_fill_rect(x + start, y + far, 5, 1, COL_CAPTURE);
+    vga_fill_rect(x + far, y + start, 1, 5, COL_CAPTURE);
 }
 
 static void draw_piece_gas(int x, int y, cf_u8 gas)
 {
     int i;
+    int start;
     if (gas == 0U) return;
+    start = (SQUARE_SIZE - 8) / 2;
     for (i = 0; i < 3; ++i) {
         cf_u8 fill = gas > (cf_u8)i ? COL_GAS : COL_PANEL_LINE;
-        vga_fill_rect(x + 5 + i * 3, y + 16, 2, 1, fill);
+        vga_fill_rect(x + start + i * 3, y + SQUARE_SIZE - 2, 2, 1, fill);
     }
 }
 
@@ -229,7 +241,10 @@ static void draw_board(const CfBoard *board, const CfGasState *gas,
 
             piece = board_piece_at(board, file, rank);
             if (piece != 0 && piece->type != CF_PIECE_NONE) {
-                ui_assets_draw_piece_overlay(x, y + 1, piece);
+                ui_assets_draw_piece_overlay(
+                    x + (SQUARE_SIZE - CF_UI_PIECE_W) / 2,
+                    y + (SQUARE_SIZE - CF_UI_PIECE_H) / 2,
+                    piece);
                 draw_piece_gas(x, y, gas_at(gas, file, rank));
             }
         }
@@ -245,14 +260,19 @@ static void draw_board(const CfBoard *board, const CfGasState *gas,
     y = BOARD_Y + (7 - cursor_rank) * SQUARE_SIZE;
     draw_outline(x, y, SQUARE_SIZE, SQUARE_SIZE, COL_CURSOR);
 
+    /* Coordinates live inside the board now; no outer gutters are wasted. */
     label[1] = '\0';
     for (file = 0; file < 8; ++file) {
         label[0] = (char)('A' + file);
-        font_draw_text(24 + file * SQUARE_SIZE, 172, label, COL_GOLD, 1);
+        font_draw_text(BOARD_X + file * SQUARE_SIZE + 2,
+                       BOARD_Y + 8 * SQUARE_SIZE - 8,
+                       label, COL_GOLD, 1);
     }
     for (screen_rank = 0; screen_rank < 8; ++screen_rank) {
         label[0] = (char)('8' - screen_rank);
-        font_draw_text(7, 32 + screen_rank * SQUARE_SIZE, label, COL_GOLD, 1);
+        font_draw_text(BOARD_X + SQUARE_SIZE - 7,
+                       BOARD_Y + screen_rank * SQUARE_SIZE + 2,
+                       label, COL_GOLD, 1);
     }
 }
 
@@ -286,8 +306,8 @@ static void draw_fart_trail(int file, int rank,
 
     fart_delta(direction, &df, &dr);
     if (df == 0 && dr == 0) return;
-    sx = BOARD_X + file * SQUARE_SIZE + 9;
-    sy = BOARD_Y + (7 - rank) * SQUARE_SIZE + 9;
+    sx = BOARD_X + file * SQUARE_SIZE + SQUARE_SIZE / 2;
+    sy = BOARD_Y + (7 - rank) * SQUARE_SIZE + SQUARE_SIZE / 2;
     dy = -dr;
     steps = preview == CF_FART_PUSH || preview == CF_FART_PROMOTION ? 6 : 3;
     for (i = 1; i <= steps; ++i) {
@@ -497,7 +517,7 @@ static void draw_fart_panel_art(const CfBoard *board, const CfGasState *gas,
                    "DIRECTION", COL_SELECTED, 1);
     font_draw_text(CF_UI_FART_DIRECTION_VALUE_X, CF_UI_FART_DIRECTION_Y,
                    gas_direction_name(fart_direction), COL_GAS, 1);
-    draw_direction_arrow(286, CF_UI_FART_DIRECTION_Y + 3,
+    draw_direction_arrow(CF_UI_PANEL_X + CF_UI_PANEL_W - 10, CF_UI_FART_DIRECTION_Y + 3,
                          fart_direction, COL_GAS);
 
     font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LABEL_Y,
@@ -566,84 +586,60 @@ static void draw_panel_art(const CfBoard *board, const CfGasState *gas,
 
     draw_panel_box(PANEL_X, PANEL_Y, PANEL_W, PANEL_H);
 
-    font_draw_text(180, 31, "TURN", COL_GOLD, 1);
-    font_draw_text(223, 31, board_piece_color_name(board->side_to_move), COL_TEXT, 1);
-    font_draw_text(180, 42, "STATE", COL_MUTED, 1);
-    font_draw_text(223, 42, board_game_status_name(status),
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_TURN_Y, "TURN", COL_GOLD, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_TURN_Y, board_piece_color_name(board->side_to_move), COL_TEXT, 1);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_STATE_Y, "STATE", COL_MUTED, 1);
+    font_draw_text(CF_UI_HUD_VALUE_X, CF_UI_HUD_STATE_Y, board_game_status_name(status),
                    status == CF_GAME_CHECK || status == CF_GAME_CHECKMATE ?
                    COL_CHECK : COL_GREEN, 1);
-    vga_fill_rect(180, 52, 123, 1, COL_PANEL_LINE);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER1_Y, CF_UI_HUD_DIVIDER_W, 1, COL_PANEL_LINE);
 
     piece_file = has_selection ? selected_file : cursor_file;
     piece_rank = has_selection ? selected_rank : cursor_rank;
     piece = board_piece_at(board, piece_file, piece_rank);
     square_name(square, piece_file, piece_rank);
 
-    font_draw_text(180, 58, has_selection ? "SELECTED PIECE" : "CURSOR PIECE",
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_PIECE_LABEL_Y, has_selection ? "SELECTED PIECE" : "CURSOR PIECE",
                    COL_SELECTED, 1);
-    vga_fill_rect(181, 68, 22, 22, COL_PANEL_EDGE);
-    vga_fill_rect(183, 70, 18, 18, COL_PANEL_SOFT);
+    vga_fill_rect(CF_UI_HUD_PIECE_BOX_X, CF_UI_HUD_PIECE_BOX_Y, CF_UI_HUD_PIECE_BOX_W, CF_UI_HUD_PIECE_BOX_H, COL_PANEL_EDGE);
+    vga_fill_rect(CF_UI_HUD_PIECE_BOX_X + 2, CF_UI_HUD_PIECE_BOX_Y + 2, 18, 18, COL_PANEL_SOFT);
     if (piece != 0 && piece->type != CF_PIECE_NONE) {
-        ui_assets_draw_piece(183, 71, piece, COL_PANEL_SOFT);
-        font_draw_text(208, 69, board_piece_type_name(piece->type), COL_TEXT, 1);
+        ui_assets_draw_piece(CF_UI_HUD_PIECE_BOX_X + 2, CF_UI_HUD_PIECE_BOX_Y + 3, piece, COL_PANEL_SOFT);
+        font_draw_text(CF_UI_HUD_PIECE_TEXT_X, CF_UI_HUD_PIECE_NAME_Y, board_piece_type_name(piece->type), COL_TEXT, 1);
         piece_gas = gas_at(gas, piece_file, piece_rank);
     } else {
-        font_draw_text(208, 69, "EMPTY", COL_MUTED, 1);
+        font_draw_text(CF_UI_HUD_PIECE_TEXT_X, CF_UI_HUD_PIECE_NAME_Y, "EMPTY", COL_MUTED, 1);
     }
-    font_draw_text(208, 80, square, COL_CURSOR, 1);
+    font_draw_text(CF_UI_HUD_PIECE_TEXT_X, CF_UI_HUD_PIECE_SQUARE_Y, square, COL_CURSOR, 1);
 
-    vga_fill_rect(180, 94, 123, 1, COL_PANEL_LINE);
-    font_draw_text(180, 99, "GAS RESERVE", COL_GOLD, 1);
-    draw_gas_pips(181, 109, piece_gas);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER2_Y, CF_UI_HUD_DIVIDER_W, 1, COL_PANEL_LINE);
+    font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_HUD_GAS_LABEL_Y, "GAS RESERVE", COL_GOLD, 1);
+    draw_gas_pips(CF_UI_HUD_LABEL_X + 1, CF_UI_HUD_GAS_PIPS_Y - 1, piece_gas);
     sprintf(line, "%u/3", (unsigned)piece_gas);
-    font_draw_text(232, 110, line, piece_gas >= 2U ? COL_GAS : COL_MUTED, 1);
-    vga_fill_rect(180, 121, 123, 1, COL_PANEL_LINE);
+    font_draw_text(CF_UI_HUD_VALUE_X + 9, CF_UI_HUD_GAS_PIPS_Y, line, piece_gas >= 2U ? COL_GAS : COL_MUTED, 1);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_DIVIDER3_Y, CF_UI_HUD_DIVIDER_W, 1, COL_PANEL_LINE);
 
     if (promotion_pending) {
         sprintf(line, "PROMOTE %s", board_piece_type_name(promotion_choice));
-        font_draw_text(180, 128, line, COL_PROMOTE, 1);
+        font_draw_text(CF_UI_HUD_LABEL_X, 128, line, COL_PROMOTE, 1);
     } else if (has_selection) {
         sprintf(line, "%d LEGAL MOVES", legal_moves != 0 ? legal_moves->count : 0);
-        font_draw_text(180, 128, line, COL_MUTED, 1);
-        font_draw_text(180, 139, piece_gas >= 2U ? "FART READY" : "BUILD GAS",
+        font_draw_text(CF_UI_HUD_LABEL_X, 128, line, COL_MUTED, 1);
+        font_draw_text(CF_UI_HUD_LABEL_X, 139, piece_gas >= 2U ? "FART READY" : "BUILD GAS",
                        piece_gas >= 2U ? COL_GAS : COL_MUTED, 1);
     } else {
-        font_draw_text(180, 128, "READY", COL_GREEN, 1);
+        font_draw_text(CF_UI_HUD_LABEL_X, 128, "READY", COL_GREEN, 1);
         if (message != 0 && message[0] != '\0') {
             strncpy(line, message, sizeof(line) - 1U);
             line[sizeof(line) - 1U] = '\0';
-            font_draw_text(180, 139, line, COL_MUTED, 1);
+            font_draw_text(CF_UI_HUD_LABEL_X, 139, line, COL_MUTED, 1);
         }
     }
 }
 
 static void draw_header(int fart_mode)
 {
-    vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_Y,
-                  CF_UI_HEADER_W, CF_UI_HEADER_H, COL_BG);
-    font_draw_heading(CF_UI_HEADER_TITLE_X, CF_UI_HEADER_TITLE_Y,
-                      "CHESS FART", COL_GOLD, 1);
-    if (fart_mode) {
-        font_draw_text(CF_UI_FART_HEADER_TAGLINE_X, CF_UI_HEADER_TAGLINE_Y,
-                       "CHECK. MATE.", COL_TEXT, 1);
-        ui_assets_draw_puff(CF_UI_FART_HEADER_PUFF_X,
-                            CF_UI_FART_HEADER_PUFF_Y, 0);
-        vga_fill_rect(CF_UI_FART_BADGE_X, CF_UI_FART_BADGE_Y,
-                      CF_UI_FART_BADGE_W, CF_UI_FART_BADGE_H,
-                      COL_PANEL_EDGE);
-        vga_fill_rect(CF_UI_FART_BADGE_X + 1, CF_UI_FART_BADGE_Y + 1,
-                      CF_UI_FART_BADGE_W - 2, CF_UI_FART_BADGE_H - 2,
-                      COL_PANEL_SOFT);
-        vga_fill_rect(CF_UI_FART_BADGE_X + 1, CF_UI_FART_BADGE_Y + 1,
-                      CF_UI_FART_BADGE_W - 2, 1, COL_GAS);
-        font_draw_text(CF_UI_FART_BADGE_TEXT_X, CF_UI_FART_BADGE_TEXT_Y,
-                       "FART MODE", COL_GAS, 1);
-    } else {
-        font_draw_text(CF_UI_HEADER_TAGLINE_X, CF_UI_HEADER_TAGLINE_Y,
-                       "CHECK. MATE. VENTILATE.", COL_TEXT, 1);
-    }
-    vga_fill_rect(CF_UI_HEADER_X, CF_UI_HEADER_RULE_Y,
-                  CF_UI_HEADER_W, 1, COL_COPPER);
+    (void)fart_mode;
 }
 
 static void draw_command_bar(CfPieceColor side_to_move,
@@ -697,8 +693,8 @@ static void draw_fx(const CfPresentationFx *fx)
 
     if (fx == 0 || !fx->active) return;
     fart_delta(fx->action.direction, &df, &dr);
-    ax = BOARD_X + fx->action.actor_file * SQUARE_SIZE + 9;
-    ay = BOARD_Y + (7 - fx->action.actor_rank) * SQUARE_SIZE + 9;
+    ax = BOARD_X + fx->action.actor_file * SQUARE_SIZE + SQUARE_SIZE / 2;
+    ay = BOARD_Y + (7 - fx->action.actor_rank) * SQUARE_SIZE + SQUARE_SIZE / 2;
     frame = fx->frame;
     if (frame < 0) frame = 0;
     if (frame > 4) frame = 4;
