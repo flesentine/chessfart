@@ -231,6 +231,21 @@ static void draw_board(const CfBoard *board, const CfGasState *gas,
             color = square_color(file, rank);
             draw_square_surface(x, y, file, rank, color);
 
+            /* Coordinates are part of the board texture, not foreground UI.
+             * Draw them before move markers and pieces so chessmen always
+             * remain visually dominant on rank 1 and the a-file. */
+            label[1] = '\0';
+            if (rank == 0) {
+                label[0] = (char)('A' + file);
+                font_draw_text(x + 2, y + SQUARE_SIZE - 8,
+                               label, COL_GOLD, 1);
+            }
+            if (file == 0) {
+                label[0] = (char)('1' + rank);
+                font_draw_text(x + SQUARE_SIZE - 7, y + 2,
+                               label, COL_GOLD, 1);
+            }
+
             mi = move_index_at(legal_moves, file, rank);
             if (mi >= 0) {
                 if (legal_moves->moves[mi].captured.type != CF_PIECE_NONE)
@@ -260,20 +275,6 @@ static void draw_board(const CfBoard *board, const CfGasState *gas,
     y = BOARD_Y + (7 - cursor_rank) * SQUARE_SIZE;
     draw_outline(x, y, SQUARE_SIZE, SQUARE_SIZE, COL_CURSOR);
 
-    /* Coordinates live inside the board now; no outer gutters are wasted. */
-    label[1] = '\0';
-    for (file = 0; file < 8; ++file) {
-        label[0] = (char)('A' + file);
-        font_draw_text(BOARD_X + file * SQUARE_SIZE + 2,
-                       BOARD_Y + 8 * SQUARE_SIZE - 8,
-                       label, COL_GOLD, 1);
-    }
-    for (screen_rank = 0; screen_rank < 8; ++screen_rank) {
-        label[0] = (char)('8' - screen_rank);
-        font_draw_text(BOARD_X + SQUARE_SIZE - 7,
-                       BOARD_Y + screen_rank * SQUARE_SIZE + 2,
-                       label, COL_GOLD, 1);
-    }
 }
 
 static void fart_delta(CfFartDirection direction, int *df, int *dr)
