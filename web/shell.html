@@ -238,9 +238,17 @@ var Module = {
     });
   }],
   onRuntimeInitialized: function () {
-    document.getElementById('status').textContent =
-      window.matchMedia('(max-width:340px)').matches ?
-      'Ready' : 'Ready — click the VGA screen or use the controls.';
+    var status = document.getElementById('status');
+    var compactStatus = window.matchMedia('(max-width:340px)');
+    function syncStatusCopy() {
+      status.textContent = compactStatus.matches ?
+        'Ready' : 'Ready — click the VGA screen or use the controls.';
+    }
+    syncStatusCopy();
+    if (compactStatus.addEventListener)
+      compactStatus.addEventListener('change', syncStatusCopy);
+    else
+      compactStatus.addListener(syncStatusCopy);
     setInterval(function () { try { FS.syncfs(false, function () {}); } catch (_) {} }, 1500);
     Module.canvas.focus();
   },
