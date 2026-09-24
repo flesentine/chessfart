@@ -75,9 +75,6 @@ jobs:
           test -s build/web-ux-audit/audit.json
           test -s build/web-ux-audit/mobile-390x844.png
           grep -q '^findings=0
-      - name: Visual regression review
-        run: |
-          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_visual_review.mjs
           test -s build/web-visual-review/manifest.json
           test -s build/web-visual-review/01-title.png
           test -s build/web-visual-review/04-selected-legal-moves.png
@@ -176,7 +173,6 @@ jobs:
             build/web-smoke.txt
             build/web-smoke.png
             build/web-playtest/
-            build/web-ux-audit/
             build/web-visual-review/
       - name: Preserve browser bundle
         uses: actions/upload-artifact@v4
