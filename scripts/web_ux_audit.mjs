@@ -41,6 +41,7 @@ async function layoutMetrics(page) {
     };
     const machine = document.querySelector('.machine');
     const canvas = document.getElementById('canvas');
+    const canvasStyle = getComputedStyle(canvas);
     const touch = document.querySelector('.touch');
     const buttons = Array.from(document.querySelectorAll('button')).map((b) => ({
       text: b.textContent.trim(),
@@ -60,6 +61,14 @@ async function layoutMetrics(page) {
       bodyScrollWidth: document.body.scrollWidth,
       machine: rect(machine),
       canvas: rect(canvas),
+      canvasBox: {
+        clientWidth: canvas.clientWidth,
+        clientHeight: canvas.clientHeight,
+        borderTop: parseFloat(canvasStyle.borderTopWidth) || 0,
+        borderRight: parseFloat(canvasStyle.borderRightWidth) || 0,
+        borderBottom: parseFloat(canvasStyle.borderBottomWidth) || 0,
+        borderLeft: parseFloat(canvasStyle.borderLeftWidth) || 0
+      },
       touchDisplay: getComputedStyle(touch).display,
       canvasAccessibleName: canvas.getAttribute('aria-label'),
       viewportMeta: viewport,
@@ -187,6 +196,31 @@ try {
         detail: `document width ${layout.document.scrollWidth}px exceeds ${layout.viewport.width}px viewport`
       });
     }
+  }
+
+  const borderedCanvasLayouts = report.layouts.filter((layout) => {
+    const box = layout.canvasBox;
+    return Math.max(box.borderTop, box.borderRight, box.borderBottom, box.borderLeft) > 0;
+  });
+  if (borderedCanvasLayouts.length) {
+    report.findings.push({
+      severity: 'medium',
+      id: 'canvas-border-hitbox',
+      detail: 'CSS borders must stay outside the VGA canvas so the 8:5 bitmap and mouse coordinate mapping use the same box',
+      states: borderedCanvasLayouts.map((layout) => layout.name)
+    });
+  }
+
+  const distortedCanvasLayouts = report.layouts.filter((layout) =>
+    Math.abs((layout.canvas.width / layout.canvas.height) - (320 / 200)) > 0.002
+  );
+  if (distortedCanvasLayouts.length) {
+    report.findings.push({
+      severity: 'medium',
+      id: 'canvas-aspect-ratio',
+      detail: 'rendered VGA canvas deviates from the native 320:200 aspect ratio',
+      states: distortedCanvasLayouts.map((layout) => layout.name)
+    });
   }
 
   const actionKeys = new Set(
