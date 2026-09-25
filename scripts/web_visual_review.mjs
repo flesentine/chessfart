@@ -19,7 +19,7 @@ const BUILD17_CRIMSON_TITLE_SIG = 685477904;
 const BUILD17_CRIMSON_OPENING_SIG = 1358898237;
 const CRIMSON_FULL_STATE_SIGS = {
   selected: 2568958673,
-  history: 1097729450,
+  history: null,
   fart: 915670439,
   check: 3775784696,
   invalid: 3781529762,
@@ -488,16 +488,26 @@ try {
   if (!royalSelected || royalSelected.signature === crimsonSelectedSig)
     throw new Error('Crimson selected/legal-move state did not differ from Royal');
 
+  /* Make history deterministic and compare identical LOCAL 2P game state
+   * across themes: E2-E4, E7-E5 is also the Royal state #22 sequence. */
+  await call(page, 'cf_review_set_match_mode', 1);
+  if (await call(page, 'cf_review_match_mode') !== 1)
+    throw new Error('Crimson history could not switch to deterministic LOCAL mode');
   await clickSquare(page, 4, 3);
-  await waitForStatus(page, 0, 1, 2);
+  await clickSquare(page, 4, 6);
+  await clickSquare(page, 4, 4);
+  if (await call(page, 'cf_review_history_has_local_pair') !== 1)
+    throw new Error('Crimson local history did not record WHITE then BLACK');
   await press(page, 'm', 220);
   const crimsonHistorySig =
     await nativeShot(page, '39-crimson-history', 'real', states);
   assertPinnedSignature('Crimson history',
                         crimsonHistorySig, CRIMSON_FULL_STATE_SIGS.history);
-  const royalHistory = states.find((state) => state.name === '09-history');
+  const royalHistory = states.find(
+    (state) => state.name === '22-local-history-white-black'
+  );
   if (!royalHistory || royalHistory.signature === crimsonHistorySig)
-    throw new Error('Crimson history did not differ from Royal');
+    throw new Error('Crimson local history did not differ from identical Royal state');
   await press(page, 'Enter', 180);
 
   if (await call(page, 'cf_review_render_fixture', 0) !== 1)
