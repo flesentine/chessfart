@@ -509,6 +509,9 @@ try {
   if (!royalHistory || royalHistory.signature === crimsonHistorySig)
     throw new Error('Crimson local history did not differ from identical Royal state');
   await press(page, 'Enter', 180);
+  await call(page, 'cf_review_set_match_mode', 0);
+  if (await call(page, 'cf_review_match_mode') !== 0)
+    throw new Error('Crimson review could not restore CPU mode after history');
 
   if (await call(page, 'cf_review_render_fixture', 0) !== 1)
     throw new Error('Crimson Fart push-preview fixture validation failed');
