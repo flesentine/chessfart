@@ -293,6 +293,10 @@ static void ux_panel_outline(void)
     vga_fill_rect(CF_UI_PANEL_X + 2,
                   CF_UI_PANEL_Y + CF_UI_PANEL_H - 3,
                   CF_UI_PANEL_W - 4, 1, UX_COL_SHADOW);
+    font_draw_heading(CF_UI_HUD_LABEL_X, CF_UI_HUD_TITLE_Y,
+                      "CHESS FART", UX_COL_GOLD, 1);
+    vga_fill_rect(CF_UI_HUD_LABEL_X, CF_UI_HUD_TITLE_RULE_Y,
+                  CF_UI_HUD_DIVIDER_W, 1, UX_COL_PANEL_LINE);
 }
 
 static void ux_draw_gas_pips(int x, int y, cf_u8 gas)
@@ -326,28 +330,33 @@ static void ux_draw_action_two_lines(int x, int y, int second_y,
     int len;
     int split;
     int start;
+    int max_chars;
 
     if (text == 0 || text[0] == '\0') {
         font_draw_text(x, y, "NONE YET", UX_COL_MUTED, 1);
         return;
     }
 
+    max_chars = (CF_UI_HUD_DIVIDER_W + 1) / 6;
+    if (max_chars > 20) max_chars = 20;
+    if (max_chars < 8) max_chars = 8;
+
     len = (int)strlen(text);
-    if (len <= 20) {
+    if (len <= max_chars) {
         font_draw_text_clipped(x, y, text, color, 1, CF_UI_HUD_DIVIDER_W);
         return;
     }
 
-    split = 20;
+    split = max_chars;
     while (split > 0 && text[split] != ' ') --split;
-    if (split == 0) split = 20;
+    if (split == 0) split = max_chars;
 
     strncpy(first, text, (size_t)split);
     first[split] = '\0';
     start = split;
     while (text[start] == ' ') ++start;
-    strncpy(second, text + start, 20U);
-    second[20] = '\0';
+    strncpy(second, text + start, (size_t)max_chars);
+    second[max_chars] = '\0';
 
     font_draw_text_clipped(x, y, first, color, 1, CF_UI_HUD_DIVIDER_W);
     font_draw_text_clipped(x, second_y,
@@ -392,25 +401,6 @@ static void ux_fart_delta(CfFartDirection direction, int *df, int *dr)
 static int ux_square_in_bounds(int file, int rank)
 {
     return file >= 0 && file < 8 && rank >= 0 && rank < 8;
-}
-
-static void ux_draw_direction_arrow(int x, int y,
-                                    CfFartDirection direction, cf_u8 color)
-{
-    int df;
-    int dr;
-    int sx;
-    int sy;
-    int i;
-
-    ux_fart_delta(direction, &df, &dr);
-    if (df == 0 && dr == 0) return;
-    sy = -dr;
-    for (i = 0; i < 3; ++i)
-        vga_fill_rect(x + df * i * 2, y + sy * i * 2, 2, 2, color);
-    sx = x + df * 6;
-    sy = y + sy * 6;
-    vga_fill_rect(sx - 1, sy - 1, 3, 3, color);
 }
 
 static void ux_fart_preview_lines(int file, int rank,
@@ -535,8 +525,8 @@ static void ux_draw_fart_panel(const CfBoard *board,
                    "DIRECTION", UX_COL_SELECTED, 1);
     font_draw_text(CF_UI_FART_DIRECTION_VALUE_X, CF_UI_FART_DIRECTION_Y,
                    gas_direction_name(fart_direction), UX_COL_GAS, 1);
-    ux_draw_direction_arrow(286, CF_UI_FART_DIRECTION_Y + 3,
-                            fart_direction, UX_COL_GAS);
+    /* Direction text plus the on-board Fart trail are clearer than a tiny
+     * duplicate arrow in the narrower board-first rail. */
 
     font_draw_text(CF_UI_HUD_LABEL_X, CF_UI_FART_PREVIEW_LABEL_Y,
                    "PREVIEW", UX_COL_SELECTED, 1);
@@ -566,7 +556,9 @@ static void ux_draw_fart_panel(const CfBoard *board,
 
 static const char *ux_hud_status_name(CfGameStatus status)
 {
+    if (status == CF_GAME_DRAW_FIFTY_MOVE) return "DRAW 50";
     if (status == CF_GAME_DRAW_THREEFOLD) return "DRAW 3-FOLD";
+    if (status == CF_GAME_DRAW_INSUFFICIENT) return "DRAW MAT";
     return board_game_status_name(status);
 }
 
@@ -880,7 +872,7 @@ static void ux_draw_replay_panel(const CfReplaySnapshot *snapshot,
                    UX_COL_TEXT, 1);
     font_draw_text(CF_UI_HUD_LABEL_X, 72, "STATE", UX_COL_MUTED, 1);
     font_draw_text_clipped(CF_UI_HUD_VALUE_X, 72,
-                           board_game_status_name(status),
+                           ux_hud_status_name(status),
                            status == CF_GAME_CHECK ||
                            status == CF_GAME_CHECKMATE ?
                            UX_COL_CHECK : UX_COL_GREEN,

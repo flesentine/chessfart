@@ -1,57 +1,63 @@
 #ifndef CF_UI_LAYOUT_H
 #define CF_UI_LAYOUT_H
 
-/* Canonical 320x200 retail layout. Keep input and rendering in sync. */
+/* Canonical 320x200 retail layout. Keep input and rendering in sync.
+ * Board-first refresh: the 8x8 board now uses 176x176 pixels (22px squares),
+ * while the HUD is a narrower right rail and the command strip stays 10px
+ * tall at the bottom. */
 #define CF_UI_SCREEN_W 320
 #define CF_UI_SCREEN_H 200
 
+/* Gameplay no longer spends vertical space on a dedicated header. */
 #define CF_UI_HEADER_X 0
 #define CF_UI_HEADER_Y 0
 #define CF_UI_HEADER_W CF_UI_SCREEN_W
-#define CF_UI_HEADER_H 21
+#define CF_UI_HEADER_H 0
 
-#define CF_UI_BOARD_X 18
-#define CF_UI_BOARD_Y 27
-#define CF_UI_SQUARE_SIZE 18
+#define CF_UI_BOARD_X 8
+#define CF_UI_BOARD_Y 8
+#define CF_UI_SQUARE_SIZE 22
 #define CF_UI_BOARD_PIXELS (CF_UI_SQUARE_SIZE * 8)
 
-#define CF_UI_BOARD_FRAME_X 14
-#define CF_UI_BOARD_FRAME_Y 23
-#define CF_UI_BOARD_FRAME_W 152
-#define CF_UI_BOARD_FRAME_H 154
+#define CF_UI_BOARD_FRAME_X 4
+#define CF_UI_BOARD_FRAME_Y 4
+#define CF_UI_BOARD_FRAME_W 184
+#define CF_UI_BOARD_FRAME_H 184
 
-#define CF_UI_PANEL_X 170
-#define CF_UI_PANEL_Y 24
-#define CF_UI_PANEL_W 143
-#define CF_UI_PANEL_H 151
+#define CF_UI_PANEL_X 192
+#define CF_UI_PANEL_Y 4
+#define CF_UI_PANEL_W 125
+#define CF_UI_PANEL_H 184
 #define CF_UI_PANEL_INSET 10
 #define CF_UI_PANEL_CONTENT_X (CF_UI_PANEL_X + CF_UI_PANEL_INSET)
-#define CF_UI_PANEL_CONTENT_W 123
+#define CF_UI_PANEL_CONTENT_W 105
 
 #define CF_UI_COMMAND_X 0
-#define CF_UI_COMMAND_Y 181
+#define CF_UI_COMMAND_Y 190
 #define CF_UI_COMMAND_W CF_UI_SCREEN_W
-#define CF_UI_COMMAND_H 19
+#define CF_UI_COMMAND_H 10
 
-/* Normal gameplay HUD positions. */
+/* Compact gameplay HUD positions. */
 #define CF_UI_HEADER_TITLE_X 10
-#define CF_UI_HEADER_TITLE_Y 5
+#define CF_UI_HEADER_TITLE_Y 0
 #define CF_UI_HEADER_TAGLINE_X 165
-#define CF_UI_HEADER_TAGLINE_Y 5
-#define CF_UI_HEADER_RULE_Y 16
+#define CF_UI_HEADER_TAGLINE_Y 0
+#define CF_UI_HEADER_RULE_Y 0
 
+#define CF_UI_HUD_TITLE_Y 10
+#define CF_UI_HUD_TITLE_RULE_Y 20
 #define CF_UI_HUD_LABEL_X CF_UI_PANEL_CONTENT_X
-#define CF_UI_HUD_VALUE_X 223
+#define CF_UI_HUD_VALUE_X 238
 #define CF_UI_HUD_DIVIDER_W CF_UI_PANEL_CONTENT_W
 #define CF_UI_HUD_TURN_Y 31
 #define CF_UI_HUD_STATE_Y 42
 #define CF_UI_HUD_DIVIDER1_Y 52
 #define CF_UI_HUD_PIECE_LABEL_Y 58
-#define CF_UI_HUD_PIECE_BOX_X 181
+#define CF_UI_HUD_PIECE_BOX_X 203
 #define CF_UI_HUD_PIECE_BOX_Y 68
 #define CF_UI_HUD_PIECE_BOX_W 22
 #define CF_UI_HUD_PIECE_BOX_H 22
-#define CF_UI_HUD_PIECE_TEXT_X 208
+#define CF_UI_HUD_PIECE_TEXT_X 230
 #define CF_UI_HUD_PIECE_NAME_Y 69
 #define CF_UI_HUD_PIECE_SQUARE_Y 80
 #define CF_UI_HUD_DIVIDER2_Y 94
@@ -64,7 +70,7 @@
 #define CF_UI_HUD_ACTION_LINE1_Y 155
 #define CF_UI_HUD_ACTION_LINE2_Y 165
 
-#define CF_UI_PROMPT_TEXT_Y 187
+#define CF_UI_PROMPT_TEXT_Y 192
 #define CF_UI_PROMPT_TURN_X 8
 #define CF_UI_PROMPT_FART_X 96
 #define CF_UI_PROMPT_SAVE_X 134
@@ -80,7 +86,7 @@
 #define CF_UI_PRACTICE_UNDO_HIT_X 88
 #define CF_UI_PRACTICE_UNDO_HIT_W 48
 
-/* Fart-mode presentation positions. */
+/* Fart-mode presentation positions in the same compact right rail. */
 #define CF_UI_FART_HEADER_TAGLINE_X 112
 #define CF_UI_FART_HEADER_PUFF_X 224
 #define CF_UI_FART_HEADER_PUFF_Y 1
@@ -92,17 +98,17 @@
 #define CF_UI_FART_BADGE_TEXT_Y 5
 
 #define CF_UI_FART_SOURCE_LABEL_Y 53
-#define CF_UI_FART_PIECE_BOX_X 181
+#define CF_UI_FART_PIECE_BOX_X 203
 #define CF_UI_FART_PIECE_BOX_Y 61
 #define CF_UI_FART_PIECE_BOX_W 20
 #define CF_UI_FART_PIECE_BOX_H 20
-#define CF_UI_FART_PIECE_TEXT_X 205
+#define CF_UI_FART_PIECE_TEXT_X 227
 #define CF_UI_FART_PIECE_NAME_Y 62
 #define CF_UI_FART_PIECE_SQUARE_Y 73
 #define CF_UI_FART_GAS_LABEL_Y 84
 #define CF_UI_FART_GAS_PIPS_Y 93
 #define CF_UI_FART_DIRECTION_Y 104
-#define CF_UI_FART_DIRECTION_VALUE_X 247
+#define CF_UI_FART_DIRECTION_VALUE_X 260
 #define CF_UI_FART_PREVIEW_LABEL_Y 114
 #define CF_UI_FART_PREVIEW_LINE1_Y 123
 #define CF_UI_FART_PREVIEW_LINE2_Y 132
@@ -166,7 +172,7 @@
 #define CF_UI_MODAL_RULE_Y_OFFSET 23
 #define CF_UI_MODAL_FOOTER_H 18
 
-#define CF_UI_NOTICE_X 194
+#define CF_UI_NOTICE_X 202
 #define CF_UI_NOTICE_Y 149
 #define CF_UI_NOTICE_W 108
 #define CF_UI_NOTICE_H 20
