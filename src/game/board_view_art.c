@@ -217,7 +217,6 @@ static void draw_board(const CfBoard *board, const CfGasState *gas,
     int x;
     int y;
     int mi;
-    char label[2];
     const CfPiece *piece;
     cf_u8 color;
 
@@ -231,20 +230,9 @@ static void draw_board(const CfBoard *board, const CfGasState *gas,
             color = square_color(file, rank);
             draw_square_surface(x, y, file, rank, color);
 
-            /* Coordinates are part of the board texture, not foreground UI.
-             * Draw them before move markers and pieces so chessmen always
-             * remain visually dominant on rank 1 and the a-file. */
-            label[1] = '\0';
-            if (rank == 0) {
-                label[0] = (char)('A' + file);
-                font_draw_text(x + 2, y + SQUARE_SIZE - 8,
-                               label, COL_GOLD, 1);
-            }
-            if (file == 0) {
-                label[0] = (char)('1' + rank);
-                font_draw_text(x + SQUARE_SIZE - 7, y + 2,
-                               label, COL_GOLD, 1);
-            }
+            /* The compact rail already identifies the active square; keep
+             * the enlarged 22px squares free of coordinate text so pieces,
+             * legal markers and Fart geometry remain visually dominant. */
 
             mi = move_index_at(legal_moves, file, rank);
             if (mi >= 0) {
