@@ -76,6 +76,19 @@ jobs:
           test -s build/web-ux-audit/mobile-390x844.png
           grep -q '^findings=0$' build/web-ux-audit/audit.txt
           cat build/web-ux-audit/audit.txt
+      - name: Desktop fine-pointer Chromium audit
+        run: |
+          command -v xvfb-run
+          xvfb-run -a env CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_fine_pointer_audit.mjs
+          test -s build/web-fine-pointer-audit/audit.json
+          test -s build/web-fine-pointer-audit/desktop-fine-pointer-1365x900.png
+          grep -q '^PASS$' build/web-fine-pointer-audit/audit.txt
+          grep -q '^pointerFine=true$' build/web-fine-pointer-audit/audit.txt
+          grep -q '^hoverHover=true$' build/web-fine-pointer-audit/audit.txt
+          grep -q '^rule=true$' build/web-fine-pointer-audit/audit.txt
+          grep -q '^touch=none$' build/web-fine-pointer-audit/audit.txt
+          grep -q '^fartHover=true$' build/web-fine-pointer-audit/audit.txt
+          cat build/web-fine-pointer-audit/audit.txt
       - name: Visual regression review
         run: |
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_visual_review.mjs
@@ -132,6 +145,7 @@ jobs:
             build/web-smoke.png
             build/web-playtest/
             build/web-ux-audit/
+            build/web-fine-pointer-audit/
             build/web-visual-review/
       - name: Preserve browser bundle
         uses: actions/upload-artifact@v4
