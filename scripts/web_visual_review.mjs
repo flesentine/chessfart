@@ -17,6 +17,16 @@ const BUILD17_ROYAL_CHECKMATE_SIG = 3549803542;
 const BUILD17_CRIMSON_CHECKMATE_SIG = 2953092713;
 const BUILD17_CRIMSON_TITLE_SIG = 685477904;
 const BUILD17_CRIMSON_OPENING_SIG = 1358898237;
+const CRIMSON_FULL_STATE_SIGS = {
+  selected: null,
+  history: null,
+  fart: null,
+  check: null,
+  invalid: null,
+  stalemate: null,
+  help2: null,
+  promotion: null
+};
 
 async function call(page, name, ...args) {
   return await page.evaluate(({ name, args }) => {
@@ -24,6 +34,11 @@ async function call(page, name, ...args) {
     if (!fn) throw new Error(`missing review export ${name}`);
     return fn(...args);
   }, { name, args });
+}
+
+function assertPinnedSignature(label, actual, expected) {
+  if (expected !== null && actual !== expected)
+    throw new Error(`${label} signature drifted: ${actual} != ${expected}`);
 }
 
 async function nativeShot(page, name, source, states) {
@@ -451,6 +466,94 @@ try {
   if (BUILD17_CRIMSON_OPENING_SIG !== null &&
       crimsonOpeningSig !== BUILD17_CRIMSON_OPENING_SIG)
     throw new Error('Crimson Cellar board-first opening signature drifted');
+
+  /* Chromium UX sweep #5: exercise Crimson Cellar across the gameplay and
+   * overlay states most likely to expose palette/readability regressions. */
+  await clickSquare(page, 4, 1);
+  const crimsonSelectedSig =
+    await nativeShot(page, '38-crimson-selected-legal-moves', 'real', states);
+  assertPinnedSignature('Crimson selected/legal moves',
+                        crimsonSelectedSig, CRIMSON_FULL_STATE_SIGS.selected);
+  const royalSelected = states.find((state) => state.name === '04-selected-legal-moves');
+  if (!royalSelected || royalSelected.signature === crimsonSelectedSig)
+    throw new Error('Crimson selected/legal-move state did not differ from Royal');
+
+  await clickSquare(page, 4, 3);
+  await waitForStatus(page, 0, 1, 2);
+  await press(page, 'm', 220);
+  const crimsonHistorySig =
+    await nativeShot(page, '39-crimson-history', 'real', states);
+  assertPinnedSignature('Crimson history',
+                        crimsonHistorySig, CRIMSON_FULL_STATE_SIGS.history);
+  const royalHistory = states.find((state) => state.name === '09-history');
+  if (!royalHistory || royalHistory.signature === crimsonHistorySig)
+    throw new Error('Crimson history did not differ from Royal');
+  await press(page, 'Enter', 180);
+
+  if (await call(page, 'cf_review_render_fixture', 0) !== 1)
+    throw new Error('Crimson Fart push-preview fixture validation failed');
+  const crimsonFartSig =
+    await nativeShot(page, '40-crimson-fart-push-preview', 'fixture', states);
+  assertPinnedSignature('Crimson Fart push preview',
+                        crimsonFartSig, CRIMSON_FULL_STATE_SIGS.fart);
+  const royalFart = states.find((state) => state.name === '12-fart-push-preview');
+  if (!royalFart || royalFart.signature === crimsonFartSig)
+    throw new Error('Crimson Fart push-preview did not differ from Royal');
+
+  if (await call(page, 'cf_review_render_fixture', 1) !== 1)
+    throw new Error('Crimson CHECK fixture validation failed');
+  const crimsonCheckSig =
+    await nativeShot(page, '41-crimson-check', 'fixture', states);
+  assertPinnedSignature('Crimson Check',
+                        crimsonCheckSig, CRIMSON_FULL_STATE_SIGS.check);
+  const royalCheck = states.find((state) => state.name === '13-check');
+  if (!royalCheck || royalCheck.signature === crimsonCheckSig)
+    throw new Error('Crimson Check did not differ from Royal');
+
+  if (await call(page, 'cf_review_render_fixture', 3) !== 1)
+    throw new Error('Crimson Fart edge-invalid fixture validation failed');
+  const crimsonInvalidSig =
+    await nativeShot(page, '42-crimson-fart-edge-invalid', 'fixture', states);
+  assertPinnedSignature('Crimson invalid Fart edge',
+                        crimsonInvalidSig, CRIMSON_FULL_STATE_SIGS.invalid);
+  const royalInvalid = states.find((state) => state.name === '15-fart-edge-invalid');
+  if (!royalInvalid || royalInvalid.signature === crimsonInvalidSig)
+    throw new Error('Crimson invalid Fart state did not differ from Royal');
+
+  if (await call(page, 'cf_review_render_fixture', 4) !== 1)
+    throw new Error('Crimson STALEMATE fixture validation failed');
+  const crimsonStalemateSig =
+    await nativeShot(page, '43-crimson-stalemate', 'fixture', states);
+  assertPinnedSignature('Crimson stalemate',
+                        crimsonStalemateSig, CRIMSON_FULL_STATE_SIGS.stalemate);
+  const royalStalemate = states.find((state) => state.name === '16-stalemate');
+  if (!royalStalemate || royalStalemate.signature === crimsonStalemateSig)
+    throw new Error('Crimson stalemate did not differ from Royal');
+
+  if (await call(page, 'cf_review_render_ui_fixture', 0) !== 1)
+    throw new Error('Crimson Help page 2 fixture validation failed');
+  const crimsonHelpSig =
+    await nativeShot(page, '44-crimson-help-page-2', 'fixture', states);
+  assertPinnedSignature('Crimson Help page 2',
+                        crimsonHelpSig, CRIMSON_FULL_STATE_SIGS.help2);
+  const royalHelp = states.find((state) => state.name === '17-help-page-2');
+  if (!royalHelp || royalHelp.signature === crimsonHelpSig)
+    throw new Error('Crimson Help page 2 did not differ from Royal');
+
+  await loadLocalFixture(page, 1, 1, 1);
+  if (await call(page, 'cf_review_ui_theme') !== 1)
+    throw new Error('Crimson theme did not survive local promotion fixture load');
+  await clickSquare(page, 1, 6);
+  await clickSquare(page, 1, 7);
+  if (await call(page, 'cf_review_promotion_pending') !== 1)
+    throw new Error('Crimson White promotion did not enter choice state');
+  const crimsonPromotionSig =
+    await nativeShot(page, '45-crimson-promotion-choice', 'real', states);
+  assertPinnedSignature('Crimson promotion choice',
+                        crimsonPromotionSig, CRIMSON_FULL_STATE_SIGS.promotion);
+  const royalPromotion = states.find((state) => state.name === '26-local-white-promotion-choice');
+  if (!royalPromotion || royalPromotion.signature === crimsonPromotionSig)
+    throw new Error('Crimson promotion choice did not differ from Royal');
 
   /* Chromium UX follow-up: Replay footer controls must all read as active.
    * Capture the real viewer after restoring Royal Basement so the command
