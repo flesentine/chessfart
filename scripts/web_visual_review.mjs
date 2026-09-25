@@ -18,14 +18,14 @@ const BUILD17_CRIMSON_CHECKMATE_SIG = 2953092713;
 const BUILD17_CRIMSON_TITLE_SIG = 685477904;
 const BUILD17_CRIMSON_OPENING_SIG = 1358898237;
 const CRIMSON_FULL_STATE_SIGS = {
-  selected: null,
-  history: null,
-  fart: null,
-  check: null,
-  invalid: null,
-  stalemate: null,
-  help2: null,
-  promotion: null
+  selected: 2568958673,
+  history: 1097729450,
+  fart: 915670439,
+  check: 3775784696,
+  invalid: 3781529762,
+  stalemate: 2858226022,
+  help2: 3540433939,
+  promotion: 1602626059
 };
 
 async function call(page, name, ...args) {
