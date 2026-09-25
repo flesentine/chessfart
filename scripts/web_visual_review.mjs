@@ -19,7 +19,7 @@ const BUILD17_CRIMSON_TITLE_SIG = 685477904;
 const BUILD17_CRIMSON_OPENING_SIG = 1358898237;
 const CRIMSON_FULL_STATE_SIGS = {
   selected: 2568958673,
-  history: null,
+  history: 1625686260,
   fart: 915670439,
   check: 3775784696,
   invalid: 3781529762,
