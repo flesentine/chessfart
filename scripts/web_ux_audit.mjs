@@ -73,6 +73,15 @@ async function layoutMetrics(page) {
       },
       touchDisplay: getComputedStyle(touch).display,
       helpDisplay: getComputedStyle(help).display,
+      media: {
+        pointerFine: matchMedia('(pointer:fine)').matches,
+        pointerCoarse: matchMedia('(pointer:coarse)').matches,
+        hoverHover: matchMedia('(hover:hover)').matches,
+        hoverNone: matchMedia('(hover:none)').matches,
+        desktopFineRule: matchMedia(
+          '(min-width:760px) and (hover:hover) and (pointer:fine)'
+        ).matches
+      },
       statusText: status.textContent,
       canvasAccessibleName: canvas.getAttribute('aria-label'),
       viewportMeta: viewport,
@@ -148,6 +157,7 @@ const report = {
   purpose: 'Deep Chromium UX audit for Chess Fart web wrapper and input surface',
   commit: process.env.GITHUB_SHA || 'local',
   layouts: [],
+  desktopFinePointer: null,
   input: null,
   findings: [],
   notes: [],
@@ -182,6 +192,29 @@ try {
     });
   }
 
+  /* Headless Chromium often reports pointer:none / hover:none even at a
+   * desktop viewport. Explicitly emulate the desktop fine-pointer media
+   * features through CDP so the real CSS branch is exercised in CI. */
+  const cdp = await page.createCDPSession();
+  await cdp.send('Emulation.setEmulatedMedia', {
+    features: [
+      { name: 'pointer', value: 'fine' },
+      { name: 'hover', value: 'hover' }
+    ]
+  });
+  await page.setViewport({ width: 1365, height: 900, deviceScaleFactor: 1 });
+  await page.goto('http://127.0.0.1:8130/?ux=desktop-fine-pointer', {
+    waitUntil: 'domcontentloaded',
+    timeout: 15000
+  });
+  await waitReady(page);
+  report.desktopFinePointer = await layoutMetrics(page);
+  await page.screenshot({
+    path: path.join(outDir, 'desktop-fine-pointer-1365x900.png'),
+    fullPage: true
+  });
+  await cdp.send('Emulation.setEmulatedMedia', { features: [] });
+
   await page.setViewport({ width: 1100, height: 850, deviceScaleFactor: 1 });
   await page.goto('http://127.0.0.1:8130/?ux=input', {
     waitUntil: 'domcontentloaded',
@@ -189,6 +222,26 @@ try {
   });
   await waitReady(page);
   report.input = await inputProbe(page);
+
+  const fine = report.desktopFinePointer;
+  if (!fine ||
+      !fine.media.pointerFine ||
+      !fine.media.hoverHover ||
+      !fine.media.desktopFineRule) {
+    report.findings.push({
+      severity: 'high',
+      id: 'desktop-fine-pointer-media',
+      detail: fine
+        ? `desktop fine-pointer media did not activate: pointerFine=${fine.media.pointerFine} hoverHover=${fine.media.hoverHover} rule=${fine.media.desktopFineRule}`
+        : 'desktop fine-pointer audit did not run'
+    });
+  } else if (fine.touchDisplay !== 'none') {
+    report.findings.push({
+      severity: 'high',
+      id: 'desktop-fine-pointer-touch-controls',
+      detail: `fine-pointer desktop must hide the touch D-pad; got display=${fine.touchDisplay}`
+    });
+  }
 
   const mobileLayouts = report.layouts.filter((x) => x.name.startsWith('mobile-'));
   for (const layout of mobileLayouts) {
@@ -338,6 +391,9 @@ try {
     [
       'PASS',
       `findings=${report.findings.length}`,
+      report.desktopFinePointer
+        ? `desktop-fine-pointer: pointerFine=${report.desktopFinePointer.media.pointerFine} hoverHover=${report.desktopFinePointer.media.hoverHover} rule=${report.desktopFinePointer.media.desktopFineRule} touch=${report.desktopFinePointer.touchDisplay}`
+        : 'desktop-fine-pointer: missing',
       ...report.findings.map((f) => `${f.severity.toUpperCase()} ${f.id}: ${f.detail}`),
       ...report.notes.map((n) => `NOTE ${n.id}: ${n.detail}`),
       ...report.layouts.map((l) =>
