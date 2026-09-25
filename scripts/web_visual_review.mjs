@@ -467,6 +467,16 @@ try {
       crimsonOpeningSig !== BUILD17_CRIMSON_OPENING_SIG)
     throw new Error('Crimson Cellar board-first opening signature drifted');
 
+  /* Keep the existing Replay state at canonical slot 37. */
+  if (await call(page, 'cf_review_set_ui_theme', 0) !== 1)
+    throw new Error('Replay visual review could not restore Royal Basement');
+  await press(page, 'r', 250);
+  await nativeShot(page, '37-replay-active-close', 'real', states);
+  await press(page, 'r', 180);
+  if (await call(page, 'cf_review_set_ui_theme', 1) !== 1 ||
+      await call(page, 'cf_review_ui_theme') !== 1)
+    throw new Error('Crimson full-state review could not restore Crimson Cellar');
+
   /* Chromium UX sweep #5: exercise Crimson Cellar across the gameplay and
    * overlay states most likely to expose palette/readability regressions. */
   await clickSquare(page, 4, 1);
@@ -554,15 +564,6 @@ try {
   const royalPromotion = states.find((state) => state.name === '26-local-white-promotion-choice');
   if (!royalPromotion || royalPromotion.signature === crimsonPromotionSig)
     throw new Error('Crimson promotion choice did not differ from Royal');
-
-  /* Chromium UX follow-up: Replay footer controls must all read as active.
-   * Capture the real viewer after restoring Royal Basement so the command
-   * bar remains part of the permanent visual-review surface. */
-  if (await call(page, 'cf_review_set_ui_theme', 0) !== 1)
-    throw new Error('Replay visual review could not restore Royal Basement');
-  await press(page, 'r', 250);
-  await nativeShot(page, '37-replay-active-close', 'real', states);
-  await press(page, 'r', 180);
 
   if (errors.length) throw new Error(errors.join(' | '));
 
