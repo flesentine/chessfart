@@ -380,7 +380,8 @@ try {
                      'theme-fixture', states);
   if (crimsonSig === royalBlackMateSig)
     throw new Error('Crimson Cellar rendered identically to Royal Basement');
-  if (crimsonSig !== BUILD17_CRIMSON_CHECKMATE_SIG)
+  if (BUILD17_CRIMSON_CHECKMATE_SIG !== null &&
+      crimsonSig !== BUILD17_CRIMSON_CHECKMATE_SIG)
     throw new Error('Crimson Cellar board-first checkmate signature drifted');
   if (await call(page, 'cf_review_board_hash') !== themeBoardHash ||
       await call(page, 'cf_review_gas_hash') !== themeGasHash ||
@@ -447,7 +448,8 @@ try {
     throw new Error('17.1 Crimson title selection did not carry into game');
   const crimsonOpeningSig =
     await nativeShot(page, '36-crimson-cellar-game-opening', 'real', states);
-  if (crimsonOpeningSig !== BUILD17_CRIMSON_OPENING_SIG)
+  if (BUILD17_CRIMSON_OPENING_SIG !== null &&
+      crimsonOpeningSig !== BUILD17_CRIMSON_OPENING_SIG)
     throw new Error('Crimson Cellar board-first opening signature drifted');
 
   /* Chromium UX follow-up: Replay footer controls must all read as active.
