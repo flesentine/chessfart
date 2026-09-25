@@ -556,7 +556,9 @@ static void ux_draw_fart_panel(const CfBoard *board,
 
 static const char *ux_hud_status_name(CfGameStatus status)
 {
+    if (status == CF_GAME_DRAW_FIFTY_MOVE) return "DRAW 50";
     if (status == CF_GAME_DRAW_THREEFOLD) return "DRAW 3-FOLD";
+    if (status == CF_GAME_DRAW_INSUFFICIENT) return "DRAW MAT";
     return board_game_status_name(status);
 }
 
@@ -870,7 +872,7 @@ static void ux_draw_replay_panel(const CfReplaySnapshot *snapshot,
                    UX_COL_TEXT, 1);
     font_draw_text(CF_UI_HUD_LABEL_X, 72, "STATE", UX_COL_MUTED, 1);
     font_draw_text_clipped(CF_UI_HUD_VALUE_X, 72,
-                           board_game_status_name(status),
+                           ux_hud_status_name(status),
                            status == CF_GAME_CHECK ||
                            status == CF_GAME_CHECKMATE ?
                            UX_COL_CHECK : UX_COL_GREEN,
