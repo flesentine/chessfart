@@ -13,10 +13,10 @@ const server = spawn('python3', ['-m', 'http.server', '8128', '--directory', 'bu
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let reviewGeometry = null;
 
-const BUILD17_ROYAL_CHECKMATE_SIG = 3784439813;
-const BUILD17_CRIMSON_CHECKMATE_SIG = 1969226693;
+const BUILD17_ROYAL_CHECKMATE_SIG = null;
+const BUILD17_CRIMSON_CHECKMATE_SIG = null;
 const BUILD17_CRIMSON_TITLE_SIG = 685477904;
-const BUILD17_CRIMSON_OPENING_SIG = 1539768049;
+const BUILD17_CRIMSON_OPENING_SIG = null;
 
 async function call(page, name, ...args) {
   return await page.evaluate(({ name, args }) => {
