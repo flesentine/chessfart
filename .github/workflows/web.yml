@@ -74,7 +74,9 @@ jobs:
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)" node scripts/web_ux_audit.mjs
           test -s build/web-ux-audit/audit.json
           test -s build/web-ux-audit/mobile-390x844.png
+          test -s build/web-ux-audit/desktop-fine-pointer-1365x900.png
           grep -q '^findings=0$' build/web-ux-audit/audit.txt
+          grep -q '^desktop-fine-pointer: pointerFine=true hoverHover=true rule=true touch=none$' build/web-ux-audit/audit.txt
           cat build/web-ux-audit/audit.txt
       - name: Visual regression review
         run: |
