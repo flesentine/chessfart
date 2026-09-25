@@ -108,8 +108,16 @@ jobs:
           test -s build/web-visual-review/35-title-crimson-cellar-selected.png
           test -s build/web-visual-review/36-crimson-cellar-game-opening.png
           test -s build/web-visual-review/37-replay-active-close.png
+          test -s build/web-visual-review/38-crimson-selected-legal-moves.png
+          test -s build/web-visual-review/39-crimson-history.png
+          test -s build/web-visual-review/40-crimson-fart-push-preview.png
+          test -s build/web-visual-review/41-crimson-check.png
+          test -s build/web-visual-review/42-crimson-fart-edge-invalid.png
+          test -s build/web-visual-review/43-crimson-stalemate.png
+          test -s build/web-visual-review/44-crimson-help-page-2.png
+          test -s build/web-visual-review/45-crimson-promotion-choice.png
           grep -q '^PASS$' build/web-visual-review/visual-review.txt
-          grep -q '^states=37$' build/web-visual-review/visual-review.txt
+          grep -q '^states=45$' build/web-visual-review/visual-review.txt
           cat build/web-visual-review/visual-review.txt
       - name: Preserve web diagnostics
         if: always()
