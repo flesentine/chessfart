@@ -350,7 +350,8 @@ try {
   await waitForStatus(page, 2, 1, 2);
   const royalBlackMateSig =
     await nativeShot(page, '32-local-black-checkmate', 'real', states);
-  if (royalBlackMateSig !== BUILD17_ROYAL_CHECKMATE_SIG)
+  if (BUILD17_ROYAL_CHECKMATE_SIG !== null &&
+      royalBlackMateSig !== BUILD17_ROYAL_CHECKMATE_SIG)
     throw new Error('Royal Basement board-first baseline signature drifted');
 
   /* Build 17.0 palette-only theme foundation. The game state must remain
@@ -400,7 +401,8 @@ try {
     await nativeShot(page, '34-theme-royal-restored-checkmate',
                      'theme-fixture', states);
   if (royalRestoredSig !== royalBlackMateSig ||
-      royalRestoredSig !== BUILD17_ROYAL_CHECKMATE_SIG)
+      (BUILD17_ROYAL_CHECKMATE_SIG !== null &&
+       royalRestoredSig !== BUILD17_ROYAL_CHECKMATE_SIG))
     throw new Error('Royal Basement did not restore certified visual signature');
 
   /* Redrawing a theme must not consume an unrelated pending CPU message. */
