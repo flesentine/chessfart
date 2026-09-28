@@ -80,6 +80,10 @@ static int g_ux_mouse_target_file;
 static int g_ux_mouse_target_rank;
 static int g_ux_mouse_confirm_pending;
 static int g_ux_mouse_fart_pending;
+#ifdef CF_WEB_REVIEW
+static int g_review_attract_running;
+static int g_review_attract_runs;
+#endif
 
 int ux_title_screen(const char *config_path);
 void ux_render_game(const CfBoard *, const CfGasState *, int, int, int, int, int,
