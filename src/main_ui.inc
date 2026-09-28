@@ -1179,6 +1179,10 @@ static void ux_run_attract(void)
     CfGasState after_gas;
     CfFartAction action;
     CfMoveList moves;
+#ifdef CF_WEB_REVIEW
+    g_review_attract_running = 1;
+    ++g_review_attract_runs;
+#endif
     ux_setup_demo(&before_board, &before_gas);
     after_board = before_board;
     after_gas = before_gas;
@@ -1193,6 +1197,9 @@ static void ux_run_attract(void)
                                   &after_board, &after_gas, &action);
         ux_render_attract_after(&after_board, &after_gas, &moves);
     }
+#ifdef CF_WEB_REVIEW
+    g_review_attract_running = 0;
+#endif
 }
 
 #ifdef CF_HOST_BUILD
