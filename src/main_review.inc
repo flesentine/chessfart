@@ -102,6 +102,46 @@ EMSCRIPTEN_KEEPALIVE int cf_review_ui_theme(void)
     return (int)ui_theme_get();
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_attract_running(void)
+{
+    return g_review_attract_running;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_attract_runs(void)
+{
+    return g_review_attract_runs;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_render_attract_stage(int stage)
+{
+    CfBoard before_board;
+    CfBoard after_board;
+    CfGasState before_gas;
+    CfGasState after_gas;
+    CfFartAction action;
+    CfMoveList moves;
+
+    ux_setup_demo(&before_board, &before_gas);
+    moves.count = 0;
+
+    if (stage == 0) {
+        ux_render_attract_preview(&before_board, &before_gas, &moves);
+        return 1;
+    }
+
+    if (stage == 1) {
+        after_board = before_board;
+        after_gas = before_gas;
+        if (!gas_make_fart(&after_board, &after_gas, 2, 2, CF_FART_NE,
+                           CF_PIECE_QUEEN, &action))
+            return 0;
+        ux_render_attract_after(&after_board, &after_gas, &moves);
+        return 1;
+    }
+
+    return 0;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_ui_board_surface(void)
 {
     return (int)ui_theme_board_surface(ui_theme_get());

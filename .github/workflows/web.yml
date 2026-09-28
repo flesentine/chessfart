@@ -129,8 +129,11 @@ jobs:
           test -s build/web-visual-review/43-crimson-stalemate.png
           test -s build/web-visual-review/44-crimson-help-page-2.png
           test -s build/web-visual-review/45-crimson-promotion-choice.png
+          test -s build/web-visual-review/46-title-attract-demo-selected.png
+          test -s build/web-visual-review/47-attract-demo-fart-preview.png
+          test -s build/web-visual-review/48-attract-demo-after-push.png
           grep -q '^PASS$' build/web-visual-review/visual-review.txt
-          grep -q '^states=45$' build/web-visual-review/visual-review.txt
+          grep -q '^states=48$' build/web-visual-review/visual-review.txt
           cat build/web-visual-review/visual-review.txt
       - name: Preserve web diagnostics
         if: always()

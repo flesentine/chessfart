@@ -1140,6 +1140,37 @@ static void ux_setup_demo(CfBoard *board, CfGasState *gas)
     gas_set(gas, 3, 3, 1U);
 }
 
+static void ux_render_attract_preview(const CfBoard *board,
+                                      const CfGasState *gas,
+                                      const CfMoveList *moves)
+{
+    audio_game_render(board, gas, 2, 2, 1, 2, 2,
+                      moves, CF_GAME_ONGOING, 0, CF_PIECE_QUEEN,
+                      1, CF_FART_NE, CF_FART_PUSH, 0,
+                      CF_PIECE_QUEEN, "CHARGED KNIGHT");
+    ux_draw_retail_panel(board, gas, 2, 2, 1, 2, 2,
+                         CF_GAME_ONGOING, "AIM NE TO PUSH", 1,
+                         CF_FART_NE, CF_FART_PUSH, 0, CF_PIECE_QUEEN);
+    ux_draw_command_bar(board, 0, 1, 0);
+    vga_present();
+}
+
+static void ux_render_attract_after(const CfBoard *board,
+                                    const CfGasState *gas,
+                                    const CfMoveList *moves)
+{
+    audio_game_render(board, gas, 2, 2, 0, 0, 0,
+                      moves, CF_GAME_ONGOING, 0, CF_PIECE_QUEEN,
+                      0, CF_FART_NE, CF_FART_INVALID, 0,
+                      CF_PIECE_QUEEN, "D4 BLASTED TO E5");
+    ux_draw_retail_panel(board, gas, 2, 2, 0, 0, 0,
+                         CF_GAME_ONGOING, "D4 BLASTED TO E5", 0,
+                         CF_FART_N, CF_FART_INVALID,
+                         0, CF_PIECE_QUEEN);
+    ux_draw_command_bar(board, 0, 0, 0);
+    vga_present();
+}
+
 static void ux_run_attract(void)
 {
     CfBoard before_board;
@@ -1148,37 +1179,27 @@ static void ux_run_attract(void)
     CfGasState after_gas;
     CfFartAction action;
     CfMoveList moves;
+#ifdef CF_WEB_REVIEW
+    g_review_attract_running = 1;
+    ++g_review_attract_runs;
+#endif
     ux_setup_demo(&before_board, &before_gas);
     after_board = before_board;
     after_gas = before_gas;
     moves.count = 0;
 
     ux_capture("chessfart_attract");
-    audio_game_render(&before_board, &before_gas, 2, 2, 1, 2, 2,
-                            &moves, CF_GAME_ONGOING, 0, CF_PIECE_QUEEN,
-                            1, CF_FART_NE, CF_FART_PUSH, 0,
-                            CF_PIECE_QUEEN, "CHARGED KNIGHT");
-    ux_draw_retail_panel(&before_board, &before_gas, 2, 2, 1, 2, 2,
-                         CF_GAME_ONGOING, "AIM NE TO PUSH", 1,
-                         CF_FART_NE, CF_FART_PUSH, 0, CF_PIECE_QUEEN);
-    ux_draw_command_bar(&before_board, 0, 1, 0);
-    vga_present();
+    ux_render_attract_preview(&before_board, &before_gas, &moves);
 
     if (gas_make_fart(&after_board, &after_gas, 2, 2, CF_FART_NE,
                       CF_PIECE_QUEEN, &action)) {
         presentation_animate_fart(&before_board, &before_gas,
                                   &after_board, &after_gas, &action);
-        audio_game_render(&after_board, &after_gas, 2, 2, 0, 0, 0,
-                                &moves, CF_GAME_ONGOING, 0, CF_PIECE_QUEEN,
-                                0, CF_FART_NE, CF_FART_INVALID, 0,
-                                CF_PIECE_QUEEN, "D4 BLASTED TO E5");
-        ux_draw_retail_panel(&after_board, &after_gas, 2, 2, 0, 0, 0,
-                             CF_GAME_ONGOING, "D4 BLASTED TO E5", 0,
-                             CF_FART_N, CF_FART_INVALID,
-                             0, CF_PIECE_QUEEN);
-        ux_draw_command_bar(&after_board, 0, 0, 0);
-        vga_present();
+        ux_render_attract_after(&after_board, &after_gas, &moves);
     }
+#ifdef CF_WEB_REVIEW
+    g_review_attract_running = 0;
+#endif
 }
 
 #ifdef CF_HOST_BUILD
