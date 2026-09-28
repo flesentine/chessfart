@@ -82,21 +82,6 @@ async function nativeShot(page, name, source, states) {
   return capture.signature;
 }
 
-async function currentCanvasSignature(page) {
-  return await page.evaluate(() => {
-    const canvas = document.getElementById('canvas');
-    if (!canvas) throw new Error('missing canvas');
-    const rgba = canvas.getContext('2d')
-      .getImageData(0, 0, canvas.width, canvas.height).data;
-    let hash = 2166136261 >>> 0;
-    for (let i = 0; i < rgba.length; i += 97) {
-      hash ^= rgba[i];
-      hash = Math.imul(hash, 16777619) >>> 0;
-    }
-    return hash >>> 0;
-  });
-}
-
 async function canonicalGeometry(page) {
   if (reviewGeometry === null) {
     reviewGeometry = {
@@ -620,17 +605,21 @@ try {
   assertPinnedSignature('Attract Demo title selection',
                         attractTitleSig, ATTRACT_DEMO_SIGS.titleSelected);
 
-  /* Run the actual menu command, wait beyond the 5x42ms Fart animation,
-   * then prove control returned to the title menu by opening HELP from the
-   * next menu item. */
-  await press(page, 'Enter', 800);
-  await press(page, 'ArrowDown', 120);
-  await press(page, 'Enter', 220);
-  const returnedHelpSig = await currentCanvasSignature(page);
-  const canonicalHelp = states.find((state) => state.name === '03-help');
-  if (!canonicalHelp || returnedHelpSig !== canonicalHelp.signature)
-    throw new Error('Attract Demo did not return to the title menu after playback');
-  await press(page, 'Enter', 180);
+  /* Run the actual menu command and prove the production demo completed.
+   * This avoids comparing unrelated modal pixels or sampling the 5-frame
+   * animation at a timing-sensitive instant. */
+  const attractRunsBefore = await call(page, 'cf_review_attract_runs');
+  await press(page, 'Enter', 80);
+  const attractDeadline = Date.now() + 3000;
+  while (Date.now() < attractDeadline) {
+    const runs = await call(page, 'cf_review_attract_runs');
+    const running = await call(page, 'cf_review_attract_running');
+    if (runs === attractRunsBefore + 1 && running === 0) break;
+    await sleep(40);
+  }
+  if (await call(page, 'cf_review_attract_runs') !== attractRunsBefore + 1 ||
+      await call(page, 'cf_review_attract_running') !== 0)
+    throw new Error('Attract Demo menu command did not complete and return control');
 
   if (await call(page, 'cf_review_render_attract_stage', 0) !== 1)
     throw new Error('Attract Demo preview stage could not render');
