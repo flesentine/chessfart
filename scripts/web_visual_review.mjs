@@ -27,6 +27,11 @@ const CRIMSON_FULL_STATE_SIGS = {
   help2: 3540433939,
   promotion: 1602626059
 };
+const ATTRACT_DEMO_SIGS = {
+  titleSelected: null,
+  preview: null,
+  afterPush: null
+};
 
 async function call(page, name, ...args) {
   return await page.evaluate(({ name, args }) => {
@@ -75,6 +80,21 @@ async function nativeShot(page, name, source, states) {
     signature: capture.signature
   });
   return capture.signature;
+}
+
+async function currentCanvasSignature(page) {
+  return await page.evaluate(() => {
+    const canvas = document.getElementById('canvas');
+    if (!canvas) throw new Error('missing canvas');
+    const rgba = canvas.getContext('2d')
+      .getImageData(0, 0, canvas.width, canvas.height).data;
+    let hash = 2166136261 >>> 0;
+    for (let i = 0; i < rgba.length; i += 97) {
+      hash ^= rgba[i];
+      hash = Math.imul(hash, 16777619) >>> 0;
+    }
+    return hash >>> 0;
+  });
 }
 
 async function canonicalGeometry(page) {
@@ -577,6 +597,56 @@ try {
   const royalPromotion = states.find((state) => state.name === '26-local-white-promotion-choice');
   if (!royalPromotion || royalPromotion.signature === crimsonPromotionSig)
     throw new Error('Crimson promotion choice did not differ from Royal');
+
+  /* Chromium UX sweep #7: make the real title-screen Attract Demo path
+   * canonical, then capture its two stable authored endpoints directly. */
+  await page.goto('http://127.0.0.1:8128/?visual=attract-demo', {
+    waitUntil: 'domcontentloaded',
+    timeout: 15000
+  });
+  await page.waitForFunction(
+    () => document.getElementById('status')?.textContent.startsWith('Ready'),
+    { timeout: 15000 }
+  );
+  if (await call(page, 'cf_review_set_ui_theme', 0) !== 1 ||
+      await call(page, 'cf_review_ui_theme') !== 0)
+    throw new Error('Attract Demo visual review could not force Royal Basement');
+
+  await press(page, 'ArrowDown', 80);
+  await press(page, 'ArrowDown', 80);
+  await press(page, 'ArrowDown', 120);
+  const attractTitleSig =
+    await nativeShot(page, '46-title-attract-demo-selected', 'real', states);
+  assertPinnedSignature('Attract Demo title selection',
+                        attractTitleSig, ATTRACT_DEMO_SIGS.titleSelected);
+
+  /* Run the actual menu command, wait beyond the 5x42ms Fart animation,
+   * then prove control returned to the title menu by opening HELP from the
+   * next menu item. */
+  await press(page, 'Enter', 800);
+  await press(page, 'ArrowDown', 120);
+  await press(page, 'Enter', 220);
+  const returnedHelpSig = await currentCanvasSignature(page);
+  const canonicalHelp = states.find((state) => state.name === '03-help');
+  if (!canonicalHelp || returnedHelpSig !== canonicalHelp.signature)
+    throw new Error('Attract Demo did not return to the title menu after playback');
+  await press(page, 'Enter', 180);
+
+  if (await call(page, 'cf_review_render_attract_stage', 0) !== 1)
+    throw new Error('Attract Demo preview stage could not render');
+  const attractPreviewSig =
+    await nativeShot(page, '47-attract-demo-fart-preview', 'attract-fixture', states);
+  assertPinnedSignature('Attract Demo Fart preview',
+                        attractPreviewSig, ATTRACT_DEMO_SIGS.preview);
+
+  if (await call(page, 'cf_review_render_attract_stage', 1) !== 1)
+    throw new Error('Attract Demo post-push stage could not render');
+  const attractAfterSig =
+    await nativeShot(page, '48-attract-demo-after-push', 'attract-fixture', states);
+  assertPinnedSignature('Attract Demo after-push',
+                        attractAfterSig, ATTRACT_DEMO_SIGS.afterPush);
+  if (attractPreviewSig === attractAfterSig)
+    throw new Error('Attract Demo preview and after-push frames rendered identically');
 
   if (errors.length) throw new Error(errors.join(' | '));
 
