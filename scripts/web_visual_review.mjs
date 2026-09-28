@@ -28,9 +28,9 @@ const CRIMSON_FULL_STATE_SIGS = {
   promotion: 1602626059
 };
 const ATTRACT_DEMO_SIGS = {
-  titleSelected: null,
-  preview: null,
-  afterPush: null
+  titleSelected: 3915611433,
+  preview: 2484544860,
+  afterPush: 1497238113
 };
 
 async function call(page, name, ...args) {
