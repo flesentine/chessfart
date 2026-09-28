@@ -102,6 +102,16 @@ EMSCRIPTEN_KEEPALIVE int cf_review_ui_theme(void)
     return (int)ui_theme_get();
 }
 
+EMSCRIPTEN_KEEPALIVE int cf_review_attract_running(void)
+{
+    return g_review_attract_running;
+}
+
+EMSCRIPTEN_KEEPALIVE int cf_review_attract_runs(void)
+{
+    return g_review_attract_runs;
+}
+
 EMSCRIPTEN_KEEPALIVE int cf_review_render_attract_stage(int stage)
 {
     CfBoard before_board;
